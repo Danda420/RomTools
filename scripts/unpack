@@ -1,0 +1,26 @@
+#!/bin/bash
+
+USER=danda
+DIRTOOLS=/home/$USER/Desktop
+DIRROM=$DIRTOOLS/RomTools/ROM
+DIRINPUT=$DIRTOOLS/RomTools/rom_input
+
+brotli -d $DIRINPUT/system.new.dat.br
+brotli -d $DIRINPUT/vendor.new.dat.br 
+brotli -d $DIRINPUT/odm.new.dat.br
+brotli -d $DIRINPUT/system_ext.new.dat.br
+
+rm -rf $DIRINPUT/system.new.dat.br
+rm -rf $DIRINPUT/vendor.new.dat.br 
+rm -rf $DIRINPUT/odm.new.dat.br
+rm -rf $DIRINPUT/system_ext.new.dat.br
+
+./bin/sdat2img.py $DIRINPUT/system.transfer.list $DIRINPUT/system.new.dat $DIRROM/system.img
+./bin/sdat2img.py $DIRINPUT/vendor.transfer.list $DIRINPUT/vendor.new.dat $DIRROM/vendor.img
+./bin/sdat2img.py $DIRINPUT/odm.transfer.list $DIRINPUT/odm.new.dat $DIRROM/odm.img
+./bin/sdat2img.py $DIRINPUT/product.transfer.list $DIRINPUT/product.new.dat $DIRROM/product.img
+./bin/sdat2img.py $DIRINPUT/system_ext.transfer.list $DIRINPUT/system_ext.new.dat $DIRROM/system_ext.img
+
+bash mount
+
+rm -rf $DIRINPUT/*

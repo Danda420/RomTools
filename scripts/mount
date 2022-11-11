@@ -1,0 +1,19 @@
+#!/bin/bash
+
+USER=danda
+DIRTOOLS=/home/$USER/Desktop
+DIRROM=$DIRTOOLS/RomTools/ROM
+
+sudo mount -t ext4 -o loop $DIRROM/system.img $DIRROM/system
+sudo mount -t ext4 -o loop $DIRROM/vendor.img $DIRROM/vendor
+sudo mount -t ext4 -o loop $DIRROM/odm.img $DIRROM/odm
+sudo mount -t ext4 -o loop $DIRROM/product.img $DIRROM/product
+sudo mount -t ext4 -o loop $DIRROM/system_ext.img $DIRROM/system_ext
+
+sudo mount -t ext4 -o loop $DIRROM/system_a.img $DIRROM/system
+sudo mount -t ext4 -o loop $DIRROM/vendor_a.img $DIRROM/vendor
+sudo mount -t ext4 -o loop $DIRROM/odm_a.img $DIRROM/odm
+sudo mount -t ext4 -o loop $DIRROM/product_a.img $DIRROM/product
+sudo mount -t ext4 -o loop $DIRROM/system_ext_a.img $DIRROM/system_ext
+
+bash give_perm

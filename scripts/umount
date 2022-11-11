@@ -1,0 +1,12 @@
+#!/bin/bash
+
+USER=danda
+DIRTOOLS=/home/$USER/Desktop
+DIRROM=$DIRTOOLS/RomTools/ROM
+
+sudo umount $DIRROM/system
+sudo umount $DIRROM/vendor
+sudo umount $DIRROM/odm
+sudo umount $DIRROM/product
+sudo umount $DIRROM/system_ext
+

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+USER=danda
+DIRTOOLS=/home/$USER/Desktop
+DIRROM=$DIRTOOLS/RomTools/ROM
+
+sudo chown -R $USER:$USER $DIRROM/system
+sudo chown -R $USER:$USER $DIRROM/vendor
+sudo chown -R $USER:$USER $DIRROM/odm
+sudo chown -R $USER:$USER $DIRROM/system_ext
+sudo chown -R $USER:$USER $DIRROM/product

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+USER=danda
+DIRTOOLS=/home/$USER/Desktop
+DIRIN=$DIRTOOLS/RomTools/brotli/input
+DIROUT=$DIRTOOLS/RomTools/brotli/output
+
+rm -rf $DIRIN/*
+rm -rf $DIROUT/*
