@@ -66,10 +66,10 @@ VENDORSIZE=$REPLY
 echo " "
 
 echo "your odm raw image size is : $ODMSIZE"
-echo "your odm raw image size is : $PRODUCTSIZE"
-echo "your odm raw image size is : $SYSTEMSIZE"
-echo "your odm raw image size is : $SYSEXTSIZE"
-echo "your odm raw image size is : $VENDORSIZE"
+echo "your product raw image size is : $PRODUCTSIZE"
+echo "your system raw image size is : $SYSTEMSIZE"
+echo "your system_ext raw image size is : $SYSEXTSIZE"
+echo "your vendor raw image size is : $VENDORSIZE"
 echo " "
 while true; do
     read -p "Are those partitions size above correct? (Y/N)" yn
