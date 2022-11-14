@@ -6,6 +6,8 @@ DIRINPUT=$DIRTOOLS/RomTools/rom_input
 DIROUT=$DIRTOOLS/RomTools/rom_output
 DIRROM=$DIRTOOLS/RomTools/ROM
 
+clear
+
 echo " "
 echo " "
 echo "Input Super image name :"

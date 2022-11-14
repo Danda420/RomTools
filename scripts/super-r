@@ -24,6 +24,8 @@ odm1=odm$SLOT1
 product1=product$SLOT1
 system_ext1=system_ext$SLOT1
 
+clear
+
 echo " "
 echo " "
 echo "Input Raw Super image name :"
@@ -141,6 +143,7 @@ done
 echo " "
 
 img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img
+rm -rf $DIRIN/$imgname.img
 
 ./bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4
 cp $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
