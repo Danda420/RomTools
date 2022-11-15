@@ -5,6 +5,7 @@ DIRTOOLS=/home/$USER/Desktop
 DIRIN=$DIRTOOLS/RomTools/rom_input
 DIROUT=$DIRTOOLS/RomTools/rom_output
 DIRSUPER=$DIRTOOLS/RomTools/ROM/super
+SIZEPART=$DIRTOOLS/RomTools/size
 
 SLOT=_a
 SLOT1=_b
@@ -26,21 +27,29 @@ system_ext1=system_ext$SLOT1
 
 clear
 
-echo " "
-echo " "
-echo "Input Raw Super image name :"
-read
-imgname=$REPLY
-echo " "
 while true; do
-    read -p "Your super raw img name is : $imgname is that correct? (Y/N)" yn
-    case $yn in
-        [Yy]* ) break;;
-        [Nn]* ) exit;;
-        * ) echo "Please answer yes or no.";;
-    esac
-done
+    echo "Take partition size from $SIZEPART or just input manually?"
+    echo "(1) Take from $SIZEPART"
+    echo "(2) Input manually "
+    read -p "choose 1 or 2 : " choose
+    case $choose in
+        [1]* ) 
 
+ODMSIZE=$(cat $SIZEPART/odm)
+PRODUCTSIZE=$(cat $SIZEPART/system)
+SYSTEMSIZE=$(cat $SIZEPART/system_ext)
+SYSEXTSIZE=$(cat $SIZEPART/product)
+VENDORSIZE=$(cat $SIZEPART/vendor)
+echo " "
+echo "imported partition sizes from $SIZEPART"
+echo " "
+echo "here's your partitions size, if the size below is empty.. you need to input your partition size in bytes on $SIZEPART"
+
+break;;
+
+
+        [2]* ) 
+        
 echo " "
 echo "Input odm raw image size in bytes :"
 read
@@ -67,6 +76,15 @@ read
 VENDORSIZE=$REPLY
 echo " "
 
+
+break;;
+
+
+        * ) echo "Please answer 1 or 2.";;
+    esac
+done
+
+echo " "
 echo "your odm raw image size is : $ODMSIZE"
 echo "your product raw image size is : $PRODUCTSIZE"
 echo "your system raw image size is : $SYSTEMSIZE"
@@ -84,10 +102,42 @@ done
 
 echo " "
 
+echo " "
+echo " "
+echo "Input Raw Super image name :"
+read
+imgname=$REPLY
+echo " "
 while true; do
-    read -p "Are you compiling super.img of A/B device? (Y/N)" yn
+    read -p "Your super raw img name is : $imgname is that correct? (Y/N)" yn
     case $yn in
-        [Yy]* ) 
+        [Yy]* ) break;;
+        [Nn]* ) exit;;
+        * ) echo "Please answer yes or no.";;
+    esac
+done
+
+while true; do
+    echo "What super partition type that u want to compile?"
+    echo "(1) A only"
+    echo "(2) A/B "
+    read -p "choose 1 or 2 : " choose
+    case $choose in
+        [1]* ) 
+echo " "
+echo " "
+echo "Compiling super with A only format"
+echo " "
+echo " "
+
+
+./bin/lpmake --metadata-size $METADATASIZE --super-name super --metadata-slots 2 --device super:$SUPERSIZE --group qti_dynamic_partitions:$SUPERSIZE --partition system:none:$SYSTEMSIZE:qti_dynamic_partitions --image system=$DIRSUPER/system.img --partition system_ext:none:$SYSEXTSIZE:qti_dynamic_partitions --image system_ext=$DIRSUPER/system_ext.img --partition odm:none:$ODMSIZE:qti_dynamic_partitions --image odm=$DIRSUPER/odm.img --partition vendor:none:$VENDORSIZE:qti_dynamic_partitions --image vendor=$DIRSUPER/vendor.img --partition product:none:$PRODUCTSIZE:qti_dynamic_partitions --image product=$DIRSUPER/product.img --output $DIRIN/$imgname.img
+
+
+break;;
+
+
+        [2]* ) 
 echo " "
 echo " "
 echo "Compiling super with A/B format"
@@ -103,25 +153,10 @@ touch $DIRSUPER/system_ext_b.img
 ./bin/lpmake --metadata-size $METADATASIZE --super-name super --metadata-slots 2 --device super:$SUPERSIZE --group qti_dynamic_partitions:$SUPERSIZE --partition $system:none:$SYSTEMSIZE:qti_dynamic_partitions --image $system=$DIRSUPER/$system.img --partition $system_ext:none:$SYSEXTSIZE:qti_dynamic_partitions --image $system_ext=$DIRSUPER/$system_ext.img --partition $odm:none:$ODMSIZE:qti_dynamic_partitions --image $odm=$DIRSUPER/$odm.img --partition $vendor:none:$VENDORSIZE:qti_dynamic_partitions --image $vendor=$DIRSUPER/$vendor.img --partition $product:none:$PRODUCTSIZE:qti_dynamic_partitions --image $product=$DIRSUPER/$product.img --partition $system1:none:1:qti_dynamic_partitions --image $system1=$DIRSUPER/$system1.img --partition $system_ext1:none:1:qti_dynamic_partitions --image $system_ext1=$DIRSUPER/$system_ext1.img --partition $odm1:none:1:qti_dynamic_partitions --image $odm1=$DIRSUPER/$odm1.img --partition $vendor1:none:1:qti_dynamic_partitions --image $vendor1=$DIRSUPER/$vendor1.img --partition $product1:none:1:qti_dynamic_partitions --image $product1=$DIRSUPER/$product1.img --output $DIRIN/$imgname.img
 
 
-
 break;;
 
 
-        [Nn]* ) 
-echo " "
-echo " "
-echo "Compiling super with A only format"
-echo " "
-echo " "
-
-./bin/lpmake --metadata-size $METADATASIZE --super-name super --metadata-slots 2 --device super:$SUPERSIZE --group qti_dynamic_partitions:$SUPERSIZE --partition system:none:$SYSTEMSIZE:qti_dynamic_partitions --image system=$DIRSUPER/system.img --partition system_ext:none:$SYSEXTSIZE:qti_dynamic_partitions --image system_ext=$DIRSUPER/system_ext.img --partition odm:none:$ODMSIZE:qti_dynamic_partitions --image odm=$DIRSUPER/odm.img --partition vendor:none:$VENDORSIZE:qti_dynamic_partitions --image vendor=$DIRSUPER/vendor.img --partition product:none:$PRODUCTSIZE:qti_dynamic_partitions --image product=$DIRSUPER/product.img --output $DIRIN/$imgname.img
-
-
-
-break;;
-
-
-        * ) echo "Please answer yes or no.";;
+        * ) echo "Please answer 1 or 2.";;
     esac
 done
 
