@@ -1,8 +1,9 @@
 #!/bin/bash
 
-USER=danda
-DIRTOOLS=/home/$USER/Desktop
-DIRROM=$DIRTOOLS/RomTools/ROM
+cd ..
+DIRTOOLS=$PWD
+cd scripts
+DIRROM=$DIRTOOLS/ROM
 
 sudo umount $DIRROM/system
 sudo umount $DIRROM/vendor

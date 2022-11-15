@@ -1,10 +1,11 @@
 #!/bin/bash
 
-USER=danda
-DIRTOOLS=/home/$USER/Desktop
-DIRINPUT=$DIRTOOLS/RomTools/rom_input
-DIROUT=$DIRTOOLS/RomTools/rom_output
-DIRROM=$DIRTOOLS/RomTools/ROM
+cd ..
+DIRTOOLS=$PWD
+cd scripts
+DIRINPUT=$DIRTOOLS/rom_input
+DIROUT=$DIRTOOLS/rom_output
+DIRROM=$DIRTOOLS/ROM
 
 clear
 

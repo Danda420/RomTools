@@ -1,9 +1,10 @@
 #!/bin/bash
 
-USER=danda
-DIRTOOLS=/home/$USER/Desktop
-DIRROM=$DIRTOOLS/RomTools/ROM
-DIROUT=$DIRTOOLS/RomTools/rom_output
+cd ..
+DIRTOOLS=$PWD
+cd scripts
+DIRROM=$DIRTOOLS/ROM
+DIROUT=$DIRTOOLS/rom_output
 
 bash umount
 

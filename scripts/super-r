@@ -1,11 +1,12 @@
 #!/bin/bash
 
-USER=danda
-DIRTOOLS=/home/$USER/Desktop
-DIRIN=$DIRTOOLS/RomTools/rom_input
-DIROUT=$DIRTOOLS/RomTools/rom_output
-DIRSUPER=$DIRTOOLS/RomTools/ROM/super
-SIZEPART=$DIRTOOLS/RomTools/size
+cd ..
+DIRTOOLS=$PWD
+cd scripts
+DIRIN=$DIRTOOLS/rom_input
+DIROUT=$DIRTOOLS/rom_output
+DIRSUPER=$DIRTOOLS/ROM/super
+SIZEPART=$DIRTOOLS/size
 
 SLOT=_a
 SLOT1=_b

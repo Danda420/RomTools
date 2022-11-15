@@ -1,9 +1,10 @@
 #!/bin/bash
 
-USER=danda
-DIRTOOLS=/home/$USER/Desktop
-DIRROM=$DIRTOOLS/RomTools/ROM
-DIRINPUT=$DIRTOOLS/RomTools/rom_input
+cd ..
+DIRTOOLS=$PWD
+cd scripts
+DIRROM=$DIRTOOLS/ROM
+DIRINPUT=$DIRTOOLS/rom_input
 
 brotli -d $DIRINPUT/system.new.dat.br
 brotli -d $DIRINPUT/vendor.new.dat.br 
