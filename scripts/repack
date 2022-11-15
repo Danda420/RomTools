@@ -16,36 +16,36 @@ img2simg $DIRROM/product.img $DIRROM/product.sparse.img
 img2simg $DIRROM/system_ext.img $DIRROM/system_ext.sparse.img
 
 ./bin/img2sdat.py $DIRROM/system.sparse.img -o $DIRROM/ -v 4
-cp $DIRROM/system.new.dat $DIROUT/system.new.dat
-cp $DIRROM/system.patch.dat $DIROUT/system.patch.dat
-cp $DIRROM/system.transfer.list $DIROUT/system.transfer.list
+mv $DIRROM/system.new.dat $DIROUT/system.new.dat
+mv $DIRROM/system.patch.dat $DIROUT/system.patch.dat
+mv $DIRROM/system.transfer.list $DIROUT/system.transfer.list
 rm -rf $DIRROM/system.*
 
 ./bin/img2sdat.py $DIRROM/vendor.sparse.img -o $DIRROM/ -v 4
-cp $DIRROM/system.new.dat $DIROUT/vendor.new.dat
-cp $DIRROM/system.patch.dat $DIROUT/vendor.patch.dat
-cp $DIRROM/system.transfer.list $DIROUT/vendor.transfer.list
+mv $DIRROM/system.new.dat $DIROUT/vendor.new.dat
+mv $DIRROM/system.patch.dat $DIROUT/vendor.patch.dat
+mv $DIRROM/system.transfer.list $DIROUT/vendor.transfer.list
 rm -rf $DIRROM/system.*
 rm -rf $DIRROM/vendor.*
 
 ./bin/img2sdat.py $DIRROM/odm.sparse.img -o $DIRROM/-v 4
-cp $DIRROM/system.new.dat $DIROUT/odm.new.dat
-cp $DIRROM/system.patch.dat $DIROUT/odm.patch.dat
-cp $DIRROM/system.transfer.list $DIROUT/odm.transfer.list
+mv $DIRROM/system.new.dat $DIROUT/odm.new.dat
+mv $DIRROM/system.patch.dat $DIROUT/odm.patch.dat
+mv $DIRROM/system.transfer.list $DIROUT/odm.transfer.list
 rm -rf $DIRROM/system.*
 rm -rf $DIRROM/odm.*
 
 ./bin/img2sdat.py $DIRROM/product.sparse.img -o $DIRROM/ -v 4
-cp $DIRROM/system.new.dat $DIROUT/product.new.dat
-cp $DIRROM/system.patch.dat $DIROUT/product.patch.dat
-cp $DIRROM/system.transfer.list $DIROUT/product.transfer.list
+mv $DIRROM/system.new.dat $DIROUT/product.new.dat
+mv $DIRROM/system.patch.dat $DIROUT/product.patch.dat
+mv $DIRROM/system.transfer.list $DIROUT/product.transfer.list
 rm -rf $DIRROM/system.*
 rm -rf $DIRROM/product.*
 
 ./bin/img2sdat.py $DIRROM/system_ext.sparse.img -o $DIRROM/-v 4
-cp $DIRROM/system.new.dat $DIROUT/system_ext.new.dat
-cp $DIRROM/system.patch.dat $DIROUT/system_ext.patch.dat
-cp $DIRROM/system.transfer.list $DIROUT/system_ext.transfer.list
+mv $DIRROM/system.new.dat $DIROUT/system_ext.new.dat
+mv $DIRROM/system.patch.dat $DIROUT/system_ext.patch.dat
+mv $DIRROM/system.transfer.list $DIROUT/system_ext.transfer.list
 rm -rf $DIRROM/system.*
 rm -rf $DIRROM/system_ext.*
 

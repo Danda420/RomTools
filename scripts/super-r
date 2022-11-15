@@ -37,9 +37,9 @@ while true; do
         [1]* ) 
 
 ODMSIZE=$(cat $SIZEPART/odm)
-PRODUCTSIZE=$(cat $SIZEPART/system)
-SYSTEMSIZE=$(cat $SIZEPART/system_ext)
-SYSEXTSIZE=$(cat $SIZEPART/product)
+PRODUCTSIZE=$(cat $SIZEPART/product)
+SYSTEMSIZE=$(cat $SIZEPART/system)
+SYSEXTSIZE=$(cat $SIZEPART/system_ext)
 VENDORSIZE=$(cat $SIZEPART/vendor)
 echo " "
 echo "imported partition sizes from $SIZEPART"
@@ -170,8 +170,7 @@ while true; do
         [Yy]* ) break;;
         [Nn]* ) 
         
-cp $DIRIN/$imgname.img $DIROUT/$imgname.img
-rm -rf $DIRIN/$imgname.img  
+mv $DIRIN/$imgname.img $DIROUT/$imgname.img
 exit;;
         * ) echo "Please answer yes or no.";;
     esac
@@ -182,10 +181,9 @@ img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img
 rm -rf $DIRIN/$imgname.img
 
 ./bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4
-cp $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
-cp $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
-cp $DIRIN/system.transfer.list $DIROUT/$imgname.transfer.list
-rm -rf $DIRIN/system.*
+mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
+mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
+mv $DIRIN/system.transfer.list $DIROUT/$imgname.transfer.list
 rm -rf $DIRIN/$imgname.*
 
 echo " "
