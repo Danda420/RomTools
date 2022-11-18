@@ -28,7 +28,7 @@ mv $DIRROM/system.transfer.list $DIROUT/vendor.transfer.list
 rm -rf $DIRROM/system.*
 rm -rf $DIRROM/vendor.*
 
-./bin/img2sdat.py $DIRROM/odm.sparse.img -o $DIRROM/-v 4
+./bin/img2sdat.py $DIRROM/odm.sparse.img -o $DIRROM/ -v 4
 mv $DIRROM/system.new.dat $DIROUT/odm.new.dat
 mv $DIRROM/system.patch.dat $DIROUT/odm.patch.dat
 mv $DIRROM/system.transfer.list $DIROUT/odm.transfer.list
@@ -42,7 +42,7 @@ mv $DIRROM/system.transfer.list $DIROUT/product.transfer.list
 rm -rf $DIRROM/system.*
 rm -rf $DIRROM/product.*
 
-./bin/img2sdat.py $DIRROM/system_ext.sparse.img -o $DIRROM/-v 4
+./bin/img2sdat.py $DIRROM/system_ext.sparse.img -o $DIRROM/ -v 4
 mv $DIRROM/system.new.dat $DIROUT/system_ext.new.dat
 mv $DIRROM/system.patch.dat $DIROUT/system_ext.patch.dat
 mv $DIRROM/system.transfer.list $DIROUT/system_ext.transfer.list

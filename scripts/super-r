@@ -121,7 +121,7 @@ done
 while true; do
     echo "What super partition type that u want to compile?"
     echo "(1) A only"
-    echo "(2) A/B "
+    echo "(2) Virtual A/B "
     read -p "choose 1 or 2 : " choose
     case $choose in
         [1]* ) 
@@ -132,7 +132,14 @@ echo " "
 echo " "
 
 
-./bin/lpmake --metadata-size $METADATASIZE --super-name super --metadata-slots 2 --device super:$SUPERSIZE --group qti_dynamic_partitions:$SUPERSIZE --partition system:none:$SYSTEMSIZE:qti_dynamic_partitions --image system=$DIRSUPER/system.img --partition system_ext:none:$SYSEXTSIZE:qti_dynamic_partitions --image system_ext=$DIRSUPER/system_ext.img --partition odm:none:$ODMSIZE:qti_dynamic_partitions --image odm=$DIRSUPER/odm.img --partition vendor:none:$VENDORSIZE:qti_dynamic_partitions --image vendor=$DIRSUPER/vendor.img --partition product:none:$PRODUCTSIZE:qti_dynamic_partitions --image product=$DIRSUPER/product.img --output $DIRIN/$imgname.img
+./bin/lpmake 	--metadata-size $METADATASIZE --super-name super --metadata-slots 2 --device super:$SUPERSIZE \
+		--group qti_dynamic_partitions:$SUPERSIZE \
+		--partition system:none:$SYSTEMSIZE:qti_dynamic_partitions --image system=$DIRSUPER/system.img \
+		--partition system_ext:none:$SYSEXTSIZE:qti_dynamic_partitions --image system_ext=$DIRSUPER/system_ext.img \
+		--partition odm:none:$ODMSIZE:qti_dynamic_partitions --image odm=$DIRSUPER/odm.img \
+		--partition vendor:none:$VENDORSIZE:qti_dynamic_partitions --image vendor=$DIRSUPER/vendor.img \
+		--partition product:none:$PRODUCTSIZE:qti_dynamic_partitions --image product=$DIRSUPER/product.img \
+		--sparse --output $DIRIN/$imgname.img
 
 
 break;;
@@ -141,17 +148,17 @@ break;;
         [2]* ) 
 echo " "
 echo " "
-echo "Compiling super with A/B format"
+echo "Compiling super with Virtual A/B format"
 echo " "
 echo " "
 
-touch $DIRSUPER/system_b.img
-touch $DIRSUPER/vendor_b.img
-touch $DIRSUPER/odm_b.img
-touch $DIRSUPER/product_b.img
-touch $DIRSUPER/system_ext_b.img
-
-./bin/lpmake --metadata-size $METADATASIZE --super-name super --metadata-slots 2 --device super:$SUPERSIZE --group qti_dynamic_partitions:$SUPERSIZE --partition $system:none:$SYSTEMSIZE:qti_dynamic_partitions --image $system=$DIRSUPER/$system.img --partition $system_ext:none:$SYSEXTSIZE:qti_dynamic_partitions --image $system_ext=$DIRSUPER/$system_ext.img --partition $odm:none:$ODMSIZE:qti_dynamic_partitions --image $odm=$DIRSUPER/$odm.img --partition $vendor:none:$VENDORSIZE:qti_dynamic_partitions --image $vendor=$DIRSUPER/$vendor.img --partition $product:none:$PRODUCTSIZE:qti_dynamic_partitions --image $product=$DIRSUPER/$product.img --partition $system1:none:1:qti_dynamic_partitions --image $system1=$DIRSUPER/$system1.img --partition $system_ext1:none:1:qti_dynamic_partitions --image $system_ext1=$DIRSUPER/$system_ext1.img --partition $odm1:none:1:qti_dynamic_partitions --image $odm1=$DIRSUPER/$odm1.img --partition $vendor1:none:1:qti_dynamic_partitions --image $vendor1=$DIRSUPER/$vendor1.img --partition $product1:none:1:qti_dynamic_partitions --image $product1=$DIRSUPER/$product1.img --output $DIRIN/$imgname.img
+./bin/lpmake 	--metadata-size $METADATASIZE --virtual-ab --super-name super --metadata-slots 2 --device super:$SUPERSIZE \
+		--group qti_dynamic_partitions:$SUPERSIZE \
+		--partition $system:none:$SYSTEMSIZE:qti_dynamic_partitions --image $system=$DIRSUPER/$system.img \
+		--partition $system_ext:none:$SYSEXTSIZE:qti_dynamic_partitions --image $system_ext=$DIRSUPER/$system_ext.img \		--partition $odm:none:$ODMSIZE:qti_dynamic_partitions --image $odm=$DIRSUPER/$odm.img \
+		--partition $vendor:none:$VENDORSIZE:qti_dynamic_partitions --image $vendor=$DIRSUPER/$vendor.img \
+		--partition $product:none:$PRODUCTSIZE:qti_dynamic_partitions --image $product=$DIRSUPER/$product.img \
+		--sparse --output $DIRIN/$imgname.img
 
 
 break;;
@@ -170,7 +177,7 @@ while true; do
         [Yy]* ) break;;
         [Nn]* ) 
         
-mv $DIRIN/$imgname.img $DIROUT/$imgname.img
+mv $DIRIN/$imgname.sparse.img $DIROUT/$imgname.sparse.img
 exit;;
         * ) echo "Please answer yes or no.";;
     esac
