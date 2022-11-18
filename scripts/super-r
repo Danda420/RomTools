@@ -177,7 +177,7 @@ while true; do
         [Yy]* ) break;;
         [Nn]* ) 
         
-mv $DIRIN/$imgname.sparse.img $DIROUT/$imgname.sparse.img
+mv $DIRIN/$imgname.img $DIROUT/$imgname.img
 exit;;
         * ) echo "Please answer yes or no.";;
     esac
