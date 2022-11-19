@@ -54,7 +54,7 @@ done
 echo " "
 
 echo " " 
-echo "compressing partitions using brotli..."
+echo "compressing image : $imgname using brotli..."
 
 brotli -q $COMPLVL $DIROUT/$imgname.new.dat --output=$DIROUT/$imgname.new.dat.br
 echo "cleaning..."
