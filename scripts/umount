@@ -1,9 +1,8 @@
 #!/bin/bash
 
-cd ..
 DIRTOOLS=$PWD
-cd scripts
 DIRROM=$DIRTOOLS/ROM
+clear
 
 sudo umount $DIRROM/system
 sudo umount $DIRROM/vendor

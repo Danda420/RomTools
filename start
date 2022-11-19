@@ -1,0 +1,176 @@
+#!/bin/sh
+DIRTOOLS=$PWD
+SCRIPTS=$DIRTOOLS/scripts
+
+clear
+cd $DIRTOOLS
+
+while true; do
+    echo "========================="
+    echo "   ROM TOOLS FOR LINUX   "
+    echo "        by  Danda        "
+    echo "========================="
+    echo " "
+    echo "1. Unpack Super"
+    echo "2. Convert dat.br to raw img"
+    echo "3. Mount raw .img"
+    echo "4. Convert raw to sparse"
+    echo "5. Unpack payload.bin"
+    echo "6. Unmount images"
+    echo "7. Repack Super"
+    echo "8. Convert raw .img to dat.br"
+    echo "9. Clean up folders"
+    
+    read -p "" choose
+    case $choose in
+        [1]* ) 
+
+bash $SCRIPTS/super-u
+
+while true; do
+   echo "start tools again? (y/n)"
+   read -p "" yn
+   case $yn in
+        [Yy]* ) bash start;;
+        [Nn]* ) break;;   
+        * ) echo "please choose yes or no";;
+    esac
+done
+
+break;;
+
+        [2]* ) 
+   
+bash $SCRIPTS/unpack
+        
+while true; do
+   echo "start tools again? (y/n)"
+   read -p "" yn
+   case $yn in
+        [Yy]* ) bash start;;
+        [Nn]* ) break;;   
+        * ) echo "please choose yes or no";;
+    esac
+done
+
+break;;
+
+        [3]* ) 
+        
+bash $SCRIPTS/mount
+        
+while true; do
+   echo "start tools again? (y/n)"
+   read -p "" yn
+   case $yn in
+        [Yy]* ) bash start;;
+        [Nn]* ) break;;   
+        * ) echo "please choose yes or no";;
+    esac
+done
+
+break;;
+
+
+        [4]* ) 
+        
+bash $SCRIPTS/raw-sparse
+        
+while true; do
+   echo "start tools again? (y/n)"
+   read -p "" yn
+   case $yn in
+        [Yy]* ) bash start;;
+        [Nn]* ) break;;   
+        * ) echo "please choose yes or no";;
+    esac
+done
+
+break;;
+
+        [5]* ) 
+        
+bash $SCRIPTS/payload
+        
+while true; do
+   echo "start tools again? (y/n)"
+   read -p "" yn
+   case $yn in
+        [Yy]* ) bash start;;
+        [Nn]* ) break;;   
+        * ) echo "please choose yes or no";;
+    esac
+done
+
+break;;
+
+        [6]* ) 
+        
+bash $SCRIPTS/umount
+        
+while true; do
+   echo "start tools again? (y/n)"
+   read -p "" yn
+   case $yn in
+        [Yy]* ) bash start;;
+        [Nn]* ) break;;   
+        * ) echo "please choose yes or no";;
+    esac
+done
+
+break;;
+
+        [7]* ) 
+        
+bash $SCRIPTS/super-r
+        
+while true; do
+   echo "start tools again? (y/n)"
+   read -p "" yn
+   case $yn in
+        [Yy]* ) bash start;;
+        [Nn]* ) break;;   
+        * ) echo "please choose yes or no";;
+    esac
+done
+
+break;;
+
+        [8]* ) 
+        
+bash $SCRIPTS/repack
+        
+while true; do
+   echo "start tools again? (y/n)"
+   read -p "" yn
+   case $yn in
+        [Yy]* ) bash start;;
+        [Nn]* ) break;;   
+        * ) echo "please choose yes or no";;
+    esac
+done
+
+break;;
+
+        [9]* ) 
+        
+bash $SCRIPTS/clean
+        
+while true; do
+   echo "start tools again? (y/n)"
+   read -p "" yn
+   case $yn in
+        [Yy]* ) bash start;;
+        [Nn]* ) break;;   
+        * ) echo "please choose yes or no";;
+    esac
+done
+
+break;;
+
+
+        * ) bash start;;
+    esac
+done
+
+

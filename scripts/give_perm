@@ -1,8 +1,6 @@
 #!/bin/bash
 
-cd ..
 DIRTOOLS=$PWD
-cd scripts
 DIRROM=$DIRTOOLS/ROM
 
 sudo chown -R $USER:$USER $DIRROM/system

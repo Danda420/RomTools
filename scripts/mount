@@ -1,9 +1,9 @@
 #!/bin/bash
 
-cd ..
 DIRTOOLS=$PWD
-cd scripts
 DIRROM=$DIRTOOLS/ROM
+clear
+cd scripts
 
 sudo mount -t ext4 -o loop $DIRROM/system.img $DIRROM/system
 sudo mount -t ext4 -o loop $DIRROM/vendor.img $DIRROM/vendor

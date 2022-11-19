@@ -1,15 +1,12 @@
 #!/bin/bash
 
-cd ..
 DIRTOOLS=$PWD
-cd scripts
 DIRIN=$DIRTOOLS/rom_input
 DIROUT=$DIRTOOLS/rom_output
 DIRSUPER=$DIRTOOLS/ROM/super
 SIZEPART=$DIRTOOLS/size
 
 SLOT=_a
-SLOT1=_b
 
 SUPERSIZE=9124708352
 METADATASIZE=65536
@@ -25,8 +22,9 @@ vendor1=vendor$SLOT1
 odm1=odm$SLOT1
 product1=product$SLOT1
 system_ext1=system_ext$SLOT1
-
 clear
+cd scripts
+
 
 while true; do
     echo "Take partition size from $SIZEPART or just input manually?"
@@ -132,14 +130,20 @@ echo " "
 echo " "
 
 
-./bin/lpmake 	--metadata-size $METADATASIZE --super-name super --metadata-slots 2 --device super:$SUPERSIZE \
-		--group qti_dynamic_partitions:$SUPERSIZE \
-		--partition system:none:$SYSTEMSIZE:qti_dynamic_partitions --image system=$DIRSUPER/system.img \
-		--partition system_ext:none:$SYSEXTSIZE:qti_dynamic_partitions --image system_ext=$DIRSUPER/system_ext.img \
-		--partition odm:none:$ODMSIZE:qti_dynamic_partitions --image odm=$DIRSUPER/odm.img \
-		--partition vendor:none:$VENDORSIZE:qti_dynamic_partitions --image vendor=$DIRSUPER/vendor.img \
-		--partition product:none:$PRODUCTSIZE:qti_dynamic_partitions --image product=$DIRSUPER/product.img \
-		--sparse --output $DIRIN/$imgname.img
+./bin/lpmake 	--metadata-size $METADATASIZE --metadata-slots 2 --super-name super \
+		--device super:$SUPERSIZE \
+	    	--group qti_dynamic_partitions:$SUPERSIZE \
+		--partition system:none:$SYSTEMSIZE:qti_dynamic_partitions \
+		--image system=$DIRSUPER/system.img \
+		--partition system_ext:none:$SYSEXTSIZE:qti_dynamic_partitions \
+		--image system_ext=$DIRSUPER/system_ext.img \
+		--partition odm:none:$ODMSIZE:qti_dynamic_partitions \
+		--image odm=$DIRSUPER/odm.img \
+		--partition vendor:none:$VENDORSIZE:qti_dynamic_partitions \
+		--image vendor=$DIRSUPER/vendor.img \
+		--partition product:none:$PRODUCTSIZE:qti_dynamic_partitions \
+		--image product=$DIRSUPER/product.img \
+		--output $DIRIN/$imgname.img
 
 
 break;;
@@ -152,13 +156,20 @@ echo "Compiling super with Virtual A/B format"
 echo " "
 echo " "
 
-./bin/lpmake 	--metadata-size $METADATASIZE --virtual-ab --super-name super --metadata-slots 2 --device super:$SUPERSIZE \
+./bin/lpmake 	--metadata-size $METADATASIZE --metadata-slots 2 --virtual-ab --super-name super \
+		--device super:$SUPERSIZE \
 		--group qti_dynamic_partitions:$SUPERSIZE \
-		--partition $system:none:$SYSTEMSIZE:qti_dynamic_partitions --image $system=$DIRSUPER/$system.img \
-		--partition $system_ext:none:$SYSEXTSIZE:qti_dynamic_partitions --image $system_ext=$DIRSUPER/$system_ext.img \		--partition $odm:none:$ODMSIZE:qti_dynamic_partitions --image $odm=$DIRSUPER/$odm.img \
-		--partition $vendor:none:$VENDORSIZE:qti_dynamic_partitions --image $vendor=$DIRSUPER/$vendor.img \
-		--partition $product:none:$PRODUCTSIZE:qti_dynamic_partitions --image $product=$DIRSUPER/$product.img \
-		--sparse --output $DIRIN/$imgname.img
+		--partition $system:none:$SYSTEMSIZE:qti_dynamic_partitions \
+		--image $system=$DIRSUPER/$system.img \
+		--partition $system_ext:none:$SYSEXTSIZE:qti_dynamic_partitions \
+		--image $system_ext=$DIRSUPER/$system_ext.img \		
+		--partition $odm:none:$ODMSIZE:qti_dynamic_partitions \
+		--image $odm=$DIRSUPER/$odm.img \
+		--partition $vendor:none:$VENDORSIZE:qti_dynamic_partitions \
+		--image $vendor=$DIRSUPER/$vendor.img \
+		--partition $product:none:$PRODUCTSIZE:qti_dynamic_partitions \
+		--image $product=$DIRSUPER/$product.img \
+		--output $DIRIN/$imgname.img
 
 
 break;;

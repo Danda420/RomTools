@@ -1,0 +1,20 @@
+#!/bin/bash
+
+DIRTOOLS=$PWD
+DIRIN=$DIRTOOLS/rom_input
+DIROUT=$DIRTOOLS/rom_output
+DIRROM=$DIRTOOLS/ROM
+clear
+
+echo "cleaning..."
+
+rm -rf $DIRIN/*
+rm -rf $DIROUT/*
+rm -rf $DIRROM/system/*
+rm -rf $DIRROM/odm/*
+rm -rf $DIRROM/vendor/*
+rm -rf $DIRROM/product/*
+rm -rf $DIRROM/system_ext/*
+rm -rf $DIRROM/super/*
+
+echo "Done!"

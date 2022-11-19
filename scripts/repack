@@ -1,53 +1,26 @@
 #!/bin/bash
 
-cd ..
 DIRTOOLS=$PWD
-cd scripts
-DIRROM=$DIRTOOLS/ROM
+DIRIN=$DIRTOOLS/rom_input
 DIROUT=$DIRTOOLS/rom_output
+clear
+cd scripts
 
-bash umount
+echo " "
+echo "Input image/partition name :"
+read
+imgname=$REPLY
 
 
-img2simg $DIRROM/system.img $DIRROM/system.sparse.img
-img2simg $DIRROM/vendor.img $DIRROM/vendor.sparse.img
-img2simg $DIRROM/odm.img $DIRROM/odm.sparse.img
-img2simg $DIRROM/product.img $DIRROM/product.sparse.img
-img2simg $DIRROM/system_ext.img $DIRROM/system_ext.sparse.img
+img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img
 
-./bin/img2sdat.py $DIRROM/system.sparse.img -o $DIRROM/ -v 4
-mv $DIRROM/system.new.dat $DIROUT/system.new.dat
-mv $DIRROM/system.patch.dat $DIROUT/system.patch.dat
-mv $DIRROM/system.transfer.list $DIROUT/system.transfer.list
-rm -rf $DIRROM/system.*
+./bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4
+mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
+mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
+mv $DIRIN/system.transfer.list $DIROUT/$imgname.transfer.list
+rm -rf $DIRIN/system.*
+rm -rf $DIRIN/$imgname.*
 
-./bin/img2sdat.py $DIRROM/vendor.sparse.img -o $DIRROM/ -v 4
-mv $DIRROM/system.new.dat $DIROUT/vendor.new.dat
-mv $DIRROM/system.patch.dat $DIROUT/vendor.patch.dat
-mv $DIRROM/system.transfer.list $DIROUT/vendor.transfer.list
-rm -rf $DIRROM/system.*
-rm -rf $DIRROM/vendor.*
-
-./bin/img2sdat.py $DIRROM/odm.sparse.img -o $DIRROM/ -v 4
-mv $DIRROM/system.new.dat $DIROUT/odm.new.dat
-mv $DIRROM/system.patch.dat $DIROUT/odm.patch.dat
-mv $DIRROM/system.transfer.list $DIROUT/odm.transfer.list
-rm -rf $DIRROM/system.*
-rm -rf $DIRROM/odm.*
-
-./bin/img2sdat.py $DIRROM/product.sparse.img -o $DIRROM/ -v 4
-mv $DIRROM/system.new.dat $DIROUT/product.new.dat
-mv $DIRROM/system.patch.dat $DIROUT/product.patch.dat
-mv $DIRROM/system.transfer.list $DIROUT/product.transfer.list
-rm -rf $DIRROM/system.*
-rm -rf $DIRROM/product.*
-
-./bin/img2sdat.py $DIRROM/system_ext.sparse.img -o $DIRROM/ -v 4
-mv $DIRROM/system.new.dat $DIROUT/system_ext.new.dat
-mv $DIRROM/system.patch.dat $DIROUT/system_ext.patch.dat
-mv $DIRROM/system.transfer.list $DIROUT/system_ext.transfer.list
-rm -rf $DIRROM/system.*
-rm -rf $DIRROM/system_ext.*
 
 echo " "
 echo " "
@@ -82,21 +55,11 @@ echo " "
 echo " " 
 echo "compressing partitions using brotli..."
 
-brotli -q $COMPLVL $DIROUT/system.new.dat --output=$DIROUT/system.new.dat.br
-brotli -q $COMPLVL $DIROUT/vendor.new.dat --output=$DIROUT/vendor.new.dat.br
-brotli -q $COMPLVL $DIROUT/odm.new.dat --output=$DIROUT/odm.new.dat.br
-brotli -q $COMPLVL $DIROUT/product.new.dat --output=$DIROUT/product.new.dat.br
-brotli -q $COMPLVL $DIROUT/system_ext.new.dat --output=$DIROUT/system_ext.new.dat.br
-
+brotli -q $COMPLVL $DIROUT/$imgname.new.dat --output=$DIROUT/$imgname.new.dat.br
 echo "cleaning..."
 echo " "
 
-rm -rf $DIROUT/system.new.dat
-rm -rf $DIROUT/vendor.new.dat
-rm -rf $DIROUT/odm.new.dat
-rm -rf $DIROUT/product.new.dat
-rm -rf $DIROUT/system_ext.new.dat
-
+rm -rf $DIROUT/$imgname.new.dat
 echo "compession done!";
 echo " "
 

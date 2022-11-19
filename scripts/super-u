@@ -1,13 +1,11 @@
 #!/bin/bash
 
-cd ..
 DIRTOOLS=$PWD
-cd scripts
 DIRINPUT=$DIRTOOLS/rom_input
 DIROUT=$DIRTOOLS/rom_output
 DIRROM=$DIRTOOLS/ROM
-
 clear
+cd scripts
 
 echo " "
 echo " "

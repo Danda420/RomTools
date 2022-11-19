@@ -1,27 +1,24 @@
 #!/bin/bash
 
-cd ..
 DIRTOOLS=$PWD
+DIRIN=$DIRTOOLS/rom_input
+DIROUT=$DIRTOOLS/rom_output
+clear
 cd scripts
-DIRROM=$DIRTOOLS/ROM
-DIRINPUT=$DIRTOOLS/rom_input
 
-brotli -d $DIRINPUT/system.new.dat.br
-brotli -d $DIRINPUT/vendor.new.dat.br 
-brotli -d $DIRINPUT/odm.new.dat.br
-brotli -d $DIRINPUT/system_ext.new.dat.br
+echo " "
+echo "Input image/partition name :"
+read
+imgname=$REPLY
+echo " "
+echo "Unpacking..."
+echo " "
+brotli -d $DIRIN/$imgname.new.dat.br
 
-rm -rf $DIRINPUT/system.new.dat.br
-rm -rf $DIRINPUT/vendor.new.dat.br 
-rm -rf $DIRINPUT/odm.new.dat.br
-rm -rf $DIRINPUT/system_ext.new.dat.br
+rm -rf $DIRIN/$imgname.new.dat.br
 
-./bin/sdat2img.py $DIRINPUT/system.transfer.list $DIRINPUT/system.new.dat $DIRROM/system.img
-./bin/sdat2img.py $DIRINPUT/vendor.transfer.list $DIRINPUT/vendor.new.dat $DIRROM/vendor.img
-./bin/sdat2img.py $DIRINPUT/odm.transfer.list $DIRINPUT/odm.new.dat $DIRROM/odm.img
-./bin/sdat2img.py $DIRINPUT/product.transfer.list $DIRINPUT/product.new.dat $DIRROM/product.img
-./bin/sdat2img.py $DIRINPUT/system_ext.transfer.list $DIRINPUT/system_ext.new.dat $DIRROM/system_ext.img
+./bin/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img
+echo " "
+echo "Cleaning input folder..."
 
-bash mount
-
-rm -rf $DIRINPUT/*
+rm -rf $DIRIN/*

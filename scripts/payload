@@ -1,0 +1,15 @@
+#1/bin/bash
+
+DIRTOOLS=$PWD
+DIRIN=$DIRTOOLS/rom_input
+DIROUT=$DIRTOOLS/rom_output
+clear
+cd scripts
+
+./bin/payload --output=$DIROUT $DIRIN/payload.bin
+
+
+echo " "
+echo "cleaning..."
+
+rm -rf $DIRIN/payload.bin
