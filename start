@@ -31,7 +31,8 @@ while true; do
     echo "6. Unmount images"
     echo "7. Repack Super"
     echo "8. Convert raw .img to dat.br"
-    echo "9. Clean up folders"
+    echo "9. Compress split partitons (raw to dat.br)"
+    echo "C. Clean up folders"
     
     read -p "" choose
     case $choose in
@@ -93,6 +94,13 @@ restart_tool
 break;;
 
         [9]* ) 
+        
+bash $SCRIPTS/compress-splits
+        
+restart_tool
+break;;
+
+        [Cc]* ) 
         
 bash $SCRIPTS/clean
         
