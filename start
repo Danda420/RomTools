@@ -5,6 +5,18 @@ SCRIPTS=$DIRTOOLS/scripts
 clear
 cd $DIRTOOLS
 
+restart_tool() {
+while true; do
+   echo "start tools again? (y/n)"
+   read -p "" yn
+   case $yn in
+        [Yy]* ) bash start;;
+        [Nn]* ) break;;   
+        * ) echo "please choose yes or no";;
+    esac
+done
+}
+
 while true; do
     echo "========================="
     echo "   ROM TOOLS FOR LINUX   "
@@ -27,48 +39,21 @@ while true; do
 
 bash $SCRIPTS/super-u
 
-while true; do
-   echo "start tools again? (y/n)"
-   read -p "" yn
-   case $yn in
-        [Yy]* ) bash start;;
-        [Nn]* ) break;;   
-        * ) echo "please choose yes or no";;
-    esac
-done
-
+restart_tool
 break;;
 
         [2]* ) 
    
 bash $SCRIPTS/unpack
-        
-while true; do
-   echo "start tools again? (y/n)"
-   read -p "" yn
-   case $yn in
-        [Yy]* ) bash start;;
-        [Nn]* ) break;;   
-        * ) echo "please choose yes or no";;
-    esac
-done
 
+restart_tool
 break;;
 
         [3]* ) 
         
 bash $SCRIPTS/mount
         
-while true; do
-   echo "start tools again? (y/n)"
-   read -p "" yn
-   case $yn in
-        [Yy]* ) bash start;;
-        [Nn]* ) break;;   
-        * ) echo "please choose yes or no";;
-    esac
-done
-
+restart_tool
 break;;
 
 
@@ -76,96 +61,42 @@ break;;
         
 bash $SCRIPTS/raw-sparse
         
-while true; do
-   echo "start tools again? (y/n)"
-   read -p "" yn
-   case $yn in
-        [Yy]* ) bash start;;
-        [Nn]* ) break;;   
-        * ) echo "please choose yes or no";;
-    esac
-done
-
+restart_tool
 break;;
 
         [5]* ) 
         
 bash $SCRIPTS/payload
         
-while true; do
-   echo "start tools again? (y/n)"
-   read -p "" yn
-   case $yn in
-        [Yy]* ) bash start;;
-        [Nn]* ) break;;   
-        * ) echo "please choose yes or no";;
-    esac
-done
-
+restart_tool
 break;;
 
         [6]* ) 
         
 bash $SCRIPTS/umount
         
-while true; do
-   echo "start tools again? (y/n)"
-   read -p "" yn
-   case $yn in
-        [Yy]* ) bash start;;
-        [Nn]* ) break;;   
-        * ) echo "please choose yes or no";;
-    esac
-done
-
+restart_tool
 break;;
 
         [7]* ) 
         
 bash $SCRIPTS/super-r
         
-while true; do
-   echo "start tools again? (y/n)"
-   read -p "" yn
-   case $yn in
-        [Yy]* ) bash start;;
-        [Nn]* ) break;;   
-        * ) echo "please choose yes or no";;
-    esac
-done
-
+restart_tool
 break;;
 
         [8]* ) 
         
 bash $SCRIPTS/repack
         
-while true; do
-   echo "start tools again? (y/n)"
-   read -p "" yn
-   case $yn in
-        [Yy]* ) bash start;;
-        [Nn]* ) break;;   
-        * ) echo "please choose yes or no";;
-    esac
-done
-
+restart_tool
 break;;
 
         [9]* ) 
         
 bash $SCRIPTS/clean
         
-while true; do
-   echo "start tools again? (y/n)"
-   read -p "" yn
-   case $yn in
-        [Yy]* ) bash start;;
-        [Nn]* ) break;;   
-        * ) echo "please choose yes or no";;
-    esac
-done
-
+restart_tool
 break;;
 
 
