@@ -13,6 +13,7 @@ imgname=$REPLY
 
 
 img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img
+rm -rf $DIRIN/$imgname.img
 
 ./bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4
 mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
