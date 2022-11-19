@@ -4,7 +4,6 @@ DIRTOOLS=$PWD
 DIRIN=$DIRTOOLS/rom_input
 DIROUT=$DIRTOOLS/rom_output
 DIRSUPER=$DIRTOOLS/ROM/super
-SIZEPART=$DIRTOOLS/size
 
 SLOT=_a
 
@@ -17,91 +16,9 @@ odm=odm$SLOT
 product=product$SLOT
 system_ext=system_ext$SLOT
 
-system1=system$SLOT1
-vendor1=vendor$SLOT1
-odm1=odm$SLOT1
-product1=product$SLOT1
-system_ext1=system_ext$SLOT1
 clear
 cd scripts
 
-
-while true; do
-    echo "Take partition size from $SIZEPART or just input manually?"
-    echo "(1) Take from $SIZEPART"
-    echo "(2) Input manually "
-    read -p "choose 1 or 2 : " choose
-    case $choose in
-        [1]* ) 
-
-ODMSIZE=$(cat $SIZEPART/odm)
-PRODUCTSIZE=$(cat $SIZEPART/product)
-SYSTEMSIZE=$(cat $SIZEPART/system)
-SYSEXTSIZE=$(cat $SIZEPART/system_ext)
-VENDORSIZE=$(cat $SIZEPART/vendor)
-echo " "
-echo "imported partition sizes from $SIZEPART"
-echo " "
-echo "here's your partitions size, if the size below is empty.. you need to input your partition size in bytes on $SIZEPART"
-
-break;;
-
-
-        [2]* ) 
-        
-echo " "
-echo "Input odm raw image size in bytes :"
-read
-ODMSIZE=$REPLY
-echo " "
-
-echo "Input product raw image size in bytes :"
-read
-PRODUCTSIZE=$REPLY
-echo " "
-
-echo "Input system raw image size in bytes :"
-read
-SYSTEMSIZE=$REPLY
-echo " "
-
-echo "Input system_ext raw image size in bytes :"
-read
-SYSEXTSIZE=$REPLY
-echo " "
-
-echo "Input vendor raw image size in bytes :"
-read
-VENDORSIZE=$REPLY
-echo " "
-
-
-break;;
-
-
-        * ) echo "Please answer 1 or 2.";;
-    esac
-done
-
-echo " "
-echo "your odm raw image size is : $ODMSIZE"
-echo "your product raw image size is : $PRODUCTSIZE"
-echo "your system raw image size is : $SYSTEMSIZE"
-echo "your system_ext raw image size is : $SYSEXTSIZE"
-echo "your vendor raw image size is : $VENDORSIZE"
-echo " "
-while true; do
-    read -p "Are those partitions size above correct? (Y/N)" yn
-    case $yn in
-        [Yy]* ) break;;
-        [Nn]* ) exit;;
-        * ) echo "Please answer yes or no.";;
-    esac
-done
-
-echo " "
-
-echo " "
 echo " "
 echo "Input Raw Super image name :"
 read
@@ -129,6 +46,11 @@ echo "Compiling super with A only format"
 echo " "
 echo " "
 
+ODMSIZE=$(ls -nl $DIRSUPER/odm.img | awk '{print $5}')
+PRODUCTSIZE=$(ls -nl $DIRSUPER/product.img | awk '{print $5}')
+SYSTEMSIZE=$(ls -nl $DIRSUPER/system.img | awk '{print $5}')
+SYSEXTSIZE=$(ls -nl $DIRSUPER/system_ext.img | awk '{print $5}')
+VENDORSIZE=$(ls -nl $DIRSUPER/vendor.img | awk '{print $5}')
 
 ./bin/lpmake 	--metadata-size $METADATASIZE --metadata-slots 2 --super-name super \
 		--device super:$SUPERSIZE \
@@ -155,6 +77,12 @@ echo " "
 echo "Compiling super with Virtual A/B format"
 echo " "
 echo " "
+
+ODMSIZE=$(ls -nl $DIRSUPER/$odm.img | awk '{print $5}')
+PRODUCTSIZE=$(ls -nl $DIRSUPER/$product.img | awk '{print $5}')
+SYSTEMSIZE=$(ls -nl $DIRSUPER/$system.img | awk '{print $5}')
+SYSEXTSIZE=$(ls -nl $DIRSUPER/$system_ext.img | awk '{print $5}')
+VENDORSIZE=$(ls -nl $DIRSUPER/$vendor.img | awk '{print $5}')
 
 ./bin/lpmake 	--metadata-size $METADATASIZE --metadata-slots 2 --virtual-ab --super-name super \
 		--device super:$SUPERSIZE \
