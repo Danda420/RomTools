@@ -44,78 +44,67 @@ while true; do
 
 bash $SCRIPTS/super-u
 
-restart_tool
-exit;;
+restart_tool;;
 
         2 ) 
    
 bash $SCRIPTS/unpack
 
-restart_tool
-exit;;
+restart_tool;;
 
         3 ) 
         
 bash $SCRIPTS/mount
         
-restart_tool
-exit;;
+restart_tool;;
 
         4 ) 
         
 bash $SCRIPTS/raw-sparse
         
-restart_tool
-exit;;
+restart_tool;;
 
         5 ) 
         
 bash $SCRIPTS/payload
         
-restart_tool
-exit;;
+restart_tool;;
 
         6 ) 
         
 bash $SCRIPTS/umount
         
-restart_tool
-exit;;
+restart_tool;;
 
         7 ) 
         
 bash $SCRIPTS/super-r
         
-restart_tool
-exit;;
+restart_tool;;
 
         8 ) 
         
 bash $SCRIPTS/repack
         
-restart_tool
-exit;;
+restart_tool;;
 
         9 ) 
         
 bash $SCRIPTS/compress-splits
         
-restart_tool
-exit;;
+restart_tool;;
 
         10 ) 
         
 bash $SCRIPTS/zip-main
         
-restart_tool
-exit;;
+restart_tool;;
 
         11 ) 
         
 bash $SCRIPTS/clean
         
-restart_tool
-exit;;
+restart_tool;;
 
         12 )  exit;;
 
