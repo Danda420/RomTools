@@ -172,8 +172,7 @@ echo " "
 
 rm -rf $DIROUT/$imgname.new.dat
 
-echo "compession done!";
-echo " "
+echo "compession done! Output : $DIROUT"
 
 
 

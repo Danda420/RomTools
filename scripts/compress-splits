@@ -165,22 +165,18 @@ echo " "
 echo "compressing partitions using brotli..."
 
 brotli -q $COMPLVL $DIROUT/system.new.dat --output=$DIROUT/system.new.dat.br
-brotli -q $COMPLVL $DIROUT/vendor.new.dat --output=$DIROUT/vendor.new.dat.br
-brotli -q $COMPLVL $DIROUT/odm.new.dat --output=$DIROUT/odm.new.dat.br
-brotli -q $COMPLVL $DIROUT/product.new.dat --output=$DIROUT/product.new.dat.br
-brotli -q $COMPLVL $DIROUT/system_ext.new.dat --output=$DIROUT/system_ext.new.dat.br
-
-echo "cleaning..."
-echo " "
-
 rm -rf $DIROUT/system.new.dat
+brotli -q $COMPLVL $DIROUT/vendor.new.dat --output=$DIROUT/vendor.new.dat.br
 rm -rf $DIROUT/vendor.new.dat
+brotli -q $COMPLVL $DIROUT/odm.new.dat --output=$DIROUT/odm.new.dat.br
 rm -rf $DIROUT/odm.new.dat
+brotli -q $COMPLVL $DIROUT/product.new.dat --output=$DIROUT/product.new.dat.br
 rm -rf $DIROUT/product.new.dat
+brotli -q $COMPLVL $DIROUT/system_ext.new.dat --output=$DIROUT/system_ext.new.dat.br
 rm -rf $DIROUT/system_ext.new.dat
 
-echo "compession done!";
 echo " "
+echo "Done! Output : $DIROUT"
 
 }
 

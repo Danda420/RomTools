@@ -16,5 +16,5 @@ echo "Converting raw image to sparse..."
 img2simg $DIRIN/$imgname.img $DIROUT/$imgname.sparse.img
 
 echo " "
-echo "Done..."
+echo "Done! Output : $DIROUT"
 

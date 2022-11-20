@@ -57,10 +57,9 @@ echo " "
 echo "compressing image : $imgname using brotli..."
 
 brotli -q $COMPLVL $DIROUT/$imgname.new.dat --output=$DIROUT/$imgname.new.dat.br
-echo "cleaning..."
 echo " "
+echo "cleaning..."
 
 rm -rf $DIROUT/$imgname.new.dat
-echo "compession done!";
 echo " "
-
+echo "Done! Output : $DIROUT"

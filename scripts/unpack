@@ -22,3 +22,6 @@ echo " "
 echo "Cleaning input folder..."
 
 rm -rf $DIRIN/*
+
+echo " "
+echo "Done! Output : $DIROUT"

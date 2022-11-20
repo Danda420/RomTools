@@ -13,3 +13,6 @@ echo " "
 echo "cleaning..."
 
 rm -rf $DIRIN/payload.bin
+
+echo " "
+echo "Done! Output : $DIROUT"
