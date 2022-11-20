@@ -36,21 +36,21 @@ while true; do
     
     read -p "" choose
     case $choose in
-        [1]* ) 
+        1 ) 
 
 bash $SCRIPTS/super-u
 
 restart_tool
 break;;
 
-        [2]* ) 
+        2 ) 
    
 bash $SCRIPTS/unpack
 
 restart_tool
 break;;
 
-        [3]* ) 
+        3 ) 
         
 bash $SCRIPTS/mount
         
@@ -58,49 +58,49 @@ restart_tool
 break;;
 
 
-        [4]* ) 
+        4 ) 
         
 bash $SCRIPTS/raw-sparse
         
 restart_tool
 break;;
 
-        [5]* ) 
+        5 ) 
         
 bash $SCRIPTS/payload
         
 restart_tool
 break;;
 
-        [6]* ) 
+        6 ) 
         
 bash $SCRIPTS/umount
         
 restart_tool
 break;;
 
-        [7]* ) 
+        7 ) 
         
 bash $SCRIPTS/super-r
         
 restart_tool
 break;;
 
-        [8]* ) 
+        8 ) 
         
 bash $SCRIPTS/repack
         
 restart_tool
 break;;
 
-        [9]* ) 
+        9 ) 
         
 bash $SCRIPTS/compress-splits
         
 restart_tool
 break;;
 
-        [Cc]* ) 
+        10 ) 
         
 bash $SCRIPTS/clean
         
