@@ -1,0 +1,53 @@
+#!/bin/sh
+DIRTOOLS=$PWD
+SCRIPTS=$DIRTOOLS/scripts
+
+clear
+cd $DIRTOOLS
+
+restart_tool() {
+echo " "
+while true; do
+   echo "start tools again? (y/n)"
+   read -p "" yn
+   case $yn in
+        [Yy]* ) bash start;;
+        [Nn]* ) break;;   
+        * ) echo "please choose yes or no";;
+    esac
+done
+}
+
+while true; do
+    echo "========================="
+    echo "   ROM TOOLS FOR LINUX   "
+    echo "        by  Danda        "
+    echo "========================="
+    echo " "
+    echo "*this will zip files in rom_output folder*"
+    echo " "
+    echo "1. Zip Oplus images"
+    echo "2. Zip Compressed Split partitions"
+    
+    read -p "" choose
+    case $choose in
+    
+        1 ) 
+
+bash $SCRIPTS/oplus-zip
+
+restart_tool
+break;;
+
+        2 ) 
+   
+bash $SCRIPTS/splits-zip
+
+restart_tool
+break;;
+
+        * ) bash $SCRIPTS/zip-main;;
+    esac
+done
+
+

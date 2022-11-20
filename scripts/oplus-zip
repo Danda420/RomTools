@@ -1,0 +1,11 @@
+#!/bin/sh
+DIRTOOLS=$PWD
+DIROUT=$DIRTOOLS/rom_output
+ZIPNAME=$DIRTOOLS/oplus.zip
+clear
+
+cd $DIROUT
+
+zip $ZIPNAME my_* system.img vendor.img odm.img product.img system_ext.img
+
+cd $DIRTOOLS
