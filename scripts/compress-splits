@@ -22,7 +22,7 @@ a_dp_op_list() {
 	fi;
 	
 	touch $DIROUT/dynamic_partitions_op_list
-	echo "# Remove all existing dynamic partitions and groups before applying full OTA" >>  $dynamic_part_op_list
+	echo "# Remove all existing dynamic partitions and groups before applying full OTA" >> $dynamic_part_op_list
 	echo "remove_all_groups" >>  $dynamic_part_op_list
 	echo "# Add group qti_dynamic_partitions with maximum size $SUPERSIZE" >>  $dynamic_part_op_list
 	echo "add_group qti_dynamic_partitions $SUPERSIZE" >>  $dynamic_part_op_list
@@ -36,8 +36,8 @@ a_dp_op_list() {
 	echo "add odm qti_dynamic_partitions" >>  $dynamic_part_op_list
 	echo "# Add partition system_ext to group qti_dynamic_partitions" >>  $dynamic_part_op_list
 	echo "add system_ext qti_dynamic_partitions" >>  $dynamic_part_op_list
-	echo "# Grow partition system from 0 to $SYSTEMSIZ" >>  $dynamic_part_op_list
-	echo "resize system $SYSTEMSIZ" >>  $dynamic_part_op_list
+	echo "# Grow partition system from 0 to $SYSTEMSIZE" >>  $dynamic_part_op_list
+	echo "resize system $SYSTEMSIZE" >>  $dynamic_part_op_list
 	echo "# Grow partition vendor from 0 to $VENDORSIZE" >>  $dynamic_part_op_list
 	echo "resize vendor $VENDORSIZE" >>  $dynamic_part_op_list
 	echo "# Grow partition product from 0 to $PRODUCTSIZE" >>  $dynamic_part_op_list
