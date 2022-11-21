@@ -2,6 +2,7 @@
 
 DIRTOOLS=$PWD
 DIRROM=$DIRTOOLS/ROM
+GIVEPERM=$DIRTOOLS/scripts/give_perm
 clear
 cd scripts
 
