@@ -5,6 +5,24 @@ DIRROM=$DIRTOOLS/ROM
 clear
 cd scripts
 
+resize_img_to_edit(){
+		getsize=$(ls -nl $DIRROM/$valset.img | awk '{print $5}')
+		readgiga=$(($getsize / 1000000000))
+		sizeimg=$(($readgiga + 1))G
+		fallocate -l $sizeimg $DIRROM/$valset.img
+		e2fsck -yf $DIRROM/$valset.img
+		resize2fs $DIRROM/$valset.img $sizeimg
+		e2fsck -yf $DIRROM/$valset.img
+}
+
+# Resize image before mount
+valset=system
+resize_img_to_edit;
+valset=system_ext
+resize_img_to_edit;
+valset=vendor
+resize_img_to_edit;
+
 sudo mount -t ext4 -o loop $DIRROM/system.img $DIRROM/system
 sudo mount -t ext4 -o loop $DIRROM/vendor.img $DIRROM/vendor
 sudo mount -t ext4 -o loop $DIRROM/odm.img $DIRROM/odm
