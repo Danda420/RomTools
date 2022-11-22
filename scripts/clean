@@ -10,6 +10,7 @@ echo "cleaning..."
 
 rm -rf $DIRIN/*
 rm -rf $DIROUT/*
+rm -rf $DIRROM/*
 rm -rf $DIRROM/system/*
 rm -rf $DIRROM/odm/*
 rm -rf $DIRROM/vendor/*

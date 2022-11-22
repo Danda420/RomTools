@@ -55,41 +55,41 @@ ab_dp_op_list() {
 	
 	touch $DIROUT/dynamic_partitions_op_list
 	echo "# Remove all existing dynamic partitions and groups before applying full OTA" >> $dynamic_part_op_list
-	echo "remove_all_groups" >>  $dynamic_part_op_list
-	echo "# Add group qti_dynamic_partitions_a with maximum size $SUPERSIZE" >>  $dynamic_part_op_list
-	echo "add_group qti_dynamic_partitions_a $SUPERSIZE" >>  $dynamic_part_op_list
-	echo "# Add group qti_dynamic_partitions_b with maximum size $SUPERSIZE" >>  $dynamic_part_op_list
-	echo "add_group qti_dynamic_partitions_b $SUPERSIZE" >>  $dynamic_part_op_list
-	echo "# Add partition system_a to group qti_dynamic_partitions_a" >>  $dynamic_part_op_list
-	echo "add system_a qti_dynamic_partitions_a" >>  $dynamic_part_op_list
-	echo "# Add partition system_b to group qti_dynamic_partitions_b" >>  $dynamic_part_op_list
-	echo "add system_b qti_dynamic_partitions_b" >>  $dynamic_part_op_list
-	echo "# Add partition system_ext_a to group qti_dynamic_partitions_a" >>  $dynamic_part_op_list
-	echo "add system_ext_a qti_dynamic_partitions_a" >>  $dynamic_part_op_list
-	echo "# Add partition system_ext_b to group qti_dynamic_partitions_b" >>  $dynamic_part_op_list
-	echo "add system_ext_b qti_dynamic_partitions_b" >>  $dynamic_part_op_list
-	echo "# Add partition product_a to group qti_dynamic_partitions_a" >>  $dynamic_part_op_list
-	echo "add product_a qti_dynamic_partitions_a" >>  $dynamic_part_op_list
-	echo "# Add partition product_b to group qti_dynamic_partitions_b" >>  $dynamic_part_op_list
-	echo "add product_b qti_dynamic_partitions_b" >>  $dynamic_part_op_list
-	echo "# Add partition vendor_a to group qti_dynamic_partitions_a" >>  $dynamic_part_op_list
-	echo "add vendor_a qti_dynamic_partitions_a" >>  $dynamic_part_op_list
-	echo "# Add partition vendor_b to group qti_dynamic_partitions_b" >>  $dynamic_part_op_list
-	echo "add vendor_b qti_dynamic_partitions_b" >>  $dynamic_part_op_list
-	echo "# Add partition odm_a to group qti_dynamic_partitions_a" >>  $dynamic_part_op_list
-	echo "add odm_a qti_dynamic_partitions_a" >>  $dynamic_part_op_list
-	echo "# Add partition odm_b to group qti_dynamic_partitions_b" >>  $dynamic_part_op_list
-	echo "add odm_b qti_dynamic_partitions_b" >>  $dynamic_part_op_list
-	echo "# Grow partition system_a from 0 to $SYSTEMSIZE" >>  $dynamic_part_op_list
-	echo "resize system_a $SYSTEMSIZE" >>  $dynamic_part_op_list
-	echo "# Grow partition system_ext_a from 0 to $SYSEXTSIZE" >>  $dynamic_part_op_list
-	echo "resize system_ext_a $SYSEXTSIZE" >>  $dynamic_part_op_list
-	echo "# Grow partition product_a from 0 to $PRODUCTSIZE" >>  $dynamic_part_op_list
-	echo "resize product_a $PRODUCTSIZE" >>  $dynamic_part_op_list
-	echo "# Grow partition vendor_a from 0 to $VENDORSIZE" >>  $dynamic_part_op_list
-	echo "resize vendor_a $VENDORSIZE" >>  $dynamic_part_op_list
-	echo "# Grow partition odm_a from 0 to $ODMSIZE" >>  $dynamic_part_op_list
-	echo "resize odm_a $ODMSIZE" >>  $dynamic_part_op_list
+	echo "remove_all_groups" >> $dynamic_part_op_list
+	echo "# Add group qti_dynamic_partitions_a with maximum size $SUPERSIZE" >> $dynamic_part_op_list
+	echo "add_group qti_dynamic_partitions_a $SUPERSIZE" >> $dynamic_part_op_list
+	echo "# Add group qti_dynamic_partitions_b with maximum size $SUPERSIZE" >> $dynamic_part_op_list
+	echo "add_group qti_dynamic_partitions_b $SUPERSIZE" >> $dynamic_part_op_list
+	echo "# Add partition system_a to group qti_dynamic_partitions_a" >> $dynamic_part_op_list
+	echo "add system_a qti_dynamic_partitions_a" >> $dynamic_part_op_list
+	echo "# Add partition system_b to group qti_dynamic_partitions_b" >> $dynamic_part_op_list
+	echo "add system_b qti_dynamic_partitions_b" >> $dynamic_part_op_list
+	echo "# Add partition system_ext_a to group qti_dynamic_partitions_a" >> $dynamic_part_op_list
+	echo "add system_ext_a qti_dynamic_partitions_a" >> $dynamic_part_op_list
+	echo "# Add partition system_ext_b to group qti_dynamic_partitions_b" >> $dynamic_part_op_list
+	echo "add system_ext_b qti_dynamic_partitions_b" >> $dynamic_part_op_list
+	echo "# Add partition product_a to group qti_dynamic_partitions_a" >> $dynamic_part_op_list
+	echo "add product_a qti_dynamic_partitions_a" >> $dynamic_part_op_list
+	echo "# Add partition product_b to group qti_dynamic_partitions_b" >> $dynamic_part_op_list
+	echo "add product_b qti_dynamic_partitions_b" >> $dynamic_part_op_list
+	echo "# Add partition vendor_a to group qti_dynamic_partitions_a" >> $dynamic_part_op_list
+	echo "add vendor_a qti_dynamic_partitions_a" >> $dynamic_part_op_list
+	echo "# Add partition vendor_b to group qti_dynamic_partitions_b" >> $dynamic_part_op_list
+	echo "add vendor_b qti_dynamic_partitions_b" >> $dynamic_part_op_list
+	echo "# Add partition odm_a to group qti_dynamic_partitions_a" >> $dynamic_part_op_list
+	echo "add odm_a qti_dynamic_partitions_a" >> $dynamic_part_op_list
+	echo "# Add partition odm_b to group qti_dynamic_partitions_b" >> $dynamic_part_op_list
+	echo "add odm_b qti_dynamic_partitions_b" >> $dynamic_part_op_list
+	echo "# Grow partition system_a from 0 to $SYSTEMSIZE" >> $dynamic_part_op_list
+	echo "resize system_a $SYSTEMSIZE" >> $dynamic_part_op_list
+	echo "# Grow partition system_ext_a from 0 to $SYSEXTSIZE" >> $dynamic_part_op_list
+	echo "resize system_ext_a $SYSEXTSIZE" >> $dynamic_part_op_list
+	echo "# Grow partition product_a from 0 to $PRODUCTSIZE" >> $dynamic_part_op_list
+	echo "resize product_a $PRODUCTSIZE" >> $dynamic_part_op_list
+	echo "# Grow partition vendor_a from 0 to $VENDORSIZE" >> $dynamic_part_op_list
+	echo "resize vendor_a $VENDORSIZE" >> $dynamic_part_op_list
+	echo "# Grow partition odm_a from 0 to $ODMSIZE" >> $dynamic_part_op_list
+	echo "resize odm_a $ODMSIZE" >> $dynamic_part_op_list
 }
 
 brotli_lvl() {

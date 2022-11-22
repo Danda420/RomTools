@@ -1,0 +1,18 @@
+#!/bin/bash
+
+DIRTOOLS=$PWD
+clear
+
+echo "creating dirs"
+
+mkdir $DIRTOOLS/rom_input
+mkdir $DIRTOOLS/rom_output
+mkdir $DIRTOOLS/ROM
+mkdir $DIRTOOLS/ROM/odm
+mkdir $DIRTOOLS/ROM/product
+mkdir $DIRTOOLS/ROM/system
+mkdir $DIRTOOLS/ROM/system_ext
+mkdir $DIRTOOLS/ROM/vendor
+mkdir $DIRTOOLS/ROM/super
+
+echo "Done!"
