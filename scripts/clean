@@ -11,11 +11,5 @@ echo "cleaning..."
 rm -rf $DIRIN/*
 rm -rf $DIROUT/*
 rm -rf $DIRROM/*
-rm -rf $DIRROM/system/*
-rm -rf $DIRROM/odm/*
-rm -rf $DIRROM/vendor/*
-rm -rf $DIRROM/product/*
-rm -rf $DIRROM/system_ext/*
-rm -rf $DIRROM/super/*
 
 echo "Done!"
