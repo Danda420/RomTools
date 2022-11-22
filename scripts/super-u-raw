@@ -1,0 +1,34 @@
+#!/bin/bash
+
+DIRTOOLS=$PWD
+DIRINPUT=$DIRTOOLS/rom_input
+DIROUT=$DIRTOOLS/rom_output
+DIRROM=$DIRTOOLS/ROM
+clear
+cd scripts
+
+echo " "
+echo " "
+echo "Input Super image name :"
+read
+imgname=$REPLY
+echo " "
+while true; do
+    read -p "Your super image name is : $imgname is that correct? (Y/N)" yn
+    case $yn in
+        [Yy]* ) break;;
+        [Nn]* ) exit;;
+        * ) echo "Please answer yes or no.";;
+    esac
+done
+
+echo " "
+
+echo " "
+echo "Unpacking $imgname.img..."
+./bin/lpunpack $DIRINPUT/$imgname.img $DIRROM/super
+rm -rf $DIRINPUT/$imgname.*
+
+echo " "
+echo "Done! Output : $DIRROM/super"
+

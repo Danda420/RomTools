@@ -28,6 +28,7 @@ while true; do
     echo " "
     echo "1. Zip Oplus images"
     echo "2. Zip Compressed Split partitions"
+    echo "3. Back to main menu"
     
     read -p "" choose
     case $choose in
@@ -36,15 +37,17 @@ while true; do
 
 bash $SCRIPTS/oplus-zip
 
-restart_tool
-break;;
+restart_tool;;
 
         2 ) 
    
 bash $SCRIPTS/splits-zip
 
-restart_tool
-break;;
+restart_tool;;
+
+	3 ) 
+   
+bash $DIRTOOLS/start;;
 
         * ) bash $SCRIPTS/zip-main;;
     esac

@@ -1,0 +1,31 @@
+#!/bin/bash
+
+DIRTOOLS=$PWD
+DIRROM=$DIRTOOLS/ROM
+clear
+
+resize_to_build(){
+	if [ -f $DIRROM/$valset.img ]; then
+		e2fsck -yf $DIRROM/$valset.img
+		resize2fs -M $DIRROM/$valset.img
+		e2fsck -yf $DIRROM/$valset.img
+	fi;
+}
+
+sudo umount $DIRROM/system
+sudo umount $DIRROM/vendor
+sudo umount $DIRROM/odm
+sudo umount $DIRROM/product
+sudo umount $DIRROM/system_ext
+
+# Resize image to minimum
+valset=system
+resize_to_build
+valset=system_ext
+resize_to_build
+valset=vendor
+resize_to_build
+valset=odm
+resize_to_build
+valset=product
+resize_to_build

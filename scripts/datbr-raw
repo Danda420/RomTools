@@ -1,0 +1,27 @@
+#!/bin/bash
+
+DIRTOOLS=$PWD
+DIRIN=$DIRTOOLS/rom_input
+DIROUT=$DIRTOOLS/rom_output
+clear
+cd scripts
+
+echo " "
+echo "Input image/partition name :"
+read
+imgname=$REPLY
+echo " "
+echo "Unpacking..."
+echo " "
+brotli -d $DIRIN/$imgname.new.dat.br
+
+rm -rf $DIRIN/$imgname.new.dat.br
+
+./bin/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img
+echo " "
+echo "Cleaning input folder..."
+
+rm -rf $DIRIN/$imgname.*
+
+echo " "
+echo "Done! Output : $DIROUT"

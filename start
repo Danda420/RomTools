@@ -24,15 +24,15 @@ while true; do
     echo "        by  Danda        "
     echo "========================="
     echo " "
-    echo "1. Unpack Super"
-    echo "2. Convert dat.br to raw img"
-    echo "3. Mount raw .img"
-    echo "4. Convert raw to sparse"
-    echo "5. Unpack payload.bin"
-    echo "6. Unmount images"
-    echo "7. Repack Super"
-    echo "8. Convert raw .img to dat.br"
-    echo "9. Compress split partitons (raw to dat.br)"
+    echo "1. Super partition tools"
+    echo "2. Split partition tools (system,vendor,odm,system_ext,product)"
+    echo "3. Convert dat.br to raw img"
+    echo "4. Convert raw .img to dat.br"
+    echo "5. Convert raw to sparse"
+    echo "6. Convert sparse to raw"
+    echo "7. Mount raw .img"
+    echo "8. Unmount images"
+    echo "9. Unpack payload.bin"
     echo "10. Auto ZIP"
     echo "11. Clean up folders"
     echo "12. Exit tool"
@@ -42,55 +42,55 @@ while true; do
     
         1 ) 
 
-bash $SCRIPTS/super-u
+bash $SCRIPTS/super-main
 
 restart_tool;;
 
         2 ) 
    
-bash $SCRIPTS/unpack
+bash $SCRIPTS/splits-main
 
 restart_tool;;
 
         3 ) 
         
-bash $SCRIPTS/mount
+bash $SCRIPTS/datbr-raw
         
 restart_tool;;
 
         4 ) 
         
-bash $SCRIPTS/raw-sparse
+bash $SCRIPTS/raw-datbr
         
 restart_tool;;
 
         5 ) 
         
-bash $SCRIPTS/payload
+bash $SCRIPTS/raw-sparse
         
 restart_tool;;
 
         6 ) 
         
-bash $SCRIPTS/umount
+bash $SCRIPTS/sparse-raw
         
 restart_tool;;
 
         7 ) 
         
-bash $SCRIPTS/super-r
+bash $SCRIPTS/mount-main
         
 restart_tool;;
 
         8 ) 
         
-bash $SCRIPTS/repack
+bash $SCRIPTS/umount-main
         
 restart_tool;;
 
         9 ) 
         
-bash $SCRIPTS/compress-splits
+bash $SCRIPTS/payload
         
 restart_tool;;
 
