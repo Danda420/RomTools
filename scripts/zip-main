@@ -12,7 +12,7 @@ while true; do
    read -p "" yn
    case $yn in
         [Yy]* ) bash start;;
-        [Nn]* ) break;;   
+        [Nn]* ) exit;;   
         * ) echo "please choose yes or no";;
     esac
 done
