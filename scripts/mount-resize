@@ -8,8 +8,15 @@ cd scripts
 
 resize_img_to_edit(){
 		getsize=$(ls -nl $DIRROM/$valset.img | awk '{print $5}')
+		readmb=$(($getsize / 100000000))
 		readgiga=$(($getsize / 1000000000))
-		sizeimg=$(($readgiga + 1))G
+		cval=$(($readmb - $readgiga))
+		if [[ $cval -gt 5 ]]; then
+			vplus=2;
+		else
+			vplus=1;
+		fi
+		sizeimg=$(($readgiga + $vplus))G
 		fallocate -l $sizeimg $DIRROM/$valset.img
 		e2fsck -yf $DIRROM/$valset.img
 		resize2fs $DIRROM/$valset.img $sizeimg
