@@ -3,10 +3,14 @@
 DIRTOOLS=$PWD
 DIRROM=$DIRTOOLS/ROM
 clear
+cd scripts
 
-sudo umount $DIRROM/system
-sudo umount $DIRROM/vendor
-sudo umount $DIRROM/odm
-sudo umount $DIRROM/product
-sudo umount $DIRROM/system_ext
+echo " "
+echo "Unmounting partitions..."
+echo " "
+sudo umount $DIRROM/system >> log.txt
+sudo umount $DIRROM/vendor >> log.txt
+sudo umount $DIRROM/odm >> log.txt
+sudo umount $DIRROM/product >> log.txt
+sudo umount $DIRROM/system_ext >> log.txt
 

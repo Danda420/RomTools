@@ -28,12 +28,12 @@ echo " "
 brotli -d $DIRINPUT/$imgname.new.dat.br
 rm -rf $DIRINPUT/$imgname.new.dat.br
 
-./bin/sdat2img.py $DIRINPUT/$imgname.transfer.list $DIRINPUT/$imgname.new.dat $DIROUT/$imgname.img
+./bin/sdat2img.py $DIRINPUT/$imgname.transfer.list $DIRINPUT/$imgname.new.dat $DIROUT/$imgname.img >> log.txt
 rm -rf $DIRINPUT/$imgname.*
 
 echo " "
 echo "Unpacking $imgname.img..."
-./bin/lpunpack $DIROUT/$imgname.img $DIRROM/super
+./bin/lpunpack $DIROUT/$imgname.img $DIRROM/super >> log.txt
 rm -rf $DIROUT/$imgname.*
 
 echo " "

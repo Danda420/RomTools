@@ -4,6 +4,7 @@ SCRIPTS=$DIRTOOLS/scripts
 bash $SCRIPTS/setup
 clear
 cd $DIRTOOLS
+rm -rf $SCRIPTS/log.txt
 
 restart_tool() {
 echo " "

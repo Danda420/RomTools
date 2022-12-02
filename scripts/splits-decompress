@@ -6,7 +6,8 @@ DIROUT=$DIRTOOLS/rom_output
 clear
 cd scripts
 
-
+echo " "
+echo "========================================="
 echo " "
 echo "Decompressing system using brotli..."
 brotli -d $DIRIN/system.new.dat.br
@@ -29,25 +30,29 @@ brotli -d $DIRIN/system_ext.new.dat.br
 rm -rf $DIRIN/system_ext.new.dat.br
 
 echo " "
+echo "========================================="
+echo " "
 echo "Converting system.new.dat to system.img (raw)"
-./bin/sdat2img.py $DIRIN/system.transfer.list $DIRIN/system.new.dat $DIROUT/system.img
+./bin/sdat2img.py $DIRIN/system.transfer.list $DIRIN/system.new.dat $DIROUT/system.img >> log.txt
 rm -rf $DIRIN/system.*
 echo " "
 echo "Converting vendor.new.dat to vendor.img (raw)"
-./bin/sdat2img.py $DIRIN/vendor.transfer.list $DIRIN/vendor.new.dat $DIROUT/vendor.img
+./bin/sdat2img.py $DIRIN/vendor.transfer.list $DIRIN/vendor.new.dat $DIROUT/vendor.img >> log.txt
 rm -rf $DIRIN/vendor.*
 echo " "
 echo "Converting odm.new.dat to odm.img (raw)"
-./bin/sdat2img.py $DIRIN/odm.transfer.list $DIRIN/odm.new.dat $DIROUT/odm.img
+./bin/sdat2img.py $DIRIN/odm.transfer.list $DIRIN/odm.new.dat $DIROUT/odm.img >> log.txt
 rm -rf $DIRIN/odm.*
 echo " "
 echo "Converting productnew.dat to product.img (raw)"
-./bin/sdat2img.py $DIRIN/product.transfer.list $DIRIN/product.new.dat $DIROUT/product.img
+./bin/sdat2img.py $DIRIN/product.transfer.list $DIRIN/product.new.dat $DIROUT/product.img >> log.txt
 rm -rf $DIRIN/product.*
 echo " "
 echo "Converting system_ext.new.dat to system_ext.img (raw)"
-./bin/sdat2img.py $DIRIN/system_ext.transfer.list $DIRIN/system_ext.new.dat $DIROUT/system_ext.img
+./bin/sdat2img.py $DIRIN/system_ext.transfer.list $DIRIN/system_ext.new.dat $DIROUT/system_ext.img >> log.txt
 rm -rf $DIRIN/system_ext.*
 
+echo " "
+echo "========================================="
 echo " "
 echo "Done! Output : $DIROUT"

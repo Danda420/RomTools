@@ -17,12 +17,15 @@ resize_img_to_edit(){
 			vplus=1;
 		fi
 		sizeimg=$(($readgiga + $vplus))G
-		fallocate -l $sizeimg $DIRROM/$valset.img
-		e2fsck -yf $DIRROM/$valset.img
-		resize2fs $DIRROM/$valset.img $sizeimg
-		e2fsck -yf $DIRROM/$valset.img
+		fallocate -l $sizeimg $DIRROM/$valset.img  >> log.txt
+		e2fsck -yf $DIRROM/$valset.img  >> log.txt
+		resize2fs $DIRROM/$valset.img $sizeimg  >> log.txt
+		e2fsck -yf $DIRROM/$valset.img  >> log.txt
 }
 
+echo " "
+echo "Resizing partitions..."
+echo " "
 # Resize image before mount
 valset=system
 resize_img_to_edit;
@@ -47,16 +50,19 @@ resize_img_to_edit;
 valset=odm_a
 resize_img_to_edit;
 
-sudo mount -t ext4 -o loop $DIRROM/system.img $DIRROM/system
-sudo mount -t ext4 -o loop $DIRROM/vendor.img $DIRROM/vendor
-sudo mount -t ext4 -o loop $DIRROM/odm.img $DIRROM/odm
-sudo mount -t ext4 -o loop $DIRROM/product.img $DIRROM/product
-sudo mount -t ext4 -o loop $DIRROM/system_ext.img $DIRROM/system_ext
+echo " "
+echo "Mounting partitions..."
+echo " "
+sudo mount -t ext4 -o loop $DIRROM/system.img $DIRROM/system >> log.txt
+sudo mount -t ext4 -o loop $DIRROM/vendor.img $DIRROM/vendor >> log.txt
+sudo mount -t ext4 -o loop $DIRROM/odm.img $DIRROM/odm >> log.txt
+sudo mount -t ext4 -o loop $DIRROM/product.img $DIRROM/product >> log.txt
+sudo mount -t ext4 -o loop $DIRROM/system_ext.img $DIRROM/system_ext >> log.txt
 
-sudo mount -t ext4 -o loop $DIRROM/system_a.img $DIRROM/system
-sudo mount -t ext4 -o loop $DIRROM/vendor_a.img $DIRROM/vendor
-sudo mount -t ext4 -o loop $DIRROM/odm_a.img $DIRROM/odm
-sudo mount -t ext4 -o loop $DIRROM/product_a.img $DIRROM/product
-sudo mount -t ext4 -o loop $DIRROM/system_ext_a.img $DIRROM/system_ext
+sudo mount -t ext4 -o loop $DIRROM/system_a.img $DIRROM/system >> log.txt
+sudo mount -t ext4 -o loop $DIRROM/vendor_a.img $DIRROM/vendor >> log.txt
+sudo mount -t ext4 -o loop $DIRROM/odm_a.img $DIRROM/odm >> log.txt
+sudo mount -t ext4 -o loop $DIRROM/product_a.img $DIRROM/product >> log.txt
+sudo mount -t ext4 -o loop $DIRROM/system_ext_a.img $DIRROM/system_ext >> log.txt
 
 bash give_perm

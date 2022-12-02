@@ -26,7 +26,7 @@ echo " "
 
 echo " "
 echo "Unpacking $imgname.img..."
-./bin/lpunpack $DIRINPUT/$imgname.img $DIRROM/super
+./bin/lpunpack $DIRINPUT/$imgname.img $DIRROM/super >> log.txt
 rm -rf $DIRINPUT/$imgname.*
 
 echo " "

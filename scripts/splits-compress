@@ -109,57 +109,82 @@ brotli_lvl() {
 }
 
 compress() {
-
 echo ""
-echo "converting partitions into sparse"
-img2simg $DIRIN/system.img $DIRIN/system.sparse.img
+echo "========================================="
+echo ""
+echo "converting system into sparse"
+img2simg $DIRIN/system.img $DIRIN/system.sparse.img >> log.txt
 rm -rf $DIRIN/system.img
-img2simg $DIRIN/vendor.img $DIRIN/vendor.sparse.img
+echo " "
+echo "converting vendor into sparse"
+img2simg $DIRIN/vendor.img $DIRIN/vendor.sparse.img >> log.txt
 rm -rf $DIRIN/vendor.img
-img2simg $DIRIN/odm.img $DIRIN/odm.sparse.img
+echo " "
+echo "converting odm into sparse"
+img2simg $DIRIN/odm.img $DIRIN/odm.sparse.img >> log.txt
 rm -rf $DIRIN/odm.img
-img2simg $DIRIN/product.img $DIRIN/product.sparse.img
+echo " "
+echo "converting product into sparse"
+img2simg $DIRIN/product.img $DIRIN/product.sparse.img >> log.txt
 rm -rf $DIRIN/product.img
-img2simg $DIRIN/system_ext.img $DIRIN/system_ext.sparse.img
+echo " "
+echo "converting system_ext into sparse"
+img2simg $DIRIN/system_ext.img $DIRIN/system_ext.sparse.img >> log.txt
 rm -rf $DIRIN/system_ext.img
 
-echo ""
-echo "converting partitions into new.dat"
+echo " "
+echo "========================================="
+echo " "
+echo "converting system into new.dat"
 
-./bin/img2sdat.py $DIRIN/system.sparse.img -o $DIRIN/ -v 4
+./bin/img2sdat.py $DIRIN/system.sparse.img -o $DIRIN/ -v 4 >> log.txt
 mv $DIRIN/system.new.dat $DIROUT/system.new.dat
 mv $DIRIN/system.patch.dat $DIROUT/system.patch.dat
 mv $DIRIN/system.transfer.list $DIROUT/system.transfer.list
 rm -rf $DIRIN/system.*
 
-./bin/img2sdat.py $DIRIN/vendor.sparse.img -o $DIRIN/ -v 4
+echo " "
+echo "converting vendor into new.dat"
+
+./bin/img2sdat.py $DIRIN/vendor.sparse.img -o $DIRIN/ -v 4 >> log.txt
 mv $DIRIN/system.new.dat $DIROUT/vendor.new.dat
 mv $DIRIN/system.patch.dat $DIROUT/vendor.patch.dat
 mv $DIRIN/system.transfer.list $DIROUT/vendor.transfer.list
 rm -rf $DIRIN/system.*
 rm -rf $DIRIN/vendor.*
 
-./bin/img2sdat.py $DIRIN/odm.sparse.img -o $DIRIN/ -v 4
+echo " "
+echo "converting odm into new.dat"
+
+./bin/img2sdat.py $DIRIN/odm.sparse.img -o $DIRIN/ -v 4 >> log.txt
 mv $DIRIN/system.new.dat $DIROUT/odm.new.dat
 mv $DIRIN/system.patch.dat $DIROUT/odm.patch.dat
 mv $DIRIN/system.transfer.list $DIROUT/odm.transfer.list
 rm -rf $DIRIN/system.*
 rm -rf $DIRIN/odm.*
 
-./bin/img2sdat.py $DIRIN/product.sparse.img -o $DIRIN/ -v 4
+echo " "
+echo "converting product into new.dat"
+
+./bin/img2sdat.py $DIRIN/product.sparse.img -o $DIRIN/ -v 4 >> log.txt
 mv $DIRIN/system.new.dat $DIROUT/product.new.dat
 mv $DIRIN/system.patch.dat $DIROUT/product.patch.dat
 mv $DIRIN/system.transfer.list $DIROUT/product.transfer.list
 rm -rf $DIRIN/system.*
 rm -rf $DIRIN/product.*
 
-./bin/img2sdat.py $DIRIN/system_ext.sparse.img -o $DIRIN/ -v 4
+echo " "
+echo "converting system_ext into new.dat"
+
+./bin/img2sdat.py $DIRIN/system_ext.sparse.img -o $DIRIN/ -v 4 >> log.txt
 mv $DIRIN/system.new.dat $DIROUT/system_ext.new.dat
 mv $DIRIN/system.patch.dat $DIROUT/system_ext.patch.dat
 mv $DIRIN/system.transfer.list $DIROUT/system_ext.transfer.list
 rm -rf $DIRIN/system.*
 rm -rf $DIRIN/system_ext.*
 
+echo " "
+echo "========================================="
 echo " " 
 echo "compressing system using brotli..."
 brotli -q $COMPLVL $DIROUT/system.new.dat --output=$DIROUT/system.new.dat.br
@@ -181,6 +206,8 @@ echo "compressing system_ext using brotli..."
 brotli -q $COMPLVL $DIROUT/system_ext.new.dat --output=$DIROUT/system_ext.new.dat.br
 rm -rf $DIROUT/system_ext.new.dat
 
+echo " "
+echo "========================================="
 echo " "
 echo "Done! Output : $DIROUT"
 

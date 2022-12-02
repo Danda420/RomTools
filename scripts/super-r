@@ -65,7 +65,7 @@ VENDORSIZE=$(ls -nl $DIRSUPER/vendor.img | awk '{print $5}')
 		--image vendor=$DIRSUPER/vendor.img \
 		--partition product:none:$PRODUCTSIZE:qti_dynamic_partitions \
 		--image product=$DIRSUPER/product.img \
-		--output $DIRIN/$imgname.img
+		--output $DIRIN/$imgname.img  >> log.txt
 
 
 break;;
@@ -97,7 +97,7 @@ VENDORSIZE=$(ls -nl $DIRSUPER/$vendor.img | awk '{print $5}')
 		--image $vendor=$DIRSUPER/$vendor.img \
 		--partition $product:none:$PRODUCTSIZE:qti_dynamic_partitions \
 		--image $product=$DIRSUPER/$product.img \
-		--output $DIRIN/$imgname.img
+		--output $DIRIN/$imgname.img  >> log.txt
 
 
 break;;
@@ -123,10 +123,10 @@ exit;;
 done
 echo " "
 
-img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img
+img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> log.txt
 rm -rf $DIRIN/$imgname.img
 
-./bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4
+./bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> log.txt
 rm -rf $DIRIN/$imgname.*
 mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
 mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat

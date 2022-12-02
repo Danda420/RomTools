@@ -14,8 +14,8 @@ imgname=$REPLY
 echo " "
 echo "Converting sparse to raw image..."
 
-./bin/simg2img $DIRIN/$imgname.img $DIROUT/$imgname.img
-./bin/simg2img $DIRIN/$imgname.sparse.img $DIROUT/$imgname.img
+./bin/simg2img $DIRIN/$imgname.img $DIROUT/$imgname.img >> log.txt
+./bin/simg2img $DIRIN/$imgname.sparse.img $DIROUT/$imgname.img >> log.txt
 rm -rf $DIRIN/*
 
 echo " "

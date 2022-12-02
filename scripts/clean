@@ -11,5 +11,6 @@ echo "cleaning..."
 rm -rf $DIRIN/*
 rm -rf $DIROUT/*
 rm -rf $DIRROM/*
+rm -rf $DIRTOOLS/scripts/log.txt
 
 echo "Done!"

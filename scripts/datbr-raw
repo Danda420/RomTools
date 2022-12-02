@@ -17,7 +17,7 @@ brotli -d $DIRIN/$imgname.new.dat.br
 
 rm -rf $DIRIN/$imgname.new.dat.br
 
-./bin/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img
+./bin/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img  >> log.txt
 echo " "
 echo "Cleaning input folder..."
 

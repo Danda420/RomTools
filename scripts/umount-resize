@@ -3,21 +3,27 @@
 DIRTOOLS=$PWD
 DIRROM=$DIRTOOLS/ROM
 clear
+cd scripts
 
 resize_to_build(){
 	if [ -f $DIRROM/$valset.img ]; then
-		e2fsck -yf $DIRROM/$valset.img
-		resize2fs -M $DIRROM/$valset.img
-		e2fsck -yf $DIRROM/$valset.img
+		e2fsck -yf $DIRROM/$valset.img >> log.txt
+		resize2fs -M $DIRROM/$valset.img >> log.txt
+		e2fsck -yf $DIRROM/$valset.img >> log.txt
 	fi;
 }
 
-sudo umount $DIRROM/system
-sudo umount $DIRROM/vendor
-sudo umount $DIRROM/odm
-sudo umount $DIRROM/product
-sudo umount $DIRROM/system_ext
+echo " "
+echo "Unmounting partitions..."
+echo " "
+sudo umount $DIRROM/system >> log.txt
+sudo umount $DIRROM/vendor >> log.txt
+sudo umount $DIRROM/odm >> log.txt
+sudo umount $DIRROM/product >> log.txt
+sudo umount $DIRROM/system_ext >> log.txt
 
+echo "Resizing partitions..."
+echo " "
 # Resize image to minimum
 valset=system
 resize_to_build

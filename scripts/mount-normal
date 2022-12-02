@@ -6,16 +6,16 @@ GIVEPERM=$DIRTOOLS/scripts/give_perm
 clear
 cd scripts
 
-sudo mount -t ext4 -o loop $DIRROM/system.img $DIRROM/system
-sudo mount -t ext4 -o loop $DIRROM/vendor.img $DIRROM/vendor
-sudo mount -t ext4 -o loop $DIRROM/odm.img $DIRROM/odm
-sudo mount -t ext4 -o loop $DIRROM/product.img $DIRROM/product
-sudo mount -t ext4 -o loop $DIRROM/system_ext.img $DIRROM/system_ext
+sudo mount -t ext4 -o loop $DIRROM/system.img $DIRROM/system >> log.txt
+sudo mount -t ext4 -o loop $DIRROM/vendor.img $DIRROM/vendor >> log.txt
+sudo mount -t ext4 -o loop $DIRROM/odm.img $DIRROM/odm >> log.txt
+sudo mount -t ext4 -o loop $DIRROM/product.img $DIRROM/product >> log.txt
+sudo mount -t ext4 -o loop $DIRROM/system_ext.img $DIRROM/system_ext >> log.txt
 
-sudo mount -t ext4 -o loop $DIRROM/system_a.img $DIRROM/system
-sudo mount -t ext4 -o loop $DIRROM/vendor_a.img $DIRROM/vendor
-sudo mount -t ext4 -o loop $DIRROM/odm_a.img $DIRROM/odm
-sudo mount -t ext4 -o loop $DIRROM/product_a.img $DIRROM/product
-sudo mount -t ext4 -o loop $DIRROM/system_ext_a.img $DIRROM/system_ext
+sudo mount -t ext4 -o loop $DIRROM/system_a.img $DIRROM/system >> log.txt
+sudo mount -t ext4 -o loop $DIRROM/vendor_a.img $DIRROM/vendor >> log.txt
+sudo mount -t ext4 -o loop $DIRROM/odm_a.img $DIRROM/odm >> log.txt
+sudo mount -t ext4 -o loop $DIRROM/product_a.img $DIRROM/product >> log.txt
+sudo mount -t ext4 -o loop $DIRROM/system_ext_a.img $DIRROM/system_ext >> log.txt
 
 bash give_perm
