@@ -195,7 +195,7 @@ while true; do
         [1]* ) 
 echo "Make sure to input your raw .img's to rom_input folder"
 echo " "
-echo "Compiling super with A only format"
+echo "Compiling splits with A only format"
 echo " "
 
 brotli_lvl
@@ -208,7 +208,7 @@ break;;
         [2]* ) 
 echo "Make sure to input your raw .img's to rom_input folder"
 echo " "
-echo "Compiling super with Virtual A/B format"
+echo "Compiling splits with Virtual A/B format"
 echo " "
 
 brotli_lvl
