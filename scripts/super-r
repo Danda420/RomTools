@@ -51,7 +51,8 @@ PRODUCTSIZE=$(ls -nl $DIRSUPER/product.img | awk '{print $5}')
 SYSTEMSIZE=$(ls -nl $DIRSUPER/system.img | awk '{print $5}')
 SYSEXTSIZE=$(ls -nl $DIRSUPER/system_ext.img | awk '{print $5}')
 VENDORSIZE=$(ls -nl $DIRSUPER/vendor.img | awk '{print $5}')
-
+echo " "
+echo "Compiling super : $imgname.img (raw)..."
 ./bin/lpmake 	--metadata-size $METADATASIZE --metadata-slots 2 --super-name super \
 		--device super:$SUPERSIZE \
 	    	--group qti_dynamic_partitions:$SUPERSIZE \
@@ -83,7 +84,8 @@ PRODUCTSIZE=$(ls -nl $DIRSUPER/$product.img | awk '{print $5}')
 SYSTEMSIZE=$(ls -nl $DIRSUPER/$system.img | awk '{print $5}')
 SYSEXTSIZE=$(ls -nl $DIRSUPER/$system_ext.img | awk '{print $5}')
 VENDORSIZE=$(ls -nl $DIRSUPER/$vendor.img | awk '{print $5}')
-
+echo " "
+echo "Compiling super : $imgname.img (raw)..."
 ./bin/lpmake 	--metadata-size $METADATASIZE --metadata-slots 2 --virtual-ab --super-name super \
 		--device super:$SUPERSIZE \
 		--group qti_dynamic_partitions:$SUPERSIZE \
@@ -123,9 +125,13 @@ exit;;
 done
 echo " "
 
+echo " "
+echo "Converting raw $imgname.img to sparse..."
 img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> log.txt
 rm -rf $DIRIN/$imgname.img
 
+echo " "
+echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
 ./bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> log.txt
 rm -rf $DIRIN/$imgname.*
 mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
@@ -164,7 +170,7 @@ done
 echo " "
 
 echo " " 
-echo "compressing to $imgname.new.dat.br..."
+echo "Compressing to $imgname.new.dat.br..."
 
 brotli -q $COMPLVL $DIROUT/$imgname.new.dat --output=$DIROUT/$imgname.new.dat.br
 
