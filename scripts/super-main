@@ -24,7 +24,7 @@ while true; do
     echo "        by  Danda        "
     echo "========================="
     echo " "
-    echo "1. Repack Super"
+    echo "1. Repack Super (raw, sparse, .dat, .br)"
     echo "2. Unpack Super (dat.br)"
     echo "3. Unpack Super (raw)"
     echo "4. Back to main menu"

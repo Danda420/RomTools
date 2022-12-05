@@ -12,17 +12,6 @@ echo " "
 echo "Input Super image name :"
 read
 imgname=$REPLY
-echo " "
-while true; do
-    read -p "Your super image name is : $imgname is that correct? (Y/N)" yn
-    case $yn in
-        [Yy]* ) break;;
-        [Nn]* ) exit;;
-        * ) echo "Please answer yes or no.";;
-    esac
-done
-
-echo " "
 
 echo " "
 echo "Unpacking $imgname.img..."

@@ -11,46 +11,25 @@ echo "Input image/partition name :"
 read
 imgname=$REPLY
 
-
-img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> log.txt
-rm -rf $DIRIN/$imgname.img
-
-./bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> log.txt
-rm -rf $DIRIN/$imgname.*
-mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
-mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
-mv $DIRIN/system.transfer.list $DIROUT/$imgname.transfer.list
-rm -rf $DIRIN/system.*
-
-echo " "
-echo " "
-echo " "
-while true; do
-    read -p "Do you want to compress it using brotli? (Y/N)" yn
-    case $yn in
-        [Yy]* ) break;;
-        [Nn]* ) exit;;
-        * ) echo "Please answer yes or no.";;
-    esac
-done
-
-
 echo " "
 echo " "
 echo "Input Brotli compression level (0-11) :"
 read
 COMPLVL=$REPLY
-echo " "
-while true; do
-    read -p "Your preffered brotli compression level is $COMPLVL is that correct? (Y/N)" yn
-    case $yn in
-        [Yy]* ) break;;
-        [Nn]* ) exit;;
-        * ) echo "Please answer yes or no.";;
-    esac
-done
 
-echo " "
+echo " " 
+echo "converting image : $imgname to sparse"
+img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> log.txt
+rm -rf $DIRIN/$imgname.img
+
+echo " " 
+echo "converting image : $imgname to new.dat"
+./bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> log.txt
+rm -rf $DIRIN/$imgname.sparse.img
+mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
+mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
+mv $DIRIN/system.transfer.list $DIROUT/$imgname.transfer.list
+rm -rf $DIRIN/system.*
 
 echo " " 
 echo "compressing image : $imgname using brotli..."

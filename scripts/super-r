@@ -66,7 +66,7 @@ echo "Compiling super : $imgname.img (raw)..."
 		--image vendor=$DIRSUPER/vendor.img \
 		--partition product:none:$PRODUCTSIZE:qti_dynamic_partitions \
 		--image product=$DIRSUPER/product.img \
-		--output $DIRIN/$imgname.img  >> log.txt
+		--output $DIRIN/$imgname.img
 
 
 break;;
@@ -99,7 +99,7 @@ echo "Compiling super : $imgname.img (raw)..."
 		--image $vendor=$DIRSUPER/$vendor.img \
 		--partition $product:none:$PRODUCTSIZE:qti_dynamic_partitions \
 		--image $product=$DIRSUPER/$product.img \
-		--output $DIRIN/$imgname.img  >> log.txt
+		--output $DIRIN/$imgname.img
 
 
 break;;
@@ -113,7 +113,7 @@ rm -rf $DIRSUPER/*
 
 echo " "
 while true; do
-    read -p "Continue compressing to $imgname.new.dat? (Y/N)" yn
+    read -p "Continue compressing to $imgname.img (sparse)? (Y/N)" yn
     case $yn in
         [Yy]* ) break;;
         [Nn]* ) 
@@ -123,13 +123,23 @@ exit;;
         * ) echo "Please answer yes or no.";;
     esac
 done
-echo " "
 
 echo " "
 echo "Converting raw $imgname.img to sparse..."
 img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> log.txt
 rm -rf $DIRIN/$imgname.img
-
+echo " "
+while true; do
+    read -p "Continue compressing to $imgname.new.dat? (Y/N)" yn
+    case $yn in
+        [Yy]* ) break;;
+        [Nn]* ) 
+        
+mv $DIRIN/$imgname.sparse.img $DIROUT/$imgname.img
+exit;;
+        * ) echo "Please answer yes or no.";;
+    esac
+done
 echo " "
 echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
 ./bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> log.txt
@@ -157,17 +167,6 @@ echo " "
 echo "Input Brotli compression level (0-11) :"
 read
 COMPLVL=$REPLY
-echo " "
-while true; do
-    read -p "Your preffered brotli compression level is $COMPLVL is that correct? (Y/N)" yn
-    case $yn in
-        [Yy]* ) break;;
-        [Nn]* ) exit;;
-        * ) echo "Please answer yes or no.";;
-    esac
-done
-
-echo " "
 
 echo " " 
 echo "Compressing to $imgname.new.dat.br..."
