@@ -34,9 +34,10 @@ while true; do
     echo "7. Mount raw .img"
     echo "8. Unmount images"
     echo "9. Unpack payload.bin"
-    echo "10. Auto ZIP"
-    echo "11. Clean up folders"
-    echo "12. Exit tool"
+    echo "10. Merge OPlus my_xx context and config to system"
+    echo "11. Auto ZIP"
+    echo "12. Clean up folders"
+    echo "13. Exit tool"
     
     read -p "" choose
     case $choose in
@@ -97,17 +98,23 @@ restart_tool;;
 
         10 ) 
         
-bash $SCRIPTS/zip-main
+bash $SCRIPTS/merge-oplus-conf-context
         
 restart_tool;;
 
         11 ) 
         
+bash $SCRIPTS/zip-main
+        
+restart_tool;;
+
+        12 ) 
+        
 bash $SCRIPTS/clean
         
 restart_tool;;
 
-        12 )  exit;;
+        13 )  exit;;
 
 
         * ) bash start;;
