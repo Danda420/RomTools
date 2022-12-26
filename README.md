@@ -1,6 +1,8 @@
 # RomTools
 
 for my personal use..
+Linux only!
+Wont work properly on android...
 
 this tool needs :
 img2simg, brotli, python, gawk
