@@ -5,6 +5,9 @@ clear
 
 if [ -d $DIRTOOLS/ROM ]; then
 
+	echo ""
+
+else
 	echo "creating dirs"
 
 	mkdir $DIRTOOLS/rom_input
@@ -18,7 +21,4 @@ if [ -d $DIRTOOLS/ROM ]; then
 	mkdir $DIRTOOLS/ROM/super
 
 	echo "Done!"
-
-else
-	echo ""
 fi
