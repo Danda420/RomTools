@@ -23,22 +23,35 @@ resize_img_to_edit(){
 		e2fsck -yf $DIRROM/$valset.img  >> log.txt
 }
 
+echo " "
+echo "Resizing partitions..."
+echo " "
+valset=system
+resize_img_to_edit
+valset=system_ext
+resize_img_to_edit
+valset=vendor
+resize_img_to_edit
+valset=product
+resize_img_to_edit
+valset=odm
+resize_img_to_edit
+
+valset=system_a
+resize_img_to_edit
+valset=system_ext_a
+resize_img_to_edit
+valset=vendor_a
+resize_img_to_edit
+valset=product_a
+resize_img_to_edit
+valset=odm_a
+resize_img_to_edit
 
 echo " "
-echo "Resizing and mounting partitions..."
+echo "Mounting partitions..."
 echo " "
 if [ -f $DIRROM/*_a.img ]; then
-
-	valset=system_a
-	resize_img_to_edit;
-	valset=system_ext_a
-	resize_img_to_edit;
-	valset=vendor_a
-	resize_img_to_edit;
-	valset=product_a
-	resize_img_to_edit;
-	valset=odm_a
-	resize_img_to_edit;
 	
 	sudo mount -t ext4 -o loop $DIRROM/system_a.img $DIRROM/system >> log.txt
 	sudo mount -t ext4 -o loop $DIRROM/vendor_a.img $DIRROM/vendor >> log.txt
@@ -47,17 +60,6 @@ if [ -f $DIRROM/*_a.img ]; then
 	sudo mount -t ext4 -o loop $DIRROM/system_ext_a.img $DIRROM/system_ext >> log.txt
 
 else
-
-	valset=system
-	resize_img_to_edit;
-	valset=system_ext
-	resize_img_to_edit;
-	valset=vendor
-	resize_img_to_edit;
-	valset=product
-	resize_img_to_edit;
-	valset=odm
-	resize_img_to_edit;
 	
 	sudo mount -t ext4 -o loop $DIRROM/system.img $DIRROM/system >> log.txt
 	sudo mount -t ext4 -o loop $DIRROM/vendor.img $DIRROM/vendor >> log.txt
