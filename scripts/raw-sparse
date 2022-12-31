@@ -11,12 +11,17 @@ echo "Input image/partition name :"
 read
 imgname=$REPLY
 
-echo " "
-echo "Converting raw image to sparse..."
+if [ -f $DIRIN/$imgname.img ]; then
 
-img2simg $DIRIN/$imgname.img $DIROUT/$imgname.sparse.img >> log.txt
-rm -rf $DIRIN/$imgname.img
+	echo " "
+	echo "Converting raw image to sparse..."
 
-echo " "
-echo "Done! Output : $DIROUT"
+	img2simg $DIRIN/$imgname.img $DIROUT/$imgname.sparse.img >> log.txt
+	rm -rf $DIRIN/$imgname.img
 
+	echo " "
+	echo "Done! Output : $DIROUT"
+
+else
+	echo "there's no $imgname.img in $DIRIN"
+fi

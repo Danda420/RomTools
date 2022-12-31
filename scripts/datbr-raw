@@ -10,18 +10,25 @@ echo " "
 echo "Input image/partition name :"
 read
 imgname=$REPLY
-echo " "
-echo "Unpacking..."
-echo " "
-brotli -d $DIRIN/$imgname.new.dat.br
 
-rm -rf $DIRIN/$imgname.new.dat.br
+if [ -f $DIRINPUT/$imgname.new.dat.br ]; then
 
-./bin/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img  >> log.txt
-echo " "
-echo "Cleaning input folder..."
+	echo " "
+	echo "Unpacking..."
+	echo " "
+	brotli -d $DIRIN/$imgname.new.dat.br
 
-rm -rf $DIRIN/$imgname.*
+	rm -rf $DIRIN/$imgname.new.dat.br
 
-echo " "
-echo "Done! Output : $DIROUT"
+	./bin/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img  >> log.txt
+	echo " "
+	echo "Cleaning input folder..."
+
+	rm -rf $DIRIN/$imgname.*
+
+	echo " "
+	echo "Done! Output : $DIROUT"
+else
+
+	echo "theres no image "$imgname.new.dat.br""
+fi

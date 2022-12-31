@@ -13,21 +13,27 @@ echo "Input Super image name :"
 read
 imgname=$REPLY
 
-echo " "
-echo "Decompressing brotli..."
-brotli -d $DIRINPUT/$imgname.new.dat.br
-rm -rf $DIRINPUT/$imgname.new.dat.br
+if [ -f $DIRINPUT/$imgname.new.dat.br ]; then
 
-echo " "
-echo "Converting $imgname.new.dat to $imgname.img (raw)..."
-./bin/sdat2img.py $DIRINPUT/$imgname.transfer.list $DIRINPUT/$imgname.new.dat $DIROUT/$imgname.img >> log.txt
-rm -rf $DIRINPUT/$imgname.*
+	echo " "
+	echo "Decompressing brotli..."
+	brotli -d $DIRINPUT/$imgname.new.dat.br
+	rm -rf $DIRINPUT/$imgname.new.dat.br
 
-echo " "
-echo "Unpacking $imgname.img..."
-./bin/lpunpack $DIROUT/$imgname.img $DIRROM/super >> log.txt
-rm -rf $DIROUT/$imgname.*
+	echo " "
+	echo "Converting $imgname.new.dat to $imgname.img (raw)..."
+	./bin/sdat2img.py $DIRINPUT/$imgname.transfer.list $DIRINPUT/$imgname.new.dat $DIROUT/$imgname.img >> log.txt
+	rm -rf $DIRINPUT/$imgname.*
 
-echo " "
-echo "Done! Output : $DIRROM/super"
+	echo " "
+	echo "Unpacking $imgname.img..."
+	./bin/lpunpack $DIROUT/$imgname.img $DIRROM/super >> log.txt
+	rm -rf $DIROUT/$imgname.*
 
+	echo " "
+	echo "Done! Output : $DIRROM/super"
+
+else
+
+	echo "theres no image "$imgname.new.dat.br""
+fi

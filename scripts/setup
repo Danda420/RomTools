@@ -3,16 +3,22 @@
 DIRTOOLS=$PWD
 clear
 
-echo "creating dirs"
+if [ -d $DIRTOOLS/ROM ]; then
 
-mkdir $DIRTOOLS/rom_input
-mkdir $DIRTOOLS/rom_output
-mkdir $DIRTOOLS/ROM
-mkdir $DIRTOOLS/ROM/odm
-mkdir $DIRTOOLS/ROM/product
-mkdir $DIRTOOLS/ROM/system
-mkdir $DIRTOOLS/ROM/system_ext
-mkdir $DIRTOOLS/ROM/vendor
-mkdir $DIRTOOLS/ROM/super
+	echo "creating dirs"
 
-echo "Done!"
+	mkdir $DIRTOOLS/rom_input
+	mkdir $DIRTOOLS/rom_output
+	mkdir $DIRTOOLS/ROM
+	mkdir $DIRTOOLS/ROM/odm
+	mkdir $DIRTOOLS/ROM/product
+	mkdir $DIRTOOLS/ROM/system
+	mkdir $DIRTOOLS/ROM/system_ext
+	mkdir $DIRTOOLS/ROM/vendor
+	mkdir $DIRTOOLS/ROM/super
+
+	echo "Done!"
+
+else
+	echo ""
+fi

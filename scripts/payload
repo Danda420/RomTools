@@ -6,13 +6,20 @@ DIROUT=$DIRTOOLS/rom_output
 clear
 cd scripts
 
-./bin/payload --output=$DIROUT $DIRIN/payload.bin
+if [ -f $DIRIN/payload.bin ]; then
 
+	./bin/payload --output=$DIROUT $DIRIN/payload.bin
 
-echo " "
-echo "cleaning..."
+	echo " "
+	echo "cleaning..."
 
-rm -rf $DIRIN/payload.bin
+	rm -rf $DIRIN/payload.bin
 
-echo " "
-echo "Done! Output : $DIROUT"
+	echo " "
+	echo "Done! Output : $DIROUT"
+
+else
+
+	echo "there's no payload.bin in $DIRIN"
+
+fi

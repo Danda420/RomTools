@@ -13,11 +13,17 @@ echo "Input Super image name :"
 read
 imgname=$REPLY
 
-echo " "
-echo "Unpacking $imgname.img..."
-./bin/lpunpack $DIRINPUT/$imgname.img $DIRROM/super >> log.txt
-rm -rf $DIRINPUT/$imgname.*
+if [ -f $DIRINPUT/$imgname.img ]; then
 
-echo " "
-echo "Done! Output : $DIRROM/super"
+	echo " "
+	echo "Unpacking $imgname.img..."
+	./bin/lpunpack $DIRINPUT/$imgname.img $DIRROM/super >> log.txt
+	rm -rf $DIRINPUT/$imgname.*
 
+	echo " "
+	echo "Done! Output : $DIRROM/super"
+
+else
+
+	echo "theres no image "$imgname.img""
+fi
