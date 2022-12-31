@@ -11,7 +11,7 @@ echo "Input image/partition name :"
 read
 imgname=$REPLY
 
-if [ -f $DIRINPUT/$imgname.new.dat.br ]; then
+if [ -f $DIRIN/$imgname.new.dat.br ]; then
 
 	echo " "
 	echo "Unpacking..."
