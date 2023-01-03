@@ -3,55 +3,10 @@
 DIRTOOLS=$PWD
 DIRROM=$DIRTOOLS/ROM
 GIVEPERM=$DIRTOOLS/scripts/give_perm
-OPTIONS=loop
+OPTIONS=ro,nosuid,nodev,relatime,uhelper=udisks2,loop
 clear
 cd scripts
 
-resize_img_to_edit(){
-		getsize=$(ls -nl $DIRROM/$valset.img | awk '{print $5}')
-		readmb=$(($getsize / 100000000))
-		readgiga=$(($getsize / 1000000000))
-		cval=$(($readmb - $readgiga))
-		if [[ $cval -gt 5 ]]; then
-			vplus=2;
-		else
-			vplus=1;
-		fi
-		sizeimg=$(($readgiga + $vplus))G
-		fallocate -l $sizeimg $DIRROM/$valset.img  >> log.txt
-		e2fsck -yf $DIRROM/$valset.img  >> log.txt
-		resize2fs $DIRROM/$valset.img $sizeimg  >> log.txt
-		e2fsck -yf $DIRROM/$valset.img  >> log.txt
-}
-
-echo " "
-echo "Resizing partitions..."
-echo " "
-valset=system
-resize_img_to_edit
-valset=system_ext
-resize_img_to_edit
-valset=vendor
-resize_img_to_edit
-valset=product
-resize_img_to_edit
-valset=odm
-resize_img_to_edit
-
-valset=system_a
-resize_img_to_edit
-valset=system_ext_a
-resize_img_to_edit
-valset=vendor_a
-resize_img_to_edit
-valset=product_a
-resize_img_to_edit
-valset=odm_a
-resize_img_to_edit
-
-echo " "
-echo "Mounting partitions..."
-echo " "
 if [ -f $DIRROM/*_a.img ]; then
 
 	sudo mount -t ext4 -o $OPTIONS $DIRROM/system_a.img $DIRROM/system >> log.txt

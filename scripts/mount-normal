@@ -3,24 +3,25 @@
 DIRTOOLS=$PWD
 DIRROM=$DIRTOOLS/ROM
 GIVEPERM=$DIRTOOLS/scripts/give_perm
+OPTIONS=loop
 clear
 cd scripts
 
 if [ -f $DIRROM/*_a.img ]; then
 
-	sudo mount -t ext4 -o loop $DIRROM/system_a.img $DIRROM/system >> log.txt
-	sudo mount -t ext4 -o loop $DIRROM/vendor_a.img $DIRROM/vendor >> log.txt
-	sudo mount -t ext4 -o loop $DIRROM/odm_a.img $DIRROM/odm >> log.txt
-	sudo mount -t ext4 -o loop $DIRROM/product_a.img $DIRROM/product >> log.txt
-	sudo mount -t ext4 -o loop $DIRROM/system_ext_a.img $DIRROM/system_ext >> log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/system_a.img $DIRROM/system >> log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor_a.img $DIRROM/vendor >> log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/odm_a.img $DIRROM/odm >> log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/product_a.img $DIRROM/product >> log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext_a.img $DIRROM/system_ext >> log.txt
 
 else
 
-	sudo mount -t ext4 -o loop $DIRROM/system.img $DIRROM/system >> log.txt
-	sudo mount -t ext4 -o loop $DIRROM/vendor.img $DIRROM/vendor >> log.txt
-	sudo mount -t ext4 -o loop $DIRROM/odm.img $DIRROM/odm >> log.txt
-	sudo mount -t ext4 -o loop $DIRROM/product.img $DIRROM/product >> log.txt
-	sudo mount -t ext4 -o loop $DIRROM/system_ext.img $DIRROM/system_ext >> log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/system.img $DIRROM/system >> log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor.img $DIRROM/vendor >> log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/odm.img $DIRROM/odm >> log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/product.img $DIRROM/product >> log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext.img $DIRROM/system_ext >> log.txt
 
 fi
 bash give_perm
