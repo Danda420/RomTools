@@ -1,0 +1,45 @@
+#!/bin/bash
+
+DIRTOOLS=$PWD
+DIRROM=$DIRTOOLS/ROM
+clear
+cd scripts
+
+resize_to_build(){
+	if [ -f $DIRROM/$valset.img ]; then
+		e2fsck -yf $DIRROM/$valset.img >> log.txt
+		resize2fs -M $DIRROM/$valset.img >> log.txt
+		e2fsck -yf $DIRROM/$valset.img >> log.txt
+		
+		vsizenow=$(ls -nl $DIRROM/$valset.img | awk '{print $5}')
+		sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
+		resize2fs $DIRROM/$valset.img $sizeimg
+		e2fsck -yf $DIRROM/$valset.img
+	fi;
+}
+
+echo " "
+echo "Input partition that you want to unmount :"
+read
+PARTITION=$REPLY
+
+if [[ $PARTITION == "system" ]] || [[ $PARTITION == "system_ext" ]] || [[ $PARTITION == "product" ]] || [[ $PARTITION == "odm" ]] || [[ $PARTITION == "vendor" ]]; then
+
+	echo " "
+	echo "Input partiton free space in mb (megabytes) :"
+	read
+	FREESPACE=$REPLY
+	
+	echo " "
+	echo "Unmounting $PARTITION..."
+	echo " "
+	sudo umount $DIRROM/$PARTITION >> log.txt
+
+	echo "Resizing $PARTITION..."
+	echo " "
+	# Resize image to minimum
+	valset=$PARTITION
+	resize_to_build
+else
+	echo "there's no partition named : $PARTITION"
+fi
