@@ -1,0 +1,44 @@
+#!/bin/sh
+
+DIRTOOLS=$PWD
+DIRIN=$DIRTOOLS/rom_input
+DIROUT=$DIRTOOLS/rom_output
+MERGE=$DIRTOOLS/scripts/merge_non_dynamic
+clear
+
+if [ -d $DIRIN ]; 
+then
+    echo ""
+else
+    mkdir $DIRIN $DIROUT
+fi
+
+if [[ -f $DIRIN/system_file_contexts ]] && [[ -f $DIRIN/system_fs_config ]] && [[ -f $DIRIN/system_ext_file_contexts ]] && [[ -f $DIRIN/system_ext_fs_config ]] && [[ -f $DIRIN/product_file_contexts ]] && [[ -f $DIRIN/product_fs_config ]]; then
+	gawk -i inplace 'NR>1' $DIRIN/system_ext_file_contexts
+	gawk -i inplace 'NR>1' $DIRIN/product_file_contexts
+
+	python3 $MERGE/system_ext.py $DIRIN/system_ext_file_contexts
+	python3 $MERGE/system_ext.py $DIRIN/system_ext_fs_config
+
+	python3 $MERGE/product.py $DIRIN/product_file_contexts
+	python3 $MERGE/product.py $DIRIN/product_fs_config
+
+
+	cat $DIRIN/system_ext_file_contexts >> $DIRIN/system_file_contexts
+	cat $DIRIN/system_ext_fs_config >> $DIRIN/system_fs_config
+
+	cat $DIRIN/product_file_contexts >> $DIRIN/system_file_contexts
+	cat $DIRIN/product_fs_config >> $DIRIN/system_fs_config
+
+
+	rm -rf $DIRIN/product*
+	rm -rf $DIRIN/system_ext*
+	mv $DIRIN/system_file_contexts $DIROUT/
+	mv $DIRIN/system_fs_config $DIROUT/
+
+else
+	echo "Error : you probably missed some important partitions fs conf and context..."
+	
+fi
+
+

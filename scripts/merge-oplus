@@ -6,8 +6,7 @@ DIROUT=$DIRTOOLS/rom_output
 OPLUSMERGE=$DIRTOOLS/scripts/oplus
 clear
 
-if [ -f $DIRIN/system_file_contexts ]; 
-then
+if [[ -f $DIRIN/system_file_contexts ]] && [[ -f $DIRIN/system_fs_config ]] && [[ -f $DIRIN/my_bigball_file_contexts ]] && [[ -f $DIRIN/my_bigball_fs_config ]] && [[ -f $DIRIN/my_engineering_file_contexts ]] && [[ -f $DIRIN/my_engineering_fs_config ]] && [[ -f $DIRIN/my_heytap_file_contexts ]] && [[ -f $DIRIN/my_heytap_fs_config ]] && [[ -f $DIRIN/my_manifest_file_contexts ]] && [[ -f $DIRIN/my_manifest_fs_config ]] && [[ -f $DIRIN/my_product_file_contexts ]] && [[ -f $DIRIN/my_product_fs_config ]] && [[ -f $DIRIN/my_region_file_contexts ]] && [[ -f $DIRIN/my_region_fs_config ]] && [[ -f $DIRIN/my_stock_file_contexts ]] && [[ -f $DIRIN/my_stock_fs_config ]]; then
 
 	gawk -i inplace 'NR>1' $DIRIN/my_bigball_file_contexts
 	gawk -i inplace 'NR>1' $DIRIN/my_carrier_file_contexts
@@ -89,7 +88,7 @@ then
 	echo "merged all fs context and config.. Output : $DIROUT"
 
 else
-	echo "theres no fs context and config in $DIRIN"
+	echo "Error : you probably missed some important partitions fs conf and context..."
 	
 fi
 

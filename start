@@ -34,7 +34,7 @@ while true; do
     echo "7. Mount raw .img"
     echo "8. Unmount images"
     echo "9. Unpack payload.bin"
-    echo "10. Merge OPlus my_xx context and config to system"
+    echo "10. Merge fs context and config to system"
     echo "11. Auto ZIP"
     echo "12. Clean up folders"
     echo "13. Exit tool"
@@ -98,7 +98,7 @@ restart_tool;;
 
         10 ) 
         
-bash $SCRIPTS/merge-oplus-conf-context
+bash $SCRIPTS/merge-main
         
 restart_tool;;
 
