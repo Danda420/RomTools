@@ -10,6 +10,13 @@ resize_to_build(){
 		e2fsck -yf $DIRROM/$valset.img >> log.txt
 		resize2fs -M $DIRROM/$valset.img >> log.txt
 		e2fsck -yf $DIRROM/$valset.img >> log.txt
+		
+		if [[ $valset == "system" ]] || [[ $valset == "system_a" ]] || [[ $valset == *"vendor"* ]]; then
+			vsizenow=$(ls -nl $DIRROM/$valset.img | awk '{print $5}')
+			sizeimg=$((($vsizenow + 100000000)/1000))K
+			resize2fs $DIRROM/$valset.img $sizeimg
+			e2fsck -yf $DIRROM/$valset.img
+		fi;
 	fi;
 }
 
