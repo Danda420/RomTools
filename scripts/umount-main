@@ -24,9 +24,10 @@ while true; do
     echo "        by  Danda        "
     echo "========================="
     echo " "
-    echo "1. Umount raw image and resize"
-    echo "2. Umount without resizing"
-    echo "3. Back to main menu"
+    echo "1. Umount raw image and resize to smallest size"
+    echo "2. Umount raw image and resize with free space "
+    echo "3. Umount without resizing"
+    echo "4. Back to main menu"
     
     read -p "" choose
     case $choose in
@@ -38,12 +39,18 @@ bash $SCRIPTS/umount-resize
 restart_tool;;
 
         2 ) 
+
+bash $SCRIPTS/umount-resize-freespace
+
+restart_tool;;
+
+        3 ) 
    
 bash $SCRIPTS/umount-normal
 
 restart_tool;;
 
-        3 ) 
+        4 ) 
 
 bash $DIRTOOLS/start;;
 
