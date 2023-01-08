@@ -7,7 +7,7 @@ OPTIONS=ro,nosuid,nodev,relatime,uhelper=udisks2,loop
 clear
 cd scripts
 
-if [ -f $DIRROM/*_a.img ]; then
+if [[ -f $DIRROM/system_a.img ]] || [[ -f $DIRROM/vendor_a.img ]] || [[ -f $DIRROM/odm_a.img ]] || [[ -f $DIRROM/product_a.img ]] || [[ -f $DIRROM/system_ext_a.img ]]; then
 
 	sudo mount -t ext4 -o $OPTIONS $DIRROM/system_a.img $DIRROM/system >> log.txt
 	sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor_a.img $DIRROM/vendor >> log.txt
