@@ -3,7 +3,7 @@
 DIRTOOLS=$PWD
 clear
 
-if [ -d $DIRTOOLS/ROM ]; then
+if [[ -d $DIRTOOLS/ROM ]] && [[ -d $DIRTOOLS/rom_input ]] && [[ -d $DIRTOOLS/rom_output ]]; then
 
 	echo ""
 
