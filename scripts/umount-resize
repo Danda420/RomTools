@@ -6,10 +6,14 @@ clear
 cd scripts
 
 resize_to_build(){
-	if [ -f $DIRROM/$valset.img ]; then
-		e2fsck -yf $DIRROM/$valset.img >> log.txt
-		resize2fs -M $DIRROM/$valset.img >> log.txt
-		e2fsck -yf $DIRROM/$valset.img >> log.txt
+	if [ -f $DIRROM/${valset}_a.img ]; then
+		e2fsck -yf $DIRROM/${valset}_a.img >> log.txt
+		resize2fs -M $DIRROM/${valset}_a.img >> log.txt
+		e2fsck -yf $DIRROM/${valset}_a.img >> log.txt
+	else
+		e2fsck -yf $DIRROM/${valset}.img >> log.txt
+		resize2fs -M $DIRROM/${valset}.img >> log.txt
+		e2fsck -yf $DIRROM/${valset}.img >> log.txt
 	fi;
 }
 

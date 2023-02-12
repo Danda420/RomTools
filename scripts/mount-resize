@@ -8,7 +8,8 @@ clear
 cd scripts
 
 resize_img_to_edit(){
-		getsize=$(ls -nl $DIRROM/$valset.img | awk '{print $5}')
+	if [ -f $DIRROM/${valset}_a.img ]; then
+		getsize=$(ls -nl $DIRROM/${valset}_a.img | awk '{print $5}')
 		readmb=$(($getsize / 100000000))
 		readgiga=$(($getsize / 1000000000))
 		cval=$(($readmb - $readgiga))
@@ -18,10 +19,26 @@ resize_img_to_edit(){
 			vplus=1;
 		fi
 		sizeimg=$(($readgiga + $vplus))G
-		fallocate -l $sizeimg $DIRROM/$valset.img  >> log.txt
-		e2fsck -yf $DIRROM/$valset.img  >> log.txt
-		resize2fs $DIRROM/$valset.img $sizeimg  >> log.txt
-		e2fsck -yf $DIRROM/$valset.img  >> log.txt
+		fallocate -l $sizeimg $DIRROM/${valset}_a.img  >> log.txt
+		e2fsck -yf $DIRROM/${valset}_a.img >> log.txt
+		resize2fs $DIRROM/${valset}_a.img $sizeimg  >> log.txt
+		e2fsck -yf $DIRROM/${valset}_a.img  >> log.txt
+	else
+		getsize=$(ls -nl $DIRROM/${valset}.img | awk '{print $5}')
+		readmb=$(($getsize / 100000000))
+		readgiga=$(($getsize / 1000000000))
+		cval=$(($readmb - $readgiga))
+		if [[ $cval -gt 5 ]]; then
+			vplus=2;
+		else
+			vplus=1;
+		fi
+		sizeimg=$(($readgiga + $vplus))G
+		fallocate -l $sizeimg $DIRROM/${valset}.img  >> log.txt
+		e2fsck -yf $DIRROM/${valset}.img >> log.txt
+		resize2fs $DIRROM/${valset}.img $sizeimg  >> log.txt
+		e2fsck -yf $DIRROM/${valset}.img  >> log.txt
+	fi
 }
 
 echo " "
@@ -36,17 +53,6 @@ resize_img_to_edit
 valset=product
 resize_img_to_edit
 valset=odm
-resize_img_to_edit
-
-valset=system_a
-resize_img_to_edit
-valset=system_ext_a
-resize_img_to_edit
-valset=vendor_a
-resize_img_to_edit
-valset=product_a
-resize_img_to_edit
-valset=odm_a
 resize_img_to_edit
 
 echo " "

@@ -6,15 +6,24 @@ clear
 cd scripts
 
 resize_to_build(){
-	if [ -f $DIRROM/$valset.img ]; then
-		e2fsck -yf $DIRROM/$valset.img >> log.txt
-		resize2fs -M $DIRROM/$valset.img >> log.txt
-		e2fsck -yf $DIRROM/$valset.img >> log.txt
+	if [ -f $DIRROM/${valset}_a.img ]; then
+		e2fsck -yf $DIRROM/${valset}_a.img >> log.txt
+		resize2fs -M $DIRROM/${valset}_a.img >> log.txt
+		e2fsck -yf $DIRROM/${valset}_a.img >> log.txt
 		
-		vsizenow=$(ls -nl $DIRROM/$valset.img | awk '{print $5}')
+		vsizenow=$(ls -nl $DIRROM/${valset}_a.img | awk '{print $5}')
 		sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
-		resize2fs $DIRROM/$valset.img $sizeimg
-		e2fsck -yf $DIRROM/$valset.img
+		resize2fs $DIRROM/${valset}_a.img $sizeimg
+		e2fsck -yf $DIRROM/${valset}_a.img
+	else
+		e2fsck -yf $DIRROM/${valset}.img >> log.txt
+		resize2fs -M $DIRROM/${valset}.img >> log.txt
+		e2fsck -yf $DIRROM/${valset}.img >> log.txt
+		
+		vsizenow=$(ls -nl $DIRROM/${valset}.img | awk '{print $5}')
+		sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
+		resize2fs $DIRROM/${valset}.img $sizeimg
+		e2fsck -yf $DIRROM/${valset}.img
 	fi;
 }
 
