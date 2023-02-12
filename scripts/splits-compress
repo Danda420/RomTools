@@ -7,14 +7,13 @@ dynamic_part_op_list=$DIROUT/dynamic_partitions_op_list
 clear
 cd scripts
 
-input_size() {
-	ODMSIZE=$(ls -nl $DIRIN/odm.img | awk '{print $5}')
-	PRODUCTSIZE=$(ls -nl $DIRIN/product.img | awk '{print $5}')
-	SYSTEMSIZE=$(ls -nl $DIRIN/system.img | awk '{print $5}')
-	SYSEXTSIZE=$(ls -nl $DIRIN/system_ext.img | awk '{print $5}')
-	VENDORSIZE=$(ls -nl $DIRIN/vendor.img | awk '{print $5}')
-	SUPERSIZE=9124708352
-}
+ODMSIZE=$(ls -nl $DIRIN/odm.img | awk '{print $5}')
+PRODUCTSIZE=$(ls -nl $DIRIN/product.img | awk '{print $5}')
+SYSTEMSIZE=$(ls -nl $DIRIN/system.img | awk '{print $5}')
+SYSEXTSIZE=$(ls -nl $DIRIN/system_ext.img | awk '{print $5}')
+VENDORSIZE=$(ls -nl $DIRIN/vendor.img | awk '{print $5}')
+SUPERSIZE=9124708352
+
 
 a_dp_op_list() {
 	if [ -f $dynamic_part_op_list ]; then
@@ -213,38 +212,47 @@ echo "Done! Output : $DIROUT"
 
 }
 
-while true; do
-    echo "Compiling for A only device or Virtual A/B?"
-    echo "(1) A only"
-    echo "(2) Virtual A/B "
-    read -p "choose 1 or 2 : " choose
-    case $choose in
-        [1]* ) 
-echo "Make sure to input your raw .img's to rom_input folder"
-echo " "
-echo "Compiling splits with A only format"
-echo " "
+TOTALSIZE=$(( $ODMSIZE + $PRODUCTSIZE + $SYSTEMSIZE + $SYSEXTSIZE + $VENDORSIZE ))
 
-brotli_lvl
-input_size
-a_dp_op_list
-compress
-break;;
+if (( $TOTALSIZE > $SUPERSIZE )); then
+	echo "Total size of all partitions exceeds max super size, aborting..."
+	echo "($TOTALSIZE/$SUPERSIZE)"
+	echo ""
+else
+	echo "Splits total size :"
+	echo "($TOTALSIZE/$SUPERSIZE)"
+	echo ""
+	while true; do
+	    echo "Compiling for A only device or Virtual A/B?"
+	    echo "(1) A only"
+	    echo "(2) Virtual A/B "
+	    read -p "choose 1 or 2 : " choose
+	    case $choose in
+		[1]* ) 
+	echo "Make sure to input your raw .img's to rom_input folder"
+	echo " "
+	echo "Compiling splits with A only format"
+	echo " "
 
-
-        [2]* ) 
-echo "Make sure to input your raw .img's to rom_input folder"
-echo " "
-echo "Compiling splits with Virtual A/B format"
-echo " "
-
-brotli_lvl
-input_size
-ab_dp_op_list
-compress
-break;;
+	brotli_lvl
+	a_dp_op_list
+	compress
+	break;;
 
 
-        * ) echo "Please answer 1 or 2.";;
-    esac
-done
+		[2]* ) 
+	echo "Make sure to input your raw .img's to rom_input folder"
+	echo " "
+	echo "Compiling splits with Virtual A/B format"
+	echo " "
+
+	brotli_lvl
+	ab_dp_op_list
+	compress
+	break;;
+
+
+		* ) echo "Please answer 1 or 2.";;
+	    esac
+	done
+fi
