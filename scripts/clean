@@ -12,5 +12,6 @@ rm -rf $DIRIN
 rm -rf $DIROUT
 rm -rf $DIRROM
 rm -rf $DIRTOOLS/scripts/log.txt
+rm -rf $DIRTOOLS/scripts/bin/__pycache__
 
 echo "Done!"
