@@ -1,0 +1,37 @@
+#!/bin/bash
+
+DIRTOOLS=$PWD
+DIRINPUT=$DIRTOOLS/rom_input
+DIROUT=$DIRTOOLS/rom_output
+DIRSCRIPTS=$DIRTOOLS/scripts
+mkdir $DIRSCRIPTS/ROM
+clear
+cd scripts
+
+if [[ -f $DIRINPUT/system.img ]]; then
+	echo "make sure image is on rom_input folder"
+	echo " "
+	echo "Input image name :"
+	read
+	partition=$REPLY
+
+	if [[ -f $DIRINPUT/$partition.img ]]; then
+		echo " "
+		echo "Starting conversion..."
+		echo ""
+		sudo $DIRSCRIPTS/erofs-ext4 $DIRINPUT/$partition.img $partition
+		rm -rf $DIRINPUT/$partition.img
+		mv $DIRSCRIPTS/$partition.img $DIROUT/
+		sudo chown $USER $DIROUT/$partition.img
+		echo ""
+		echo "Conversion done..."
+		echo "Output: $DIROUT"
+	else
+		echo "theres no image named "$partition.img" in $DIRINPUT"
+	fi
+else
+	echo ""
+	echo "Put your system.img from the rom that you want to convert to $DIRINPUT"
+fi
+
+rm -rf $DIRSCRIPTS/ROM

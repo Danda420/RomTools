@@ -36,8 +36,9 @@ while true; do
     echo "9. Unpack payload.bin"
     echo "10. Merge fs context and config to system"
     echo "11. Auto ZIP"
-    echo "12. Clean up folders"
-    echo "13. Exit tool"
+    echo "12. Convert erofs to ext4"
+    echo "13. Clean up folders"
+    echo "14. Exit tool"
     
     read -p "" choose
     case $choose in
@@ -110,11 +111,17 @@ restart_tool;;
 
         12 ) 
         
+bash $SCRIPTS/erofs-ext4-main
+        
+restart_tool;;
+
+        13 ) 
+        
 bash $SCRIPTS/clean
         
 restart_tool;;
 
-        13 )  exit;;
+        14 )  exit;;
 
 
         * ) bash start;;
