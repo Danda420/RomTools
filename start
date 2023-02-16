@@ -35,8 +35,8 @@ while true; do
     echo "8. Unmount images"
     echo "9. Unpack payload.bin"
     echo "10. Merge fs context and config to system"
-    echo "11. Auto ZIP"
-    echo "12. Convert erofs to ext4"
+    echo "11. Convert erofs to ext4"
+    echo "12. Auto ZIP"
     echo "13. Clean up folders"
     echo "14. Exit tool"
     
@@ -105,13 +105,13 @@ restart_tool;;
 
         11 ) 
         
-bash $SCRIPTS/zip-main
+bash $SCRIPTS/erofs-ext4-main
         
 restart_tool;;
 
         12 ) 
         
-bash $SCRIPTS/erofs-ext4-main
+bash $SCRIPTS/zip-main
         
 restart_tool;;
 
