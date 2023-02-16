@@ -6,89 +6,55 @@ DIROUT=$DIRTOOLS/rom_output
 OPLUSMERGE=$DIRTOOLS/scripts/oplus
 clear
 
-if [[ -f $DIRIN/system_file_contexts ]] && [[ -f $DIRIN/system_fs_config ]] && [[ -f $DIRIN/my_bigball_file_contexts ]] && [[ -f $DIRIN/my_bigball_fs_config ]] && [[ -f $DIRIN/my_engineering_file_contexts ]] && [[ -f $DIRIN/my_engineering_fs_config ]] && [[ -f $DIRIN/my_heytap_file_contexts ]] && [[ -f $DIRIN/my_heytap_fs_config ]] && [[ -f $DIRIN/my_manifest_file_contexts ]] && [[ -f $DIRIN/my_manifest_fs_config ]] && [[ -f $DIRIN/my_product_file_contexts ]] && [[ -f $DIRIN/my_product_fs_config ]] && [[ -f $DIRIN/my_region_file_contexts ]] && [[ -f $DIRIN/my_region_fs_config ]] && [[ -f $DIRIN/my_stock_file_contexts ]] && [[ -f $DIRIN/my_stock_fs_config ]]; then
+if [[ -f $DIRIN/system_file_contexts ]] && [[ -f $DIRIN/system_fs_config ]]; then
+   merge() {
+     if [[ -f $DIRIN/${partition}_file_contexts ]] && [[ -f $DIRIN/${partition}_fs_config ]]; then
+     	echo ""
+     	echo "Merging $partition fs config & file contexts to system"
+     	echo ""
+	gawk -i inplace 'NR>1' $DIRIN/${partition}_file_contexts
 
-	gawk -i inplace 'NR>1' $DIRIN/my_bigball_file_contexts
-	gawk -i inplace 'NR>1' $DIRIN/my_carrier_file_contexts
-	gawk -i inplace 'NR>1' $DIRIN/my_company_file_contexts
-	gawk -i inplace 'NR>1' $DIRIN/my_engineering_file_contexts
-	gawk -i inplace 'NR>1' $DIRIN/my_heytap_file_contexts
-	gawk -i inplace 'NR>1' $DIRIN/my_manifest_file_contexts
-	gawk -i inplace 'NR>1' $DIRIN/my_preload_file_contexts
-	gawk -i inplace 'NR>1' $DIRIN/my_product_file_contexts
-	gawk -i inplace 'NR>1' $DIRIN/my_region_file_contexts
-	gawk -i inplace 'NR>1' $DIRIN/my_stock_file_contexts
+	python3 $OPLUSMERGE/$partition.py $DIRIN/${partition}_file_contexts
+	python3 $OPLUSMERGE/$partition.py $DIRIN/${partition}_fs_config
 
-	python3 $OPLUSMERGE/my_bigball.py $DIRIN/my_bigball_file_contexts
-	python3 $OPLUSMERGE/my_bigball.py $DIRIN/my_bigball_fs_config
+	cat $DIRIN/${partition}_file_contexts >> $DIRIN/system_file_contexts
+	cat $DIRIN/${partition}_fs_config >> $DIRIN/system_fs_config
+     else
+     	echo ""
+     	echo "There's no $partition file contexts and/or fs config supplied"
+     	echo ""
+     fi
+   }
+   
+   partition=my_bigball
+   merge
+   partition=my_carrier
+   merge
+   partition=my_company
+   merge
+   partition=my_engineering
+   merge
+   partition=my_heytap
+   merge
+   partition=my_manifest
+   merge
+   partition=my_preload
+   merge
+   partition=my_product
+   merge
+   partition=my_region
+   merge
+   partition=my_stock
+   merge
 
-	python3 $OPLUSMERGE/my_carrier.py $DIRIN/my_carrier_file_contexts
-	python3 $OPLUSMERGE/my_carrier.py $DIRIN/my_carrier_fs_config
-
-	python3 $OPLUSMERGE/my_company.py $DIRIN/my_company_file_contexts
-	python3 $OPLUSMERGE/my_company.py $DIRIN/my_company_fs_config
-
-	python3 $OPLUSMERGE/my_engineering.py $DIRIN/my_engineering_file_contexts
-	python3 $OPLUSMERGE/my_engineering.py $DIRIN/my_engineering_fs_config
-
-	python3 $OPLUSMERGE/my_heytap.py $DIRIN/my_heytap_file_contexts
-	python3 $OPLUSMERGE/my_heytap.py $DIRIN/my_heytap_fs_config
-
-	python3 $OPLUSMERGE/my_manifest.py $DIRIN/my_manifest_file_contexts
-	python3 $OPLUSMERGE/my_manifest.py $DIRIN/my_manifest_fs_config
-
-	python3 $OPLUSMERGE/my_preload.py $DIRIN/my_preload_file_contexts
-	python3 $OPLUSMERGE/my_preload.py $DIRIN/my_preload_fs_config
-
-	python3 $OPLUSMERGE/my_product.py $DIRIN/my_product_file_contexts
-	python3 $OPLUSMERGE/my_product.py $DIRIN/my_product_fs_config
-
-	python3 $OPLUSMERGE/my_region.py $DIRIN/my_region_file_contexts
-	python3 $OPLUSMERGE/my_region.py $DIRIN/my_region_fs_config
-
-	python3 $OPLUSMERGE/my_stock.py $DIRIN/my_stock_file_contexts
-	python3 $OPLUSMERGE/my_stock.py $DIRIN/my_stock_fs_config
-
-
-	cat $DIRIN/my_bigball_file_contexts >> $DIRIN/system_file_contexts
-	cat $DIRIN/my_bigball_fs_config >> $DIRIN/system_fs_config
-
-	cat $DIRIN/my_carrier_file_contexts >> $DIRIN/system_file_contexts
-	cat $DIRIN/my_carrier_fs_config >> $DIRIN/system_fs_config
-
-	cat $DIRIN/my_company_file_contexts >> $DIRIN/system_file_contexts
-	cat $DIRIN/my_company_fs_config >> $DIRIN/system_fs_config
-
-	cat $DIRIN/my_engineering_file_contexts >> $DIRIN/system_file_contexts
-	cat $DIRIN/my_engineering_fs_config >> $DIRIN/system_fs_config
-
-	cat $DIRIN/my_heytap_file_contexts >> $DIRIN/system_file_contexts
-	cat $DIRIN/my_heytap_fs_config >> $DIRIN/system_fs_config
-
-	cat $DIRIN/my_manifest_file_contexts >> $DIRIN/system_file_contexts
-	cat $DIRIN/my_manifest_fs_config >> $DIRIN/system_fs_config
-
-	cat $DIRIN/my_preload_file_contexts >> $DIRIN/system_file_contexts
-	cat $DIRIN/my_preload_fs_config >> $DIRIN/system_fs_config
-
-	cat $DIRIN/my_product_file_contexts >> $DIRIN/system_file_contexts
-	cat $DIRIN/my_product_fs_config >> $DIRIN/system_fs_config
-
-	cat $DIRIN/my_region_file_contexts >> $DIRIN/system_file_contexts
-	cat $DIRIN/my_region_fs_config >> $DIRIN/system_fs_config
-
-	cat $DIRIN/my_stock_file_contexts >> $DIRIN/system_file_contexts
-	cat $DIRIN/my_stock_fs_config >> $DIRIN/system_fs_config
-
-
-	rm -rf $DIRIN/my_*
-	mv $DIRIN/system_file_contexts $DIROUT/
-	mv $DIRIN/system_fs_config $DIROUT/
+   rm -rf $DIRIN/my_*
+   mv $DIRIN/system_file_contexts $DIROUT/
+   mv $DIRIN/system_fs_config $DIROUT/
 	
-	echo "merged all fs context and config.. Output : $DIROUT"
+echo "merged all fs context and config.. Output : $DIROUT"
 
 else
-	echo "Error : you probably missed some important partitions fs conf and context..."
+	echo "Error : put your system_file_contexts & system_fs_config to $DIRIN"
 	
 fi
 
