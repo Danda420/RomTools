@@ -6,51 +6,57 @@ DIROUT=$DIRTOOLS/rom_output
 clear
 cd scripts
 
-echo " "
-echo "========================================="
-echo " "
-echo "Decompressing system using brotli..."
-brotli -d $DIRIN/system.new.dat.br
-rm -rf $DIRIN/system.new.dat.br
-echo " "
-echo "Decompressing vendor using brotli..."
-brotli -d $DIRIN/vendor.new.dat.br
-rm -rf $DIRIN/vendor.new.dat.br
-echo " "
-echo "Decompressing odm using brotli..."
-brotli -d $DIRIN/odm.new.dat.br
-rm -rf $DIRIN/odm.new.dat.br
-echo " "
-echo "Decompressing product using brotli..."
-brotli -d $DIRIN/product.new.dat.br
-rm -rf $DIRIN/product.new.dat.br
-echo " "
-echo "Decompressing system_ext using brotli..."
-brotli -d $DIRIN/system_ext.new.dat.br
-rm -rf $DIRIN/system_ext.new.dat.br
+datbr() {
+    if [[ -f $DIRIN/$partition.new.dat.br ]]; then
+	echo " "
+	echo "Decompressing $partition using brotli..."
+	brotli -d $DIRIN/$partition.new.dat.br
+	rm -rf $DIRIN/$partition.new.dat.br
+    else
+    	echo " "
+    	echo "there's no $partition.new.dat.br supplied! skipping..."
+    fi
+}
+
+sdat2img() {
+    if [[ -f $DIRIN/$partition.new.dat ]] && [[ -f $DIRIN/$partition.transfer.list ]]; then
+	echo " "
+	echo "Converting $partition.new.dat to $partition.img (raw)"
+	./bin/sdat2img.py $DIRIN/$partition.transfer.list $DIRIN/$partition.new.dat $DIROUT/$partition.img >> log.txt
+	rm -rf $DIRIN/$partition.*
+    else
+    	echo " "
+    	echo "there's no $partition.new.dat and/or $partition.transfer.list supplied! skipping..."
+    fi
+}
 
 echo " "
 echo "========================================="
+
+partition=system
+datbr
+partition=vendor
+datbr
+partition=odm
+datbr
+partition=product
+datbr
+partition=system_ext
+datbr
+
 echo " "
-echo "Converting system.new.dat to system.img (raw)"
-./bin/sdat2img.py $DIRIN/system.transfer.list $DIRIN/system.new.dat $DIROUT/system.img >> log.txt
-rm -rf $DIRIN/system.*
-echo " "
-echo "Converting vendor.new.dat to vendor.img (raw)"
-./bin/sdat2img.py $DIRIN/vendor.transfer.list $DIRIN/vendor.new.dat $DIROUT/vendor.img >> log.txt
-rm -rf $DIRIN/vendor.*
-echo " "
-echo "Converting odm.new.dat to odm.img (raw)"
-./bin/sdat2img.py $DIRIN/odm.transfer.list $DIRIN/odm.new.dat $DIROUT/odm.img >> log.txt
-rm -rf $DIRIN/odm.*
-echo " "
-echo "Converting productnew.dat to product.img (raw)"
-./bin/sdat2img.py $DIRIN/product.transfer.list $DIRIN/product.new.dat $DIROUT/product.img >> log.txt
-rm -rf $DIRIN/product.*
-echo " "
-echo "Converting system_ext.new.dat to system_ext.img (raw)"
-./bin/sdat2img.py $DIRIN/system_ext.transfer.list $DIRIN/system_ext.new.dat $DIROUT/system_ext.img >> log.txt
-rm -rf $DIRIN/system_ext.*
+echo "========================================="
+
+partition=system
+sdat2img
+partition=vendor
+sdat2img
+partition=odm
+sdat2img
+partition=product
+sdat2img
+partition=system_ext
+sdat2img
 
 echo " "
 echo "========================================="
