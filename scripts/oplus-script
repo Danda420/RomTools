@@ -1,0 +1,118 @@
+#!/bin/bash
+
+DIRTOOLS=$PWD
+DIRIN=$DIRTOOLS/rom_input
+DIROUT=$DIRTOOLS/rom_output
+DIRROM=$DIRTOOLS/ROM
+DIRSCRIPTS=$DIRTOOLS/scripts
+clear
+cd scripts
+
+if [[ -f $DIRIN/payload.bin ]]; then
+
+	echo " "
+	echo "Extracting payload..."
+	./bin/payload --output=$DIROUT $DIRIN/payload.bin
+	echo " "
+	echo "cleaning..."
+	rm -rf $DIRIN/payload.bin
+
+	echo " "
+	echo "Moving images..."
+	mkdir $DIRTOOLS/tmp
+	mv $DIROUT/my_* $DIRIN/
+	cp $DIROUT/system.img $DIRTOOLS/tmp/
+	mv $DIROUT/system.img $DIRIN/
+	mv $DIROUT/system_ext.img $DIRTOOLS/tmp/
+	mv $DIROUT/product.img $DIRTOOLS/tmp/
+	mv $DIROUT/odm.img $DIRROM/
+	mv $DIROUT/vendor.img $DIRROM/
+	
+	rm -rf $DIROUT/*
+	
+	echo " "
+	echo "Mounting vendor & odm..."
+	sudo mount -t erofs -o loop $DIRROM/vendor.img $DIRROM/vendor
+	sudo mount -t erofs -o loop $DIRROM/odm.img $DIRROM/odm
+	
+	echo " "
+	echo "Copying Props..."
+	sudo cp $DIRROM/vendor/build.prop $DIRTOOLS/tmp/vendor.prop
+	sudo chown $USER $DIRTOOLS/tmp/vendor.prop
+	
+	sudo cp $DIRROM/odm/build.prop $DIRTOOLS/tmp/
+	sudo chown $USER $DIRTOOLS/tmp/build.prop
+	
+	folder=($DIRROM/odm/etc/*)
+	echo "${folder[0]}"
+	cp -r $folder $DIRTOOLS/tmp/
+	
+	sudo umount $DIRROM/odm
+	sudo umount $DIRROM/vendor
+	
+	rm -rf $DIRROM/odm.img
+	rm -rf $DIRROM/vendor.img
+	
+	echo " "
+	echo "Converting my_xxx images to ext4"
+	mkdir $DIRSCRIPTS/ROM
+	
+	convert(){
+	   if [[ -f $DIRIN/$partition.img ]]; then
+		echo " "
+		echo "Starting conversion..."
+		echo ""
+		sudo $DIRSCRIPTS/erofs-ext4 $DIRIN/$partition.img $partition
+		rm -rf $DIRIN/$partition.img
+		mv $DIRSCRIPTS/$partition.img $DIROUT/
+		sudo chown $USER $DIROUT/$partition.img
+		echo ""
+		echo "Conversion done..."
+		echo "Output: $DIROUT"
+		echo ""
+	   else
+		echo ""
+		echo "theres no image named "$partition.img" in $DIRIN"
+		echo ""
+	   fi
+	}
+	    
+	partition=my_bigball
+	convert
+	partition=my_carrier
+	convert
+	partition=my_company
+	convert
+	partition=my_engineering
+	convert
+	partition=my_heytap
+	convert
+	partition=my_manifest
+	convert
+	partition=my_preload
+	convert
+	partition=my_product
+	convert
+	partition=my_region
+	convert
+	partition=my_stock
+	convert
+	rm -rf $DIRSCRIPTS/ROM
+	rm -rf $DIRIN/system.img
+	
+	
+	echo " "
+	echo "Zipping..."
+	mv $DIROUT/* $DIRTOOLS/tmp/
+	cd $DIRTOOLS/tmp/
+	zip -r $DIRTOOLS/OPLUS.zip *
+	
+	echo " "
+	echo "Cleaning..."
+	rm -rf $DIRTOOLS/tmp
+	rm -rf $DIROUT/*
+	
+else
+	echo "no payload.bin file detected on $DIRIN"
+fi
+

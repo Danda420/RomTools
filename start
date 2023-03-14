@@ -37,8 +37,9 @@ while true; do
     echo "10. Merge fs context and config to system"
     echo "11. Convert erofs to ext4"
     echo "12. Auto ZIP"
-    echo "13. Clean up folders"
-    echo "14. Exit tool"
+    echo "13. idk... port oplus? build oplus? convert oplus?"
+    echo "14. Clean up folders"
+    echo "15. Exit tool"
     
     read -p "" choose
     case $choose in
@@ -117,11 +118,17 @@ restart_tool;;
 
         13 ) 
         
+bash $SCRIPTS/oplus-script
+        
+restart_tool;;
+
+        14 ) 
+        
 bash $SCRIPTS/clean
         
 restart_tool;;
 
-        14 )  exit;;
+        15 )  exit;;
 
 
         * ) bash start;;
