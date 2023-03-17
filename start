@@ -38,8 +38,9 @@ while true; do
     echo "11. Convert erofs to ext4"
     echo "12. Auto ZIP"
     echo "13. idk... port oplus? build oplus? convert oplus?"
-    echo "14. Clean up folders"
-    echo "15. Exit tool"
+    echo "14. Convert updatable apex to non updatable"
+    echo "15. Clean up folders"
+    echo "16. Exit tool"
     
     read -p "" choose
     case $choose in
@@ -124,11 +125,17 @@ restart_tool;;
 
         14 ) 
         
+bash $SCRIPTS/apexconverter
+        
+restart_tool;;
+
+        15 ) 
+        
 bash $SCRIPTS/clean
         
 restart_tool;;
 
-        15 )  exit;;
+        16 )  exit;;
 
 
         * ) bash start;;
