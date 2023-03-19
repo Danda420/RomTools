@@ -1,7 +1,0 @@
-#!/bin/bash
-
-INPUT=$1
-DIR=$PWD
-EROFSUNPACK=$DIR/bin/unpack.erofs
-
-$EROFSUNPACK $INPUT.img output
