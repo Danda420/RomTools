@@ -1,0 +1,1760 @@
+#!/bin/bash
+DIRTOOLS=$PWD
+DIRIN=$DIRTOOLS/rom_input
+DIROUT=$DIRTOOLS/rom_output
+DIRROM=$DIRTOOLS/ROM
+DIRSCRIPTS=$DIRTOOLS/scripts
+MERGE=$DIRTOOLS/scripts/merge_non_dynamic
+OPLUSMERGE=$DIRTOOLS/scripts/oplus
+DIRSUPER=$DIRTOOLS/ROM/super
+
+restart_tool() {
+	echo " "
+	while true; do
+	   echo "start tools again? (y/n)"
+	   read -p "" yn
+	   case $yn in
+		[Yy]* ) start_tools;;
+		[Nn]* ) exit;;   
+		* ) echo "please choose yes or no";;
+	    esac
+	done
+}
+
+banner() {
+	clear
+	echo "========================="
+	echo "   ROM TOOLS FOR LINUX   "
+	echo "        by  Danda        "
+	echo "========================="
+}
+
+give_perm() {
+	sudo chown -R $USER:$USER $DIRROM/system >> $DIRSCRIPTS/log.txt
+	sudo chown -R $USER:$USER $DIRROM/vendor >> $DIRSCRIPTS/log.txt
+	sudo chown -R $USER:$USER $DIRROM/odm >> $DIRSCRIPTS/log.txt
+	sudo chown -R $USER:$USER $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
+	sudo chown -R $USER:$USER $DIRROM/product >> $DIRSCRIPTS/log.txt
+}
+
+apexconverter() {
+	clear
+	convert() {
+		mkdir $DIRIN/tmp
+		echo "==========================="
+		echo ""
+		echo "Unpacking $apex..."
+		unzip $DIRIN/$apex -d $DIRIN/tmp/
+		echo ""
+		echo "Mounting apex_payload.img..."
+		mkdir $DIRIN/tmp/mount
+		sudo mount -t ext4 -o ro,nosuid,nodev,relatime,seclabel,errors=remount-ro,uhelper=udisks2 $DIRIN/tmp/apex_payload.img $DIRIN/tmp/mount
+		apexfolder=$(echo $apex | awk '{ print substr( $0, 1, length($0)-5 ) }' )
+		mkdir $DIROUT/$apexfolder
+		echo ""
+		echo "Copying important files"
+		cp $DIRIN/tmp/apex_pubkey $DIROUT/$apexfolder/
+		sudo cp -r $DIRIN/tmp/mount/* $DIROUT/$apexfolder/
+		sudo chown -R $USER $DIROUT/$apexfolder/*
+		echo ""
+		echo "Cleaning..."
+		echo ""
+		sudo umount $DIRIN/tmp/mount
+		rm -rf $DIRIN/tmp
+		rm -rf $DIRIN/$apex
+	}
+
+	apex=com.android.apex.cts.shim.apex
+	convert
+	apex=com.android.i18n.apex
+	convert
+	apex=com.android.runtime.apex
+	convert
+	apex=com.android.uwb.apex
+	convert
+	apex=com.android.vndk.current.apex
+	convert
+	apex=com.android.wifi.apex
+	convert
+	apex=com.google.android.adbd_trimmed.apex
+	convert
+	apex=com.google.android.adservices.apex
+	convert
+	apex=com.google.android.appsearch.apex
+	convert
+	apex=com.google.android.art.apex
+	convert
+	apex=com.google.android.cellbroadcast.apex
+	convert
+	apex=com.google.android.conscrypt.apex
+	convert
+	apex=com.google.android.extservices.apex
+	convert
+	apex=com.google.android.ipsec.apex
+	convert
+	apex=com.google.android.media.apex
+	convert
+	apex=com.google.android.media.swcodec.apex
+	convert
+	apex=com.google.android.mediaprovider.apex
+	convert
+	apex=com.google.android.neuralnetworks.apex
+	convert
+	apex=com.google.android.ondevicepersonalization.apex
+	convert
+	apex=com.google.android.os.statsd.apex
+	convert
+	apex=com.google.android.permission.apex
+	convert
+	apex=com.google.android.resolv.apex
+	convert
+	apex=com.google.android.scheduling.apex
+	convert
+	apex=com.google.android.sdkext.apex
+	convert
+	apex=com.google.android.tethering.apex
+	convert
+	apex=com.google.android.tzdata4.apex
+	convert
+	apex=com.google.mainline.primary.libs.apex
+	convert
+
+	cd $DIROUT/
+	zip -r $DIRIN/non-updatable.apex.zip *
+	cd ..
+	rm -rf $DIROUT/*
+	mv $DIRIN/non-updatable.apex.zip $DIROUT/
+}
+
+datbr_raw() {
+	clear
+	echo " "
+	echo "Input image/partition name :"
+	read
+	imgname=$REPLY
+
+	if [ -f $DIRIN/$imgname.new.dat.br ]; then
+
+		echo " "
+		echo "Unpacking..."
+		echo " "
+		brotli -d $DIRIN/$imgname.new.dat.br
+
+		rm -rf $DIRIN/$imgname.new.dat.br
+
+		python3 $DIRSCRIPTS/bin/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img  >> $DIRSCRIPTS/log.txt
+		echo " "
+		echo "Cleaning input folder..."
+
+		rm -rf $DIRIN/$imgname.*
+
+		echo " "
+		echo "Done! Output : $DIROUT"
+	else
+
+		echo "theres no image "$imgname.new.dat.br""
+	fi
+}
+
+erofs_ext4_normal() {
+	cd $DIRSCRIPTS
+	clear
+	if [[ -f $DIRIN/system.img ]]; then
+		echo "make sure image is on rom_input folder"
+		echo " "
+		echo "Input image name :"
+		read
+		partition=$REPLY
+
+		if [[ -f $DIRIN/$partition.img ]]; then
+			echo " "
+			echo "Starting conversion..."
+			echo ""
+			sudo $DIRSCRIPTS/bin/erofs-ext4 $DIRIN/$partition.img $partition
+			rm -rf $DIRIN/$partition.img
+			mv $DIRSCRIPTS/$partition.img $DIROUT/
+			sudo chown $USER $DIROUT/$partition.img
+			echo ""
+			echo "Conversion done..."
+			echo "Output: $DIROUT"
+		else
+			echo "theres no image named "$partition.img" in $DIRIN"
+		fi
+	else
+		echo ""
+		echo "Put your system.img from the rom that you want to convert to $DIRIN"
+	fi
+
+	rm -rf $DIRSCRIPTS/ROM
+	cd $DIRTOOLS
+}
+
+erofs_ext4_oplus() {
+	cd $DIRSCRIPTS
+	clear
+	if [[ -f $DIRIN/system.img ]]; then
+	    convert(){
+		if [[ -f $DIRIN/$partition.img ]]; then
+			echo " "
+			echo "Starting conversion..."
+			echo ""
+			sudo $DIRSCRIPTS/bin/erofs-ext4 $DIRIN/$partition.img $partition
+			rm -rf $DIRIN/$partition.img
+			mv $DIRSCRIPTS/$partition.img $DIROUT/
+			sudo chown $USER $DIROUT/$partition.img
+			echo ""
+			echo "Conversion done..."
+			echo "Output: $DIROUT"
+			echo ""
+		else
+			echo ""
+			echo "theres no image named "$partition.img" in $DIRIN"
+			echo ""
+		fi
+	    }
+	    
+	    partition=my_bigball
+	    convert
+	    partition=my_carrier
+	    convert
+	    partition=my_company
+	    convert
+	    partition=my_engineering
+	    convert
+	    partition=my_heytap
+	    convert
+	    partition=my_manifest
+	    convert
+	    partition=my_preload
+	    convert
+	    partition=my_product
+	    convert
+	    partition=my_region
+	    convert
+	    partition=my_stock
+	    convert
+	    partition=system_ext
+	    convert
+	    partition=system
+	    convert
+	else
+		echo ""
+		echo "Put your system.img from the rom that you want to convert to $DIRIN"
+	fi
+
+	rm -rf $DIRSCRIPTS/ROM
+	cd $DIRTOOLS
+}
+
+erofs_ext4_main() (
+	while true; do
+	    banner
+	    echo " "
+	    echo "1. Convert erofs images to ext4"
+	    echo "2. Convert OPlus my_xxx,system,system_ext partitions to ext4"
+	    echo "3. Back to main menu"
+	    
+	    read -p "" choose
+	    case $choose in
+	    
+		1 ) 
+
+	erofs_ext4_normal
+
+	restart_tool;;
+
+		2 ) 
+	   
+	erofs_ext4_oplus
+
+	restart_tool;;
+
+		3 ) 
+
+	start_tools;;
+
+
+		* ) erofs_ext4_main;;
+	    esac
+	done
+)
+
+merge_oplus() {
+	clear
+	if [[ -f $DIRIN/system_file_contexts ]] && [[ -f $DIRIN/system_fs_config ]]; then
+	   merge() {
+	     if [[ -f $DIRIN/${partition}_file_contexts ]] && [[ -f $DIRIN/${partition}_fs_config ]]; then
+	     	echo ""
+	     	echo "Merging $partition fs config & file contexts to system"
+	     	echo ""
+		gawk -i inplace 'NR>1' $DIRIN/${partition}_file_contexts
+
+		python3 $OPLUSMERGE/$partition.py $DIRIN/${partition}_file_contexts
+		python3 $OPLUSMERGE/$partition.py $DIRIN/${partition}_fs_config
+
+		cat $DIRIN/${partition}_file_contexts >> $DIRIN/system_file_contexts
+		cat $DIRIN/${partition}_fs_config >> $DIRIN/system_fs_config
+	     else
+	     	echo ""
+	     	echo "There's no $partition file contexts and/or fs config supplied"
+	     	echo ""
+	     fi
+	   }
+	   
+	   partition=my_bigball
+	   merge
+	   partition=my_carrier
+	   merge
+	   partition=my_company
+	   merge
+	   partition=my_engineering
+	   merge
+	   partition=my_heytap
+	   merge
+	   partition=my_manifest
+	   merge
+	   partition=my_preload
+	   merge
+	   partition=my_product
+	   merge
+	   partition=my_region
+	   merge
+	   partition=my_stock
+	   merge
+
+	   rm -rf $DIRIN/my_*
+	   mv $DIRIN/system_file_contexts $DIROUT/
+	   mv $DIRIN/system_fs_config $DIROUT/
+		
+	echo "merged all fs context and config.. Output : $DIROUT"
+
+	else
+		echo "Error : put your system_file_contexts & system_fs_config to $DIRIN"
+		
+	fi
+}
+
+merge_non_dynamic() {
+	clear
+	if [[ -f $DIRIN/system_file_contexts ]] && [[ -f $DIRIN/system_fs_config ]] && [[ -f $DIRIN/system_ext_file_contexts ]] && [[ -f $DIRIN/system_ext_fs_config ]] && [[ -f $DIRIN/product_file_contexts ]] && [[ -f $DIRIN/product_fs_config ]]; then
+		gawk -i inplace 'NR>1' $DIRIN/system_ext_file_contexts
+		gawk -i inplace 'NR>1' $DIRIN/product_file_contexts
+
+		python3 $MERGE/system_ext.py $DIRIN/system_ext_file_contexts
+		python3 $MERGE/system_ext.py $DIRIN/system_ext_fs_config
+
+		python3 $MERGE/product.py $DIRIN/product_file_contexts
+		python3 $MERGE/product.py $DIRIN/product_fs_config
+
+
+		cat $DIRIN/system_ext_file_contexts >> $DIRIN/system_file_contexts
+		cat $DIRIN/system_ext_fs_config >> $DIRIN/system_fs_config
+
+		cat $DIRIN/product_file_contexts >> $DIRIN/system_file_contexts
+		cat $DIRIN/product_fs_config >> $DIRIN/system_fs_config
+
+
+		rm -rf $DIRIN/product*
+		rm -rf $DIRIN/system_ext*
+		mv $DIRIN/system_file_contexts $DIROUT/
+		mv $DIRIN/system_fs_config $DIROUT/
+
+	else
+		echo "Error : you probably missed some important partitions fs conf and context..."
+		
+	fi
+}
+
+merge_main() {
+	while true; do
+	    banner
+	    echo " "
+	    echo "1. Merge OPLUS my_* partition to system"
+	    echo "2. Merge product and system_ext to system"
+	    echo "3. Back to main menu"
+	    
+	    read -p "" choose
+	    case $choose in
+	    
+		1 ) 
+
+	merge_oplus
+
+	restart_tool;;
+
+		2 ) 
+
+	merge_non_dynamic
+
+	restart_tool;;
+
+		3 ) 
+
+	start_tools;;
+
+
+		* ) merge_main;;
+	    esac
+	done
+}
+
+mount_normal() {
+	OPTIONS=loop
+	clear
+	if [[ -f $DIRROM/system_a.img ]] || [[ -f $DIRROM/vendor_a.img ]] || [[ -f $DIRROM/odm_a.img ]] || [[ -f $DIRROM/product_a.img ]] || [[ -f $DIRROM/system_ext_a.img ]]; then
+
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/system_a.img $DIRROM/system >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor_a.img $DIRROM/vendor >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/odm_a.img $DIRROM/odm >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/product_a.img $DIRROM/product >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext_a.img $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
+
+	else
+
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/system.img $DIRROM/system >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor.img $DIRROM/vendor >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/odm.img $DIRROM/odm >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/product.img $DIRROM/product >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext.img $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
+
+	fi
+	give_perm
+}
+
+mount_resize() {
+	OPTIONS=loop
+	clear
+	resize_img_to_edit(){
+		if [ -f $DIRROM/${valset}_a.img ]; then
+			getsize=$(ls -nl $DIRROM/${valset}_a.img | awk '{print $5}')
+			readmb=$(($getsize / 100000000))
+			readgiga=$(($getsize / 1000000000))
+			cval=$(($readmb - $readgiga))
+			if [[ $cval -gt 5 ]]; then
+				vplus=2;
+			else
+				vplus=1;
+			fi
+			sizeimg=$(($readgiga + $vplus))G
+			fallocate -l $sizeimg $DIRROM/${valset}_a.img  >> $DIRSCRIPTS/log.txt
+			e2fsck -yf $DIRROM/${valset}_a.img >> $DIRSCRIPTS/log.txt
+			resize2fs $DIRROM/${valset}_a.img $sizeimg  >> $DIRSCRIPTS/log.txt
+			e2fsck -yf $DIRROM/${valset}_a.img  >> $DIRSCRIPTS/log.txt
+		else
+			getsize=$(ls -nl $DIRROM/${valset}.img | awk '{print $5}')
+			readmb=$(($getsize / 100000000))
+			readgiga=$(($getsize / 1000000000))
+			cval=$(($readmb - $readgiga))
+			if [[ $cval -gt 5 ]]; then
+				vplus=2;
+			else
+				vplus=1;
+			fi
+			sizeimg=$(($readgiga + $vplus))G
+			fallocate -l $sizeimg $DIRROM/${valset}.img  >> $DIRSCRIPTS/log.txt
+			e2fsck -yf $DIRROM/${valset}.img >> $DIRSCRIPTS/log.txt
+			resize2fs $DIRROM/${valset}.img $sizeimg  >> $DIRSCRIPTS/log.txt
+			e2fsck -yf $DIRROM/${valset}.img  >> $DIRSCRIPTS/log.txt
+		fi
+	}
+
+	echo " "
+	echo "Resizing partitions..."
+	echo " "
+	valset=system
+	resize_img_to_edit
+	valset=system_ext
+	resize_img_to_edit
+	valset=vendor
+	resize_img_to_edit
+	valset=product
+	resize_img_to_edit
+	valset=odm
+	resize_img_to_edit
+
+	echo " "
+	echo "Mounting partitions..."
+	echo " "
+	if [[ -f $DIRROM/system_a.img ]] || [[ -f $DIRROM/vendor_a.img ]] || [[ -f $DIRROM/odm_a.img ]] || [[ -f $DIRROM/product_a.img ]] || [[ -f $DIRROM/system_ext_a.img ]]; then
+
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/system_a.img $DIRROM/system >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor_a.img $DIRROM/vendor >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/odm_a.img $DIRROM/odm >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/product_a.img $DIRROM/product >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext_a.img $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
+
+	else
+
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/system.img $DIRROM/system >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor.img $DIRROM/vendor >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/odm.img $DIRROM/odm >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/product.img $DIRROM/product >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext.img $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
+
+	fi
+	give_perm
+}
+
+mount_ro() {
+	OPTIONS=ro,nosuid,nodev,relatime,uhelper=udisks2,loop
+	clear
+	if [[ -f $DIRROM/system_a.img ]] || [[ -f $DIRROM/vendor_a.img ]] || [[ -f $DIRROM/odm_a.img ]] || [[ -f $DIRROM/product_a.img ]] || [[ -f $DIRROM/system_ext_a.img ]]; then
+
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/system_a.img $DIRROM/system >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor_a.img $DIRROM/vendor >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/odm_a.img $DIRROM/odm >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/product_a.img $DIRROM/product >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext_a.img $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
+
+	else
+
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/system.img $DIRROM/system >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor.img $DIRROM/vendor >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/odm.img $DIRROM/odm >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/product.img $DIRROM/product >> $DIRSCRIPTS/log.txt
+		sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext.img $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
+
+	fi
+	give_perm
+}
+
+mount_main() {
+	while true; do
+	    banner
+	    echo " "
+	    echo "1. Mount raw image and resize"
+	    echo "2. Mount without resizing"
+	    echo "3. Mount read only"
+	    echo "4. Back to main menu"
+	    
+	    read -p "" choose
+	    case $choose in
+	    
+		1 ) 
+
+	mount_resize
+
+	restart_tool;;
+
+		2 ) 
+	   
+	mount_normal
+
+	restart_tool;;
+
+		3 ) 
+	   
+	mount_ro
+
+	restart_tool;;
+
+		4 ) 
+
+	start_tools;;
+
+
+		* ) mount_main;;
+	    esac
+	done
+}
+
+payload() {
+	clear
+	if [ -f $DIRIN/payload.bin ]; then
+
+		$DIRSCRIPTS/bin/payload --output=$DIROUT $DIRIN/payload.bin
+
+		echo " "
+		echo "cleaning..."
+
+		rm -rf $DIRIN/payload.bin
+
+		echo " "
+		echo "Done! Output : $DIROUT"
+
+	else
+
+		echo "there's no payload.bin in $DIRIN"
+
+	fi
+}
+
+oplus_zip() {
+	ZIPNAME=$DIRTOOLS/oplus.zip
+	clear
+
+	cd $DIROUT
+
+	zip $ZIPNAME my_* system.img vendor.img odm.img product.img system_ext.img
+
+	cd $DIRTOOLS
+}
+
+oplus_script() {
+	cd $DIRSCRIPTS
+	clear
+	if [[ -f $DIRIN/payload.bin ]]; then
+
+		echo " "
+		echo "Extracting payload..."
+		$DIRSCRIPTS/bin/payload --output=$DIROUT $DIRIN/payload.bin
+		echo " "
+		echo "cleaning..."
+		rm -rf $DIRIN/payload.bin
+
+		echo " "
+		echo "Moving images..."
+		mkdir $DIRTOOLS/tmp
+		mv $DIROUT/my_* $DIRIN/
+		cp $DIROUT/system.img $DIRTOOLS/tmp/
+		mv $DIROUT/system.img $DIRIN/
+		mv $DIROUT/system_ext.img $DIRTOOLS/tmp/
+		mv $DIROUT/product.img $DIRTOOLS/tmp/
+		mv $DIROUT/odm.img $DIRROM/
+		mv $DIROUT/vendor.img $DIRROM/
+		
+		rm -rf $DIROUT/*
+		
+		echo " "
+		echo "Mounting vendor & odm..."
+		sudo mount -t erofs -o loop $DIRROM/vendor.img $DIRROM/vendor
+		sudo mount -t erofs -o loop $DIRROM/odm.img $DIRROM/odm
+		
+		echo " "
+		echo "Copying Props..."
+		sudo cp $DIRROM/vendor/build.prop $DIRTOOLS/tmp/vendor.prop
+		sudo chown $USER $DIRTOOLS/tmp/vendor.prop
+		
+		sudo cp $DIRROM/odm/build.prop $DIRTOOLS/tmp/
+		sudo chown $USER $DIRTOOLS/tmp/build.prop
+		
+		folder=($DIRROM/odm/etc/*)
+		echo "${folder[0]}"
+		cp -r $folder $DIRTOOLS/tmp/
+		
+		sudo umount $DIRROM/odm
+		sudo umount $DIRROM/vendor
+		
+		rm -rf $DIRROM/odm.img
+		rm -rf $DIRROM/vendor.img
+		
+		echo " "
+		echo "Converting my_xxx images to ext4"
+		mkdir $DIRSCRIPTS/ROM
+		
+		convert(){
+		   if [[ -f $DIRIN/$partition.img ]]; then
+			echo " "
+			echo "Starting conversion..."
+			echo ""
+			sudo $DIRSCRIPTS/bin/erofs-ext4 $DIRIN/$partition.img $partition
+			rm -rf $DIRIN/$partition.img
+			mv $DIRSCRIPTS/$partition.img $DIROUT/
+			sudo chown $USER $DIROUT/$partition.img
+			echo ""
+			echo "Conversion done..."
+			echo "Output: $DIROUT"
+			echo ""
+		   else
+			echo ""
+			echo "theres no image named "$partition.img" in $DIRIN"
+			echo ""
+		   fi
+		}
+		    
+		partition=my_bigball
+		convert
+		partition=my_carrier
+		convert
+		partition=my_company
+		convert
+		partition=my_engineering
+		convert
+		partition=my_heytap
+		convert
+		partition=my_manifest
+		convert
+		partition=my_preload
+		convert
+		partition=my_product
+		convert
+		partition=my_region
+		convert
+		partition=my_stock
+		convert
+		rm -rf $DIRSCRIPTS/ROM
+		rm -rf $DIRIN/system.img
+		
+		
+		echo " "
+		echo "Zipping..."
+		mv $DIROUT/* $DIRTOOLS/tmp/
+		cd $DIRTOOLS/tmp/
+		zip -r $DIRTOOLS/OPLUS.zip *
+		
+		echo " "
+		echo "Cleaning..."
+		rm -rf $DIRTOOLS/tmp
+		rm -rf $DIROUT/*
+		
+	else
+		echo "no payload.bin file detected on $DIRIN"
+	fi
+	
+	cd $DIRTOOLS
+}
+
+raw_sparse() {
+	clear
+	echo " "
+	echo "Input image/partition name :"
+	read
+	imgname=$REPLY
+
+	if [ -f $DIRIN/$imgname.img ]; then
+
+		echo " "
+		echo "Converting raw image to sparse..."
+
+		img2simg $DIRIN/$imgname.img $DIROUT/$imgname.sparse.img >> $DIRSCRIPTS/log.txt
+		rm -rf $DIRIN/$imgname.img
+
+		echo " "
+		echo "Done! Output : $DIROUT"
+
+	else
+		echo "there's no $imgname.img in $DIRIN"
+	fi
+}
+
+raw_datbr() {
+	clear
+	echo " "
+	echo "Input image/partition name :"
+	read
+	imgname=$REPLY
+
+	if [ -f $DIRIN/$imgname.img ]; then
+
+		echo " "
+		echo " "
+		echo "Input Brotli compression level (0-11) :"
+		read
+		COMPLVL=$REPLY
+
+		echo " " 
+		echo "converting image : $imgname to sparse"
+		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> $DIRSCRIPTS/log.txt
+		rm -rf $DIRIN/$imgname.img
+
+		echo " " 
+		echo "converting image : $imgname to new.dat"
+		python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> $DIRSCRIPTS/log.txt
+		rm -rf $DIRIN/$imgname.sparse.img
+		mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
+		mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
+		mv $DIRIN/system.transfer.list $DIROUT/$imgname.transfer.list
+		rm -rf $DIRIN/system.*
+
+		echo " " 
+		echo "compressing image : $imgname using brotli..."
+
+		brotli -q $COMPLVL $DIROUT/$imgname.new.dat --output=$DIROUT/$imgname.new.dat.br
+		echo " "
+		echo "cleaning..."
+
+		rm -rf $DIROUT/$imgname.new.dat
+		echo " "
+		echo "Done! Output : $DIROUT"
+		
+	else
+		echo "there's no $imgname.img in $DIRIN"
+	fi
+}
+
+splits_compress() {
+	dynamic_part_op_list=$DIROUT/dynamic_partitions_op_list
+	clear
+	ODMSIZE=$(ls -nl $DIRIN/odm.img | awk '{print $5}')
+	PRODUCTSIZE=$(ls -nl $DIRIN/product.img | awk '{print $5}')
+	SYSTEMSIZE=$(ls -nl $DIRIN/system.img | awk '{print $5}')
+	SYSEXTSIZE=$(ls -nl $DIRIN/system_ext.img | awk '{print $5}')
+	VENDORSIZE=$(ls -nl $DIRIN/vendor.img | awk '{print $5}')
+	SUPERSIZE=9124708352
+
+
+	a_dp_op_list() {
+		if [ -f $dynamic_part_op_list ]; then
+			rm -f $dynamic_part_op_list;
+		fi;
+		
+		touch $DIROUT/dynamic_partitions_op_list
+		echo "# Remove all existing dynamic partitions and groups before applying full OTA" >> $dynamic_part_op_list
+		echo "remove_all_groups" >>  $dynamic_part_op_list
+		echo "# Add group qti_dynamic_partitions with maximum size $SUPERSIZE" >>  $dynamic_part_op_list
+		echo "add_group qti_dynamic_partitions $SUPERSIZE" >>  $dynamic_part_op_list
+		echo "# Add partition system to group qti_dynamic_partitions" >>  $dynamic_part_op_list
+		echo "add system qti_dynamic_partitions" >>  $dynamic_part_op_list
+		echo "# Add partition vendor to group qti_dynamic_partitions" >>  $dynamic_part_op_list
+		echo "add vendor qti_dynamic_partitions" >>  $dynamic_part_op_list
+		echo "# Add partition product to group qti_dynamic_partitions" >>  $dynamic_part_op_list
+		echo "add product qti_dynamic_partitions" >>  $dynamic_part_op_list
+		echo "# Add partition odm to group qti_dynamic_partitions" >>  $dynamic_part_op_list
+		echo "add odm qti_dynamic_partitions" >>  $dynamic_part_op_list
+		echo "# Add partition system_ext to group qti_dynamic_partitions" >>  $dynamic_part_op_list
+		echo "add system_ext qti_dynamic_partitions" >>  $dynamic_part_op_list
+		echo "# Grow partition system from 0 to $SYSTEMSIZE" >>  $dynamic_part_op_list
+		echo "resize system $SYSTEMSIZE" >>  $dynamic_part_op_list
+		echo "# Grow partition vendor from 0 to $VENDORSIZE" >>  $dynamic_part_op_list
+		echo "resize vendor $VENDORSIZE" >>  $dynamic_part_op_list
+		echo "# Grow partition product from 0 to $PRODUCTSIZE" >>  $dynamic_part_op_list
+		echo "resize product $PRODUCTSIZE" >>  $dynamic_part_op_list
+		echo "# Grow partition odm from 0 to $ODMSIZE" >>  $dynamic_part_op_list
+		echo "resize odm $ODMSIZE" >>  $dynamic_part_op_list
+		echo "# Grow partition system_ext from 0 to $SYSEXTSIZE" >>  $dynamic_part_op_list
+		echo "resize system_ext $SYSEXTSIZE" >>  $dynamic_part_op_list
+	}
+
+	ab_dp_op_list() {
+		if [ -f $dynamic_part_op_list ]; then
+			rm -f $dynamic_part_op_list;
+		fi;
+		
+		touch $DIROUT/dynamic_partitions_op_list
+		echo "# Remove all existing dynamic partitions and groups before applying full OTA" >> $dynamic_part_op_list
+		echo "remove_all_groups" >> $dynamic_part_op_list
+		echo "# Add group qti_dynamic_partitions_a with maximum size $SUPERSIZE" >> $dynamic_part_op_list
+		echo "add_group qti_dynamic_partitions_a $SUPERSIZE" >> $dynamic_part_op_list
+		echo "# Add group qti_dynamic_partitions_b with maximum size $SUPERSIZE" >> $dynamic_part_op_list
+		echo "add_group qti_dynamic_partitions_b $SUPERSIZE" >> $dynamic_part_op_list
+		echo "# Add partition system_a to group qti_dynamic_partitions_a" >> $dynamic_part_op_list
+		echo "add system_a qti_dynamic_partitions_a" >> $dynamic_part_op_list
+		echo "# Add partition system_b to group qti_dynamic_partitions_b" >> $dynamic_part_op_list
+		echo "add system_b qti_dynamic_partitions_b" >> $dynamic_part_op_list
+		echo "# Add partition system_ext_a to group qti_dynamic_partitions_a" >> $dynamic_part_op_list
+		echo "add system_ext_a qti_dynamic_partitions_a" >> $dynamic_part_op_list
+		echo "# Add partition system_ext_b to group qti_dynamic_partitions_b" >> $dynamic_part_op_list
+		echo "add system_ext_b qti_dynamic_partitions_b" >> $dynamic_part_op_list
+		echo "# Add partition product_a to group qti_dynamic_partitions_a" >> $dynamic_part_op_list
+		echo "add product_a qti_dynamic_partitions_a" >> $dynamic_part_op_list
+		echo "# Add partition product_b to group qti_dynamic_partitions_b" >> $dynamic_part_op_list
+		echo "add product_b qti_dynamic_partitions_b" >> $dynamic_part_op_list
+		echo "# Add partition vendor_a to group qti_dynamic_partitions_a" >> $dynamic_part_op_list
+		echo "add vendor_a qti_dynamic_partitions_a" >> $dynamic_part_op_list
+		echo "# Add partition vendor_b to group qti_dynamic_partitions_b" >> $dynamic_part_op_list
+		echo "add vendor_b qti_dynamic_partitions_b" >> $dynamic_part_op_list
+		echo "# Add partition odm_a to group qti_dynamic_partitions_a" >> $dynamic_part_op_list
+		echo "add odm_a qti_dynamic_partitions_a" >> $dynamic_part_op_list
+		echo "# Add partition odm_b to group qti_dynamic_partitions_b" >> $dynamic_part_op_list
+		echo "add odm_b qti_dynamic_partitions_b" >> $dynamic_part_op_list
+		echo "# Grow partition system_a from 0 to $SYSTEMSIZE" >> $dynamic_part_op_list
+		echo "resize system_a $SYSTEMSIZE" >> $dynamic_part_op_list
+		echo "# Grow partition system_ext_a from 0 to $SYSEXTSIZE" >> $dynamic_part_op_list
+		echo "resize system_ext_a $SYSEXTSIZE" >> $dynamic_part_op_list
+		echo "# Grow partition product_a from 0 to $PRODUCTSIZE" >> $dynamic_part_op_list
+		echo "resize product_a $PRODUCTSIZE" >> $dynamic_part_op_list
+		echo "# Grow partition vendor_a from 0 to $VENDORSIZE" >> $dynamic_part_op_list
+		echo "resize vendor_a $VENDORSIZE" >> $dynamic_part_op_list
+		echo "# Grow partition odm_a from 0 to $ODMSIZE" >> $dynamic_part_op_list
+		echo "resize odm_a $ODMSIZE" >> $dynamic_part_op_list
+	}
+
+	brotli_lvl() {
+		echo " "
+		echo "Input Brotli compression level (0-11) :"
+		read
+		COMPLVL=$REPLY
+		echo " "
+		while true; do
+	   		read -p "Your preffered brotli compression level is $COMPLVL is that correct? (Y/N)" yn
+	    		case $yn in
+				[Yy]* ) break;;
+				[Nn]* ) exit;;
+				* ) echo "Please answer yes or no.";;
+			    esac
+			done
+	}
+
+	sparse() {
+	    if [[ -f $DIRIN/$partition.img ]]; then
+		echo ""
+		echo "converting $partition into sparse"
+		img2simg $DIRIN/$partition.img $DIRIN/$partition.sparse.img >> $DIRSCRIPTS/log.txt
+		rm -rf $DIRIN/$partition.img
+	    else
+	    	echo " "
+	    	echo "there's no $partition.img supplied! skipping..."
+	    fi
+	}
+
+	img2sdat() {
+	    if [[ -f $DIRIN/$partition.sparse.img ]]; then
+		echo " "
+		echo "converting $partition into new.dat"
+		python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$partition.sparse.img -o $DIRIN/ -v 4 >> $DIRSCRIPTS/log.txt
+		mv $DIRIN/system.new.dat $DIROUT/$partition.new.dat
+		mv $DIRIN/system.patch.dat $DIROUT/$partition.patch.dat
+		mv $DIRIN/system.transfer.list $DIROUT/$partition.transfer.list
+		rm -rf $DIRIN/system.*
+		rm -rf $DIRIN/$partition.*
+	    else
+	    	echo " "
+	    	echo "there's no $partition.sparse.img supplied! skipping..."
+	    fi
+	}
+
+	datbr() {
+	    if [[ -f $DIROUT/$partition.new.dat ]]; then
+		echo " " 
+		echo "compressing $partition using brotli..."
+		brotli -q $COMPLVL $DIROUT/$partition.new.dat --output=$DIROUT/$partition.new.dat.br
+		rm -rf $DIROUT/$partition.new.dat
+	    else
+	    	echo " "
+	    	echo "there's no $partition.new.dat supplied! skipping..."
+	    fi
+	}
+
+	compress() {
+		echo ""
+		echo "========================================="
+
+		partition=system
+		sparse
+		partition=vendor
+		sparse
+		partition=odm
+		sparse
+		partition=product
+		sparse
+		partition=system_ext
+		sparse
+
+		echo " "
+		echo "========================================="
+
+		partition=system
+		img2sdat
+		partition=vendor
+		img2sdat
+		partition=odm
+		img2sdat
+		partition=product
+		img2sdat
+		partition=system_ext
+		img2sdat
+
+		echo " "
+		echo "========================================="
+
+		partition=system
+		datbr
+		partition=vendor
+		datbr
+		partition=odm
+		datbr
+		partition=product
+		datbr
+		partition=system_ext
+		datbr
+
+		echo " "
+		echo "========================================="
+		echo " "
+		echo "Done! Output : $DIROUT"
+
+	}
+
+	TOTALSIZE=$(( $ODMSIZE + $PRODUCTSIZE + $SYSTEMSIZE + $SYSEXTSIZE + $VENDORSIZE ))
+
+	if (( $TOTALSIZE > $SUPERSIZE )); then
+		echo "Total size of all partitions exceeds max super size, aborting..."
+		echo "($TOTALSIZE/$SUPERSIZE)"
+		echo ""
+	else
+		echo "Splits total size :"
+		echo "($TOTALSIZE/$SUPERSIZE)"
+		echo ""
+		while true; do
+		    echo "Compiling for A only device or Virtual A/B?"
+		    echo "(1) A only"
+		    echo "(2) Virtual A/B "
+		    read -p "choose 1 or 2 : " choose
+		    case $choose in
+			[1]* ) 
+		echo "Make sure to input your raw .img's to rom_input folder"
+		echo " "
+		echo "Compiling splits with A only format"
+		echo " "
+
+		brotli_lvl
+		a_dp_op_list
+		compress
+		break;;
+
+
+			[2]* ) 
+		echo "Make sure to input your raw .img's to rom_input folder"
+		echo " "
+		echo "Compiling splits with Virtual A/B format"
+		echo " "
+
+		brotli_lvl
+		ab_dp_op_list
+		compress
+		break;;
+
+
+			* ) echo "Please answer 1 or 2.";;
+		    esac
+		done
+	fi
+}
+
+splits_decompress() {
+	clear
+	datbr() {
+	    if [[ -f $DIRIN/$partition.new.dat.br ]]; then
+		echo " "
+		echo "Decompressing $partition using brotli..."
+		brotli -d $DIRIN/$partition.new.dat.br
+		rm -rf $DIRIN/$partition.new.dat.br
+	    else
+	    	echo " "
+	    	echo "there's no $partition.new.dat.br supplied! skipping..."
+	    fi
+	}
+
+	sdat2img() {
+	    if [[ -f $DIRIN/$partition.new.dat ]] && [[ -f $DIRIN/$partition.transfer.list ]]; then
+		echo " "
+		echo "Converting $partition.new.dat to $partition.img (raw)"
+		python3 $DIRSCRIPTS/bin/sdat2img.py $DIRIN/$partition.transfer.list $DIRIN/$partition.new.dat $DIROUT/$partition.img >> $DIRSCRIPTS/log.txt
+		rm -rf $DIRIN/$partition.*
+	    else
+	    	echo " "
+	    	echo "there's no $partition.new.dat and/or $partition.transfer.list supplied! skipping..."
+	    fi
+	}
+
+	echo " "
+	echo "========================================="
+
+	partition=system
+	datbr
+	partition=vendor
+	datbr
+	partition=odm
+	datbr
+	partition=product
+	datbr
+	partition=system_ext
+	datbr
+
+	echo " "
+	echo "========================================="
+
+	partition=system
+	sdat2img
+	partition=vendor
+	sdat2img
+	partition=odm
+	sdat2img
+	partition=product
+	sdat2img
+	partition=system_ext
+	sdat2img
+
+	echo " "
+	echo "========================================="
+	echo " "
+	echo "Done! Output : $DIROUT"
+}
+
+splits_main() {
+	while true; do
+	    banner
+	    echo " "
+	    echo "1. Repack Splits (raw to dat.br)"
+	    echo "2. Unpack Splits"
+	    echo "3. Back to main menu"
+	    
+	    read -p "" choose
+	    case $choose in
+	    
+		1 ) 
+
+	splits_compress
+
+	restart_tool;;
+
+		2 ) 
+	   
+	splits_decompress
+
+	restart_tool;;
+
+		3 ) 
+
+	start_tools;;
+
+
+		* ) splits_main;;
+	    esac
+	done
+}
+
+sparse_raw() {
+	clear
+	echo " "
+	echo "Input image/partition name :"
+	read
+	imgname=$REPLY
+	if [ -f $DIRIN/$imgname.* ]; then
+
+		echo " "
+		echo "Converting sparse to raw image..."
+
+		if [ -f $DIRIN/*.sparse.img ]; then
+
+			img2img $DIRIN/$imgname.sparse.img $DIROUT/$imgname.img >> $DIRSCRIPTS/log.txt
+
+			rm -rf $DIRIN/*
+
+			echo " "
+			echo "Done! Output : $DIROUT"
+
+		else
+
+			simg2img $DIRIN/$imgname.img $DIROUT/$imgname.img >> $DIRSCRIPTS/log.txt
+
+			rm -rf $DIRIN/*
+
+			echo " "
+			echo "Done! Output : $DIROUT"
+
+		fi
+	else
+		echo "there's no image named $imgname.img or $imgname.sparse.img in $DIRIN"
+	fi
+}
+
+super_u_raw() {
+	clear
+	echo " "
+	echo " "
+	echo "Input Super image name :"
+	read
+	imgname=$REPLY
+
+	if [ -f $DIRIN/$imgname.img ]; then
+
+		echo " "
+		echo "Unpacking $imgname.img..."
+		$DIRSCRIPTS/bin/lpunpack $DIRIN/$imgname.img $DIRROM/super >> $DIRSCRIPTS/log.txt
+		rm -rf $DIRIN/$imgname.*
+
+		echo " "
+		echo "Done! Output : $DIRROM/super"
+
+	else
+
+		echo "theres no image "$imgname.img""
+	fi
+}
+
+super_u_datbr() {
+	clear
+	echo " "
+	echo " "
+	echo "Input Super image name :"
+	read
+	imgname=$REPLY
+
+	if [ -f $DIRIN/$imgname.new.dat.br ]; then
+
+		echo " "
+		echo "Decompressing brotli..."
+		brotli -d $DIRIN/$imgname.new.dat.br
+		rm -rf $DIRIN/$imgname.new.dat.br
+
+		echo " "
+		echo "Converting $imgname.new.dat to $imgname.img (raw)..."
+		python3 $DIRSCRIPTS/bin/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img >> $DIRSCRIPTS/log.txt
+		rm -rf $DIRIN/$imgname.*
+
+		echo " "
+		echo "Unpacking $imgname.img..."
+		$DIRSCRIPTS/bin/lpunpack $DIROUT/$imgname.img $DIRROM/super >> $DIRSCRIPTS/log.txt
+		rm -rf $DIROUT/$imgname.*
+
+		echo " "
+		echo "Done! Output : $DIRROM/super"
+
+	else
+
+		echo "theres no image "$imgname.new.dat.br""
+	fi
+}
+
+super_r() {
+	SLOT=_a
+
+	SUPERSIZE=9124708352
+	METADATASIZE=65536
+
+	system=system$SLOT
+	vendor=vendor$SLOT
+	odm=odm$SLOT
+	product=product$SLOT
+	system_ext=system_ext$SLOT
+
+	clear
+	echo " "
+	echo "Input Raw Super image name :"
+	read
+	imgname=$REPLY
+	echo " "
+	while true; do
+	    read -p "Your super raw img name is : $imgname is that correct? (Y/N)" yn
+	    case $yn in
+		[Yy]* ) break;;
+		[Nn]* ) exit;;
+		* ) echo "Please answer yes or no.";;
+	    esac
+	done
+
+	while true; do
+	    echo "What super partition type that u want to compile?"
+	    echo "(1) A only"
+	    echo "(2) Virtual A/B "
+	    read -p "choose 1 or 2 : " choose
+	    case $choose in
+		[1]* ) 
+	echo " "
+	echo " "
+	echo "Compiling super with A only format"
+	echo " "
+	echo " "
+
+	ODMSIZE=$(ls -nl $DIRSUPER/odm.img | awk '{print $5}')
+	PRODUCTSIZE=$(ls -nl $DIRSUPER/product.img | awk '{print $5}')
+	SYSTEMSIZE=$(ls -nl $DIRSUPER/system.img | awk '{print $5}')
+	SYSEXTSIZE=$(ls -nl $DIRSUPER/system_ext.img | awk '{print $5}')
+	VENDORSIZE=$(ls -nl $DIRSUPER/vendor.img | awk '{print $5}')
+	echo " "
+	echo "Compiling super : $imgname.img (raw)..."
+	$DIRSCRIPTS/bin/lpmake 	--metadata-size $METADATASIZE --metadata-slots 2 --super-name super \
+			--device super:$SUPERSIZE \
+		    	--group qti_dynamic_partitions:$SUPERSIZE \
+			--partition system:none:$SYSTEMSIZE:qti_dynamic_partitions \
+			--image system=$DIRSUPER/system.img \
+			--partition system_ext:none:$SYSEXTSIZE:qti_dynamic_partitions \
+			--image system_ext=$DIRSUPER/system_ext.img \
+			--partition odm:none:$ODMSIZE:qti_dynamic_partitions \
+			--image odm=$DIRSUPER/odm.img \
+			--partition vendor:none:$VENDORSIZE:qti_dynamic_partitions \
+			--image vendor=$DIRSUPER/vendor.img \
+			--partition product:none:$PRODUCTSIZE:qti_dynamic_partitions \
+			--image product=$DIRSUPER/product.img \
+			--output $DIRIN/$imgname.img
+
+
+	break;;
+
+
+		[2]* ) 
+	echo " "
+	echo " "
+	echo "Compiling super with Virtual A/B format"
+	echo " "
+	echo " "
+
+	ODMSIZE=$(ls -nl $DIRSUPER/$odm.img | awk '{print $5}')
+	PRODUCTSIZE=$(ls -nl $DIRSUPER/$product.img | awk '{print $5}')
+	SYSTEMSIZE=$(ls -nl $DIRSUPER/$system.img | awk '{print $5}')
+	SYSEXTSIZE=$(ls -nl $DIRSUPER/$system_ext.img | awk '{print $5}')
+	VENDORSIZE=$(ls -nl $DIRSUPER/$vendor.img | awk '{print $5}')
+	echo " "
+	echo "Compiling super : $imgname.img (raw)..."
+	$DIRSCRIPTS/bin/lpmake 	--metadata-size $METADATASIZE --metadata-slots 2 --virtual-ab --super-name super \
+			--device super:$SUPERSIZE \
+			--group qti_dynamic_partitions:$SUPERSIZE \
+			--partition $system:none:$SYSTEMSIZE:qti_dynamic_partitions \
+			--image $system=$DIRSUPER/$system.img \
+			--partition $system_ext:none:$SYSEXTSIZE:qti_dynamic_partitions \
+			--image $system_ext=$DIRSUPER/$system_ext.img \		
+			--partition $odm:none:$ODMSIZE:qti_dynamic_partitions \
+			--image $odm=$DIRSUPER/$odm.img \
+			--partition $vendor:none:$VENDORSIZE:qti_dynamic_partitions \
+			--image $vendor=$DIRSUPER/$vendor.img \
+			--partition $product:none:$PRODUCTSIZE:qti_dynamic_partitions \
+			--image $product=$DIRSUPER/$product.img \
+			--output $DIRIN/$imgname.img
+
+
+	break;;
+
+
+		* ) echo "Please answer 1 or 2.";;
+	    esac
+	done
+
+	rm -rf $DIRSUPER/*
+
+	echo " "
+	while true; do
+	    read -p "Continue compressing to $imgname.img (sparse)? (Y/N)" yn
+	    case $yn in
+		[Yy]* ) break;;
+		[Nn]* ) 
+		
+	mv $DIRIN/$imgname.img $DIROUT/$imgname.img
+	exit;;
+		* ) echo "Please answer yes or no.";;
+	    esac
+	done
+
+	echo " "
+	echo "Converting raw $imgname.img to sparse..."
+	img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> $DIRSCRIPTS/log.txt
+	rm -rf $DIRIN/$imgname.img
+	echo " "
+	while true; do
+	    read -p "Continue compressing to $imgname.new.dat? (Y/N)" yn
+	    case $yn in
+		[Yy]* ) break;;
+		[Nn]* ) 
+		
+	mv $DIRIN/$imgname.sparse.img $DIROUT/$imgname.img
+	exit;;
+		* ) echo "Please answer yes or no.";;
+	    esac
+	done
+	echo " "
+	echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
+	python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> $DIRSCRIPTS/log.txt
+	rm -rf $DIRIN/$imgname.*
+	mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
+	mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
+	mv $DIRIN/system.transfer.list $DIROUT/$imgname.transfer.list
+	rm -rf $DIRIN/$imgname.*
+
+	echo " "
+	echo " "
+	echo " "
+	while true; do
+	    read -p "Compress $imgname.new.dat to $imgname.new.dat.br using brotli? (Y/N)" yn
+	    case $yn in
+		[Yy]* ) break;;
+		[Nn]* ) exit;;
+		* ) echo "Please answer yes or no.";;
+	    esac
+	done
+
+
+	echo " "
+	echo " "
+	echo "Input Brotli compression level (0-11) :"
+	read
+	COMPLVL=$REPLY
+
+	echo " " 
+	echo "Compressing to $imgname.new.dat.br..."
+
+	brotli -q $COMPLVL $DIROUT/$imgname.new.dat --output=$DIROUT/$imgname.new.dat.br
+
+	echo "cleaning..."
+	echo " "
+
+	rm -rf $DIROUT/$imgname.new.dat
+
+	echo "compession done! Output : $DIROUT"
+}
+
+super_main() {
+	while true; do
+	    banner
+	    echo " "
+	    echo "1. Repack Super (raw, sparse, .dat, .br)"
+	    echo "2. Unpack Super (dat.br)"
+	    echo "3. Unpack Super (raw)"
+	    echo "4. Back to main menu"
+	    
+	    read -p "" choose
+	    case $choose in
+	    
+		1 ) 
+
+	super_r
+
+	restart_tool;;
+
+		2 ) 
+	   
+	super_u_datbr
+
+	restart_tool;;
+
+		3 ) 
+	   
+	super_u_raw
+
+	restart_tool;;
+
+		4 ) 
+	   
+	start_tools;;
+
+
+		* ) super_main;;
+	    esac
+	done
+}
+
+splits_zip() {
+	ZIPNAME=$DIRTOOLS/split-partition.zip
+	clear
+
+	cd $DIROUT
+
+	zip $ZIPNAME dynamic_partitions_op_list system.* vendor.* odm.* product.* system_ext.*
+
+	cd $DIRTOOLS
+}
+
+umount_resize_freespace() {
+	clear
+	resize_to_build(){
+		if [ -f $DIRROM/${valset}_a.img ]; then
+			e2fsck -yf $DIRROM/${valset}_a.img >> $DIRSCRIPTS/log.txt
+			resize2fs -M $DIRROM/${valset}_a.img >> $DIRSCRIPTS/log.txt
+			e2fsck -yf $DIRROM/${valset}_a.img >> $DIRSCRIPTS/log.txt
+			
+			vsizenow=$(ls -nl $DIRROM/${valset}_a.img | awk '{print $5}')
+			sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
+			resize2fs $DIRROM/${valset}_a.img $sizeimg
+			e2fsck -yf $DIRROM/${valset}_a.img
+		else
+			e2fsck -yf $DIRROM/${valset}.img >> $DIRSCRIPTS/log.txt
+			resize2fs -M $DIRROM/${valset}.img >> $DIRSCRIPTS/log.txt
+			e2fsck -yf $DIRROM/${valset}.img >> $DIRSCRIPTS/log.txt
+			
+			vsizenow=$(ls -nl $DIRROM/${valset}.img | awk '{print $5}')
+			sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
+			resize2fs $DIRROM/${valset}.img $sizeimg
+			e2fsck -yf $DIRROM/${valset}.img
+		fi;
+	}
+
+	echo " "
+	echo "Input partition that you want to unmount :"
+	read
+	PARTITION=$REPLY
+
+	if [[ $PARTITION == "system" ]] || [[ $PARTITION == "system_ext" ]] || [[ $PARTITION == "product" ]] || [[ $PARTITION == "odm" ]] || [[ $PARTITION == "vendor" ]]; then
+
+		echo " "
+		echo "Input partiton free space in mb (megabytes) :"
+		read
+		FREESPACE=$REPLY
+		
+		echo " "
+		echo "Unmounting $PARTITION..."
+		echo " "
+		sudo umount $DIRROM/$PARTITION >> $DIRSCRIPTS/log.txt
+
+		echo "Resizing $PARTITION..."
+		echo " "
+		# Resize image to minimum
+		valset=$PARTITION
+		resize_to_build
+	else
+		echo "there's no partition named : $PARTITION"
+	fi
+}
+
+umount_resize() {
+	clear
+	resize_to_build(){
+		if [ -f $DIRROM/${valset}_a.img ]; then
+			e2fsck -yf $DIRROM/${valset}_a.img >> $DIRSCRIPTS/log.txt
+			resize2fs -M $DIRROM/${valset}_a.img >> $DIRSCRIPTS/log.txt
+			e2fsck -yf $DIRROM/${valset}_a.img >> $DIRSCRIPTS/log.txt
+		else
+			e2fsck -yf $DIRROM/${valset}.img >> $DIRSCRIPTS/log.txt
+			resize2fs -M $DIRROM/${valset}.img >> $DIRSCRIPTS/log.txt
+			e2fsck -yf $DIRROM/${valset}.img >> $DIRSCRIPTS/log.txt
+		fi;
+	}
+
+	echo " "
+	echo "Unmounting partitions..."
+	echo " "
+	sudo umount $DIRROM/system >> $DIRSCRIPTS/log.txt
+	sudo umount $DIRROM/vendor >> $DIRSCRIPTS/log.txt
+	sudo umount $DIRROM/odm >> $DIRSCRIPTS/log.txt
+	sudo umount $DIRROM/product >> $DIRSCRIPTS/log.txt
+	sudo umount $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
+
+	echo "Resizing partitions..."
+	echo " "
+	# Resize image to minimum
+	valset=system
+	resize_to_build
+	valset=system_ext
+	resize_to_build
+	valset=vendor
+	resize_to_build
+	valset=odm
+	resize_to_build
+	valset=product
+	resize_to_build
+}
+
+umount_normal() {
+	clear
+	echo " "
+	echo "Unmounting partitions..."
+	echo " "
+	sudo umount $DIRROM/system >> $DIRSCRIPTS/log.txt
+	sudo umount $DIRROM/vendor >> $DIRSCRIPTS/log.txt
+	sudo umount $DIRROM/odm >> $DIRSCRIPTS/log.txt
+	sudo umount $DIRROM/product >> $DIRSCRIPTS/log.txt
+	sudo umount $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
+}
+
+umount_main() {
+	while true; do
+	    banner
+	    echo " "
+	    echo "1. Umount raw image and resize to smallest size"
+	    echo "2. Umount raw image and resize with free space "
+	    echo "3. Umount without resizing"
+	    echo "4. Back to main menu"
+	    
+	    read -p "" choose
+	    case $choose in
+	    
+		1 ) 
+
+	umount_resize
+
+	restart_tool;;
+
+		2 ) 
+
+	umount_resize_freespace
+
+	restart_tool;;
+
+		3 ) 
+	   
+	umount_normal
+
+	restart_tool;;
+
+		4 ) 
+
+	start_tools;;
+
+
+		* ) umount_main;;
+	    esac
+	done
+}
+
+zip_main() {
+	while true; do
+	    banner
+	    echo " "
+	    echo "*this will zip files in rom_output folder*"
+	    echo " "
+	    echo "1. Zip Oplus images"
+	    echo "2. Zip Compressed Split partitions"
+	    echo "3. Back to main menu"
+	    
+	    read -p "" choose
+	    case $choose in
+	    
+		1 ) 
+
+	oplus_zip
+
+	restart_tool;;
+
+		2 ) 
+	   
+	splits_zip
+
+	restart_tool;;
+
+		3 ) 
+	   
+	start_tools;;
+
+		* ) zip_main;;
+	    esac
+	done
+}
+
+setup() {
+	clear
+	if [[ -d $DIRTOOLS/ROM ]] && [[ -d $DIRTOOLS/rom_input ]] && [[ -d $DIRTOOLS/rom_output ]]; then
+
+		echo ""
+
+	else
+		echo "creating dirs"
+
+		mkdir $DIRTOOLS/rom_input
+		mkdir $DIRTOOLS/rom_output
+		mkdir $DIRTOOLS/ROM
+		mkdir $DIRTOOLS/ROM/odm
+		mkdir $DIRTOOLS/ROM/product
+		mkdir $DIRTOOLS/ROM/system
+		mkdir $DIRTOOLS/ROM/system_ext
+		mkdir $DIRTOOLS/ROM/vendor
+		mkdir $DIRTOOLS/ROM/super
+
+		echo "Done!"
+	fi
+}
+
+clean() {
+	clear
+	echo "cleaning..."
+
+	rm -rf $DIRIN
+	rm -rf $DIROUT
+	rm -rf $DIRROM
+	rm -rf $DIRSCRIPTS/log.txt
+	rm -rf $DIRSCRIPTS/bin/__pycache__
+
+	echo "Done!"
+}
+
+start_tools() {
+	rm -rf $DIRSCRIPTS/log.txt
+	setup
+	while true; do
+	    banner
+	    echo " "
+	    echo "1. Super partition tools"
+	    echo "2. Split partition tools (system,vendor,odm,system_ext,product)"
+	    echo "3. Convert dat.br to raw img"
+	    echo "4. Convert raw .img to dat.br"
+	    echo "5. Convert raw to sparse"
+	    echo "6. Convert sparse to raw"
+	    echo "7. Mount raw .img"
+	    echo "8. Unmount images"
+	    echo "9. Unpack payload.bin"
+	    echo "10. Merge fs context and config to system"
+	    echo "11. Convert erofs to ext4"
+	    echo "12. Auto ZIP"
+	    echo "13. idk... port oplus? build oplus? convert oplus?"
+	    echo "14. Convert updatable apex to non updatable"
+	    echo "15. Clean up folders"
+	    echo "16. Exit tool"
+	    
+	    read -p "" choose
+	    case $choose in
+	    
+		1 ) 
+
+	super_main
+
+	restart_tool;;
+
+		2 ) 
+	   
+	splits_main
+
+	restart_tool;;
+
+		3 ) 
+		
+	datbr_raw
+		
+	restart_tool;;
+
+		4 ) 
+		
+	raw_datbr
+		
+	restart_tool;;
+
+		5 ) 
+		
+	raw_sparse
+		
+	restart_tool;;
+
+		6 ) 
+		
+	sparse_raw
+		
+	restart_tool;;
+
+		7 ) 
+		
+	mount_main
+		
+	restart_tool;;
+
+		8 ) 
+		
+	umount_main
+		
+	restart_tool;;
+
+		9 ) 
+		
+	payload
+		
+	restart_tool;;
+
+		10 ) 
+		
+	merge_main
+		
+	restart_tool;;
+
+		11 ) 
+		
+	erofs_ext4_main
+		
+	restart_tool;;
+
+		12 ) 
+		
+	zip_main
+		
+	restart_tool;;
+
+		13 ) 
+		
+	oplus_script
+		
+	restart_tool;;
+
+		14 ) 
+		
+	apexconverter
+		
+	restart_tool;;
+
+		15 ) 
+		
+	clean
+		
+	restart_tool;;
+
+		16 )  exit;;
+
+
+		* ) start_tools;;
+	    esac
+	done
+}
+
