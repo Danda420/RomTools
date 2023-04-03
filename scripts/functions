@@ -1532,6 +1532,63 @@ zip_main() {
 	done
 }
 
+patch_oplus() {
+	DIRPATCH=$DIRTOOLS/scripts/patch
+	patch_device() {
+		clear
+		echo ""
+		echo "patching for device : $device"
+		
+		rm -rf $DIRROM/system/my_product/priv-app/*
+		cp $DIRPATCH/${device}/HotwordEnrollmentOKGoogleHEXAGON.apk $DIRROM/system/my_product/priv-app/
+		cp $DIRPATCH/${device}/HotwordEnrollmentXGoogleHEXAGON.apk $DIRROM/system/my_product/priv-app/
+		chmod 644 $DIRROM/system/my_product/priv-app/*
+		
+		rm -rf $DIRROM/system/my_product/etc/permissions/com.oplus.feature.enable.oemports10t.xml
+		
+		rm -rf $DIRROM/system/system/etc/init/hw/init.usb.configfs.rc
+		cp $DIRPATCH/${device}/init.usb.configfs.rc $DIRROM/system/system/etc/init/hw/
+		chmod 644 $DIRROM/system/system/etc/init/hw/init.usb.configfs.rc
+		
+		rm -rf $DIRROM/product/etc/device_features/*
+		cp $DIRPATCH/${device}/${device}.xml $DIRROM/product/etc/device_features/
+		chmod 644 $DIRROM/product/etc/device_features/${device}.xml
+		
+		cp $DIRPATCH/${device}/uinput-fpc.kl $DIRROM/system/system/usr/keylayout/
+		cp $DIRPATCH/${device}/uinput-goodix.kl $DIRROM/system/system/usr/keylayout/
+		chmod 644 $DIRROM/system/system/usr/keylayout/uinput-fpc.kl
+		chmod 644 $DIRROM/system/system/usr/keylayout/uinput-goodix.kl
+		
+		echo "patching done..."
+		echo ""
+	}
+
+
+	clear
+	while true; do
+	    banner
+	    echo " "
+	    echo "1. Patch build for alioth"
+	    echo "2. Patch build for munch"
+	    echo "3. Back to main menu"
+	    read -p "" choose
+	    case $choose in
+		1 ) 
+		device=alioth
+		patch_device
+		restart_tool;;
+		2 )
+		device=munch
+		patch_device
+		restart_tool;;
+		3 )
+		start_tools;;
+		* ) 
+		patch_oplus;;
+	    esac
+	done
+}
+
 setup() {
 	clear
 	if [[ -d $DIRTOOLS/ROM ]] && [[ -d $DIRTOOLS/rom_input ]] && [[ -d $DIRTOOLS/rom_output ]]; then
@@ -1587,9 +1644,10 @@ start_tools() {
 	    echo "11. Convert erofs to ext4"
 	    echo "12. Auto ZIP"
 	    echo "13. idk... port oplus? build oplus? convert oplus?"
-	    echo "14. Convert updatable apex to non updatable"
-	    echo "15. Clean up folders"
-	    echo "16. Exit tool"
+	    echo "14. Patch oplus rom for specific device"
+	    echo "15. Convert updatable apex to non updatable"
+	    echo "16. Clean up folders"
+	    echo "17. Exit tool"
 	    
 	    read -p "" choose
 	    case $choose in
@@ -1597,98 +1655,86 @@ start_tools() {
 		1 ) 
 
 	super_main
-
 	restart_tool;;
 
 		2 ) 
 	   
 	splits_main
-
 	restart_tool;;
 
 		3 ) 
 		
 	datbr_raw
-		
 	restart_tool;;
 
 		4 ) 
 		
 	raw_datbr
-		
 	restart_tool;;
 
 		5 ) 
 		
 	raw_sparse
-		
 	restart_tool;;
 
 		6 ) 
 		
 	sparse_raw
-		
 	restart_tool;;
 
 		7 ) 
 		
 	mount_main
-		
 	restart_tool;;
 
 		8 ) 
 		
 	umount_main
-		
 	restart_tool;;
 
 		9 ) 
 		
 	payload
-		
 	restart_tool;;
 
 		10 ) 
 		
 	merge_main
-		
 	restart_tool;;
 
 		11 ) 
 		
 	erofs_ext4_main
-		
 	restart_tool;;
 
 		12 ) 
 		
 	zip_main
-		
 	restart_tool;;
 
 		13 ) 
 		
 	oplus_script
-		
 	restart_tool;;
-
-		14 ) 
+	
+		14 )
 		
-	apexconverter
-		
+	patch_oplus
 	restart_tool;;
 
 		15 ) 
 		
-	clean
-		
+	apexconverter
 	restart_tool;;
 
-		16 )  
+		16 ) 
+		
+	clean
+	restart_tool;;
+
+		17 )  
 	clear	
 	exit;;
-
-
 		* ) start_tools;;
 	    esac
 	done
