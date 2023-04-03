@@ -1,0 +1,77 @@
+#!/bin/bash
+
+DIRTOOLS=$PWD
+DIRROM=$DIRTOOLS/ROM
+DIRSCRIPTS=$DIRTOOLS/scripts
+OPTIONS=loop
+
+resize_img_to_edit(){
+	if [ -f $DIRROM/${valset}_a.img ]; then
+		getsize=$(ls -nl $DIRROM/${valset}_a.img | awk '{print $5}')
+		readmb=$(($getsize / 100000000))
+		readgiga=$(($getsize / 1000000000))
+		cval=$(($readmb - $readgiga))
+		if [[ $cval -gt 5 ]]; then
+			vplus=2;
+		else
+			vplus=1;
+		fi
+		sizeimg=$(($readgiga + $vplus))G
+		fallocate -l $sizeimg $DIRROM/${valset}_a.img  >> $DIRSCRIPTS/log.txt
+		e2fsck -yf $DIRROM/${valset}_a.img >> $DIRSCRIPTS/log.txt
+		resize2fs $DIRROM/${valset}_a.img $sizeimg  >> $DIRSCRIPTS/log.txt
+		e2fsck -yf $DIRROM/${valset}_a.img  >> $DIRSCRIPTS/log.txt
+	else
+		getsize=$(ls -nl $DIRROM/${valset}.img | awk '{print $5}')
+		readmb=$(($getsize / 100000000))
+		readgiga=$(($getsize / 1000000000))
+		cval=$(($readmb - $readgiga))
+		if [[ $cval -gt 5 ]]; then
+			vplus=2;
+		else
+			vplus=1;
+		fi
+		sizeimg=$(($readgiga + $vplus))G
+		fallocate -l $sizeimg $DIRROM/${valset}.img  >> $DIRSCRIPTS/log.txt
+		e2fsck -yf $DIRROM/${valset}.img >> $DIRSCRIPTS/log.txt
+		resize2fs $DIRROM/${valset}.img $sizeimg  >> $DIRSCRIPTS/log.txt
+		e2fsck -yf $DIRROM/${valset}.img  >> $DIRSCRIPTS/log.txt
+	fi
+}
+
+echo " "
+echo "Resizing partitions..."
+echo " "
+valset=system
+resize_img_to_edit
+valset=system_ext
+resize_img_to_edit
+valset=vendor
+resize_img_to_edit
+valset=product
+resize_img_to_edit
+valset=odm
+resize_img_to_edit
+
+echo " "
+echo "Mounting partitions..."
+echo " "
+if [[ -f $DIRROM/system_a.img ]] || [[ -f $DIRROM/vendor_a.img ]] || [[ -f $DIRROM/odm_a.img ]] || [[ -f $DIRROM/product_a.img ]] || [[ -f $DIRROM/system_ext_a.img ]]; then
+
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/system_a.img $DIRROM/system >> $DIRSCRIPTS/log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor_a.img $DIRROM/vendor >> $DIRSCRIPTS/log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/odm_a.img $DIRROM/odm >> $DIRSCRIPTS/log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/product_a.img $DIRROM/product >> $DIRSCRIPTS/log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext_a.img $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
+
+else
+
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/system.img $DIRROM/system >> $DIRSCRIPTS/log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor.img $DIRROM/vendor >> $DIRSCRIPTS/log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/odm.img $DIRROM/odm >> $DIRSCRIPTS/log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/product.img $DIRROM/product >> $DIRSCRIPTS/log.txt
+	sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext.img $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
+
+fi
+
+exit
