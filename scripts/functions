@@ -1107,7 +1107,7 @@ super_main() {
 
 			echo " "
 			echo "Unpacking $imgname.img..."
-			$DIRSCRIPTS/bin/lpunpack $DIRIN/$imgname.img $DIRROM/super >> $DIRSCRIPTS/log.txt
+			lpunpack $DIRIN/$imgname.img $DIRROM/super >> $DIRSCRIPTS/log.txt
 			rm -rf $DIRIN/$imgname.*
 
 			echo " "
@@ -1141,7 +1141,7 @@ super_main() {
 
 			echo " "
 			echo "Unpacking $imgname.img..."
-			$DIRSCRIPTS/bin/lpunpack $DIROUT/$imgname.img $DIRROM/super >> $DIRSCRIPTS/log.txt
+			lpunpack $DIROUT/$imgname.img $DIRROM/super >> $DIRSCRIPTS/log.txt
 			rm -rf $DIROUT/$imgname.*
 
 			echo " "
@@ -1200,7 +1200,7 @@ super_main() {
 		VENDORSIZE=$(ls -nl $DIRSUPER/vendor.img | awk '{print $5}')
 		echo " "
 		echo "Compiling super : $imgname.img (raw)..."
-		$DIRSCRIPTS/bin/lpmake 	--metadata-size $METADATASIZE --metadata-slots 2 --super-name super \
+		lpmake 	--metadata-size $METADATASIZE --metadata-slots 2 --super-name super \
 				--device super:$SUPERSIZE \
 			    	--group qti_dynamic_partitions:$SUPERSIZE \
 				--partition system:none:$SYSTEMSIZE:qti_dynamic_partitions \
@@ -1233,7 +1233,7 @@ super_main() {
 		VENDORSIZE=$(ls -nl $DIRSUPER/$vendor.img | awk '{print $5}')
 		echo " "
 		echo "Compiling super : $imgname.img (raw)..."
-		$DIRSCRIPTS/bin/lpmake 	--metadata-size $METADATASIZE --metadata-slots 2 --virtual-ab --super-name super \
+		lpmake 	--metadata-size $METADATASIZE --metadata-slots 2 --virtual-ab --super-name super \
 				--device super:$SUPERSIZE \
 				--group qti_dynamic_partitions:$SUPERSIZE \
 				--partition $system:none:$SYSTEMSIZE:qti_dynamic_partitions \
