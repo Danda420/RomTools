@@ -912,60 +912,85 @@ splits_main() {
 			echo "Done! Output : $DIROUT"
 
 		}
-		if [[ -f $DIRIN/system.img ]] || [[ -f $DIRIN/vendor.img ]] || [[ -f $DIRIN/odm.img ]] || [[ -f $DIRIN/product.img ]] || [[ -f $DIRIN/system_ext.img ]]; then
+		if [[ ! -f $DIRIN/system.img ]]; then
+			touch $DIRIN/system.img
+		fi
+		if [[ ! -f $DIRIN/vendor.img ]]; then
+			touch $DIRIN/vendor.img
+		fi
+		if [[ ! -f $DIRIN/odm.img ]]; then
+			touch $DIRIN/odm.img
+		fi
+		if [[ ! -f $DIRIN/product.img ]]; then
+			touch $DIRIN/product.img
+		fi
+		if [[ ! -f $DIRIN/system_ext.img ]]; then
+			touch $DIRIN/system_ext.img
+		fi
 		
-			ODMSIZE=$(ls -nl $DIRIN/odm.img | awk '{print $5}')
-			PRODUCTSIZE=$(ls -nl $DIRIN/product.img | awk '{print $5}')
-			SYSTEMSIZE=$(ls -nl $DIRIN/system.img | awk '{print $5}')
-			SYSEXTSIZE=$(ls -nl $DIRIN/system_ext.img | awk '{print $5}')
-			VENDORSIZE=$(ls -nl $DIRIN/vendor.img | awk '{print $5}')
+		ODMSIZE=$(ls -nl $DIRIN/odm.img | awk '{print $5}')
+		PRODUCTSIZE=$(ls -nl $DIRIN/product.img | awk '{print $5}')
+		SYSTEMSIZE=$(ls -nl $DIRIN/system.img | awk '{print $5}')
+		SYSEXTSIZE=$(ls -nl $DIRIN/system_ext.img | awk '{print $5}')
+		VENDORSIZE=$(ls -nl $DIRIN/vendor.img | awk '{print $5}')
 			
-			TOTALSIZE=$(( $ODMSIZE + $PRODUCTSIZE + $SYSTEMSIZE + $SYSEXTSIZE + $VENDORSIZE ))
+		TOTALSIZE=$(( $ODMSIZE + $PRODUCTSIZE + $SYSTEMSIZE + $SYSEXTSIZE + $VENDORSIZE ))
+		
+		if [[ $SYSTEMSIZE == 0 ]]; then
+			rm -rf $DIRIN/system.img
+		fi
+		if [[ $VENDORSIZE == 0 ]]; then
+			rm -rf $DIRIN/vendor.img
+		fi
+		if [[ $ODMSIZE == 0 ]]; then
+			rm -rf $DIRIN/odm.img
+		fi
+		if [[ $PRODUCTSIZE == 0 ]]; then
+			rm -rf $DIRIN/product.img
+		fi
+		if [[ $SYSEXTSIZE == 0 ]]; then
+			rm -rf $DIRIN/system_ext.img
+		fi
 
-			if (( $TOTALSIZE > $SUPERSIZE )); then
-				echo "Total size of all partitions exceeds max super size, aborting..."
-				echo "($TOTALSIZE/$SUPERSIZE)"
-				echo ""
-			else
-				echo "Splits total size :"
-				echo "($TOTALSIZE/$SUPERSIZE)"
-				echo ""
-				while true; do
-				    echo "Compiling for A only device or Virtual A/B?"
-				    echo "(1) A only"
-				    echo "(2) Virtual A/B "
-				    read -p "choose 1 or 2 : " choose
-				    case $choose in
-					[1]* ) 
-				echo "Make sure to input your raw .img's to rom_input folder"
-				echo " "
-				echo "Compiling splits with A only format"
-				echo " "
-
-				brotli_lvl
-				a_dp_op_list
-				compress
-				break;;
-
-
-					[2]* ) 
-				echo "Make sure to input your raw .img's to rom_input folder"
-				echo " "
-				echo "Compiling splits with Virtual A/B format"
-				echo " "
-
-				brotli_lvl
-				ab_dp_op_list
-				compress
-				break;;
-
-
-					* ) echo "Please answer 1 or 2.";;
-				    esac
-				done
-			fi
+		if (( $TOTALSIZE > $SUPERSIZE )); then
+			echo "Total size of all partitions exceeds max super size, aborting..."
+			echo "($TOTALSIZE/$SUPERSIZE)"
+			echo ""
 		else
-			echo "no system/vendor/odm/product/system_ext image supplied!"
+			echo "Splits total size :"
+			echo "($TOTALSIZE/$SUPERSIZE)"
+			echo ""
+			while true; do
+			    echo "Compiling for A only device or Virtual A/B?"
+			    echo "(1) A only"
+			    echo "(2) Virtual A/B "
+			    read -p "choose 1 or 2 : " choose
+			    case $choose in
+				[1]* ) 
+			echo "Make sure to input your raw .img's to rom_input folder"
+			echo " "
+			echo "Compiling splits with A only format"
+			echo " "
+
+			brotli_lvl
+			a_dp_op_list
+			compress
+			break;;
+
+				[2]* ) 
+			echo "Make sure to input your raw .img's to rom_input folder"
+			echo " "
+			echo "Compiling splits with Virtual A/B format"
+			echo " "
+
+			brotli_lvl
+			ab_dp_op_list
+			compress
+			break;;
+			
+				* ) echo "Please answer 1 or 2.";;
+			    esac
+			done
 		fi
 	}
 
