@@ -817,7 +817,7 @@ splits_main() {
 		   		read -p "Your preffered brotli compression level is $COMPLVL is that correct? (Y/N)" yn
 		    		case $yn in
 					[Yy]* ) break;;
-					[Nn]* ) exit;;
+					[Nn]* ) brotli_lvl;;
 					* ) echo "Please answer yes or no.";;
 				    esac
 				done
@@ -1200,7 +1200,7 @@ super_main() {
 		    read -p "Your super raw img name is : $imgname is that correct? (Y/N)" yn
 		    case $yn in
 			[Yy]* ) break;;
-			[Nn]* ) exit;;
+			[Nn]* ) restart_tool;;
 			* ) echo "Please answer yes or no.";;
 		    esac
 		done
@@ -1291,7 +1291,7 @@ super_main() {
 			[Nn]* ) 
 			
 		mv $DIRIN/$imgname.img $DIROUT/$imgname.img
-		exit;;
+		restart_tool;;
 			* ) echo "Please answer yes or no.";;
 		    esac
 		done
@@ -1308,7 +1308,7 @@ super_main() {
 			[Nn]* ) 
 			
 		mv $DIRIN/$imgname.sparse.img $DIROUT/$imgname.img
-		exit;;
+		restart_tool;;
 			* ) echo "Please answer yes or no.";;
 		    esac
 		done
@@ -1328,7 +1328,7 @@ super_main() {
 		    read -p "Compress $imgname.new.dat to $imgname.new.dat.br using brotli? (Y/N)" yn
 		    case $yn in
 			[Yy]* ) break;;
-			[Nn]* ) exit;;
+			[Nn]* ) restart_tool;;
 			* ) echo "Please answer yes or no.";;
 		    esac
 		done
