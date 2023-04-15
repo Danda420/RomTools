@@ -70,7 +70,7 @@ clean() {
 	rm -rf $DIROUT
 	rm -rf $DIRROM
 	rm -rf $DIRSCRIPTS/log.txt
-	rm -rf $DIRSCRIPTS/bin/__pycache__
+	sudo rm -rf $DIRSCRIPTS/bin/__pycache__
 
 	echo "Done!"
 }
