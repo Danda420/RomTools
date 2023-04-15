@@ -32,11 +32,11 @@ banner() {
 }
 
 give_perm() {
-	sudo chown -R $USER:$USER $DIRROM/system >> $DIRSCRIPTS/log.txt
-	sudo chown -R $USER:$USER $DIRROM/vendor >> $DIRSCRIPTS/log.txt
-	sudo chown -R $USER:$USER $DIRROM/odm >> $DIRSCRIPTS/log.txt
-	sudo chown -R $USER:$USER $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
-	sudo chown -R $USER:$USER $DIRROM/product >> $DIRSCRIPTS/log.txt
+	sudo chown -R $USER:$USER $DIRROM/system >> /dev/null 2>&1
+	sudo chown -R $USER:$USER $DIRROM/vendor >> /dev/null 2>&1
+	sudo chown -R $USER:$USER $DIRROM/odm >> /dev/null 2>&1
+	sudo chown -R $USER:$USER $DIRROM/system_ext >> /dev/null 2>&1
+	sudo chown -R $USER:$USER $DIRROM/product >> /dev/null 2>&1
 }
 
 setup() {
@@ -69,8 +69,9 @@ clean() {
 	rm -rf $DIRIN
 	rm -rf $DIROUT
 	rm -rf $DIRROM
-	rm -rf $DIRSCRIPTS/log.txt
+	sudo rm -rf $DIRSCRIPTS/log.txt
 	sudo rm -rf $DIRSCRIPTS/bin/__pycache__
+	sudo rm -rf $DIRSCRIPTS/bin/mkuserimg_mke2fs.pyc
 
 	echo "Done!"
 }
@@ -180,7 +181,7 @@ datbr_raw() {
 
 		rm -rf $DIRIN/$imgname.new.dat.br
 
-		python3 $DIRSCRIPTS/bin/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img  >> $DIRSCRIPTS/log.txt
+		python3 $DIRSCRIPTS/bin/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img  >> /dev/null 2>&1
 		echo " "
 		echo "Cleaning input folder..."
 
@@ -438,19 +439,19 @@ mount_main() {
 		clear
 		if [[ -f $DIRROM/system_a.img ]] || [[ -f $DIRROM/vendor_a.img ]] || [[ -f $DIRROM/odm_a.img ]] || [[ -f $DIRROM/product_a.img ]] || [[ -f $DIRROM/system_ext_a.img ]]; then
 
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/system_a.img $DIRROM/system >> $DIRSCRIPTS/log.txt
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor_a.img $DIRROM/vendor >> $DIRSCRIPTS/log.txt
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/odm_a.img $DIRROM/odm >> $DIRSCRIPTS/log.txt
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/product_a.img $DIRROM/product >> $DIRSCRIPTS/log.txt
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext_a.img $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/system_a.img $DIRROM/system >> /dev/null 2>&1
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor_a.img $DIRROM/vendor >> /dev/null 2>&1
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/odm_a.img $DIRROM/odm >> /dev/null 2>&1
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/product_a.img $DIRROM/product >> /dev/null 2>&1
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext_a.img $DIRROM/system_ext >> /dev/null 2>&1
 
 		else
 
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/system.img $DIRROM/system >> $DIRSCRIPTS/log.txt
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor.img $DIRROM/vendor >> $DIRSCRIPTS/log.txt
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/odm.img $DIRROM/odm >> $DIRSCRIPTS/log.txt
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/product.img $DIRROM/product >> $DIRSCRIPTS/log.txt
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext.img $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/system.img $DIRROM/system >> /dev/null 2>&1
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor.img $DIRROM/vendor >> /dev/null 2>&1
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/odm.img $DIRROM/odm >> /dev/null 2>&1
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/product.img $DIRROM/product >> /dev/null 2>&1
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext.img $DIRROM/system_ext >> /dev/null 2>&1
 
 		fi
 		give_perm
@@ -467,19 +468,19 @@ mount_main() {
 		clear
 		if [[ -f $DIRROM/system_a.img ]] || [[ -f $DIRROM/vendor_a.img ]] || [[ -f $DIRROM/odm_a.img ]] || [[ -f $DIRROM/product_a.img ]] || [[ -f $DIRROM/system_ext_a.img ]]; then
 
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/system_a.img $DIRROM/system >> $DIRSCRIPTS/log.txt
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor_a.img $DIRROM/vendor >> $DIRSCRIPTS/log.txt
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/odm_a.img $DIRROM/odm >> $DIRSCRIPTS/log.txt
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/product_a.img $DIRROM/product >> $DIRSCRIPTS/log.txt
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext_a.img $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/system_a.img $DIRROM/system >> /dev/null 2>&1
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor_a.img $DIRROM/vendor >> /dev/null 2>&1
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/odm_a.img $DIRROM/odm >> /dev/null 2>&1
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/product_a.img $DIRROM/product >> /dev/null 2>&1
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext_a.img $DIRROM/system_ext >> /dev/null 2>&1
 
 		else
 
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/system.img $DIRROM/system >> $DIRSCRIPTS/log.txt
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor.img $DIRROM/vendor >> $DIRSCRIPTS/log.txt
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/odm.img $DIRROM/odm >> $DIRSCRIPTS/log.txt
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/product.img $DIRROM/product >> $DIRSCRIPTS/log.txt
-			sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext.img $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/system.img $DIRROM/system >> /dev/null 2>&1
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/vendor.img $DIRROM/vendor >> /dev/null 2>&1
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/odm.img $DIRROM/odm >> /dev/null 2>&1
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/product.img $DIRROM/product >> /dev/null 2>&1
+			sudo mount -t ext4 -o $OPTIONS $DIRROM/system_ext.img $DIRROM/system_ext >> /dev/null 2>&1
 
 		fi
 		give_perm
@@ -637,6 +638,49 @@ oplus_script() {
 		rm -rf $DIRSCRIPTS/ROM
 		rm -rf $DIRIN/system.img
 		
+		echo " "
+		echo "Patching my_product..."
+		
+		mkdir $DIROUT/my_product
+		sudo mount -t ext4 -o loop $DIROUT/my_product.img $DIROUT/my_product >> /dev/null 2>&1
+		sudo chown -R $USER:$USER $DIROUT/my_product >> /dev/null 2>&1
+		
+		rm -rf $DIROUT/my_product/etc/extension/*
+		rm -rf $DIROUT/my_product/etc/permissions/*
+		rm -rf $DIROUT/my_product/non_overlay
+		rm -rf $DIROUT/my_product/product_overlay
+		rm -rf $DIROUT/my_product/priv-app/*
+		rm -rf $DIROUT/my_product/overlay/SystemUIFingerprintRes_*
+		
+		cp -r $DIRSCRIPTS/patch/general/etc/extension/* $DIROUT/my_product/etc/extension/
+		chmod 644 $DIROUT/my_product/etc/extension/*
+		cp $DIRSCRIPTS/patch/general/etc/refresh_rate_config.xml $DIROUT/my_product/etc/
+		chmod 644 $DIROUT/my_product/etc/refresh_rate_config.xml
+		cp -r $DIRSCRIPTS/patch/general/etc/permissions/* $DIROUT/my_product/etc/permissions/
+		chmod 644 $DIROUT/my_product/etc/permissions/*
+		cp -r $DIRSCRIPTS/patch/general/priv-app/* $DIROUT/my_product/priv-app/
+		chmod 644 $DIROUT/my_product/priv-app/*
+		cp $DIRSCRIPTS/patch/general/vendor/etc/display_brightness_config_samsung1024.xml $DIROUT/my_product/vendor/etc/
+		chmod 644 $DIROUT/my_product/vendor/etc/display_brightness_config_samsung1024.xml
+		
+		sed -i 's/vendor.display.smomo_camera_support/#vendor.display.smomo_camera_support/g' $DIROUT/my_product/build.prop
+		sed -i 's/vendor.display.smomo_game_support/#vendor.display.smomo_game_support/g' $DIROUT/my_product/build.prop
+		sed -i 's/vendor.display.enable_camera_smooth/#vendor.display.enable_camera_smooth/g' $DIROUT/my_product/build.prop
+		sed -i 's/ro.oppo.screen.heteromorphism/#ro.oppo.screen.heteromorphism/g' $DIROUT/my_product/build.prop
+		sed -i 's/ro.oplus.display.screen.heteromorphism/#ro.oplus.display.screen.heteromorphism/g' $DIROUT/my_product/build.prop
+		sed -i 's/ro.oppo.screenhole.positon/#ro.oppo.screenhole.positon/g' $DIROUT/my_product/build.prop
+		sed -i 's/ro.oplus.display.screenhole.positon/#ro.oplus.display.screenhole.positon/g' $DIROUT/my_product/build.prop
+		sed -i 's/ro.display.underscreen.lightsensor.support/#ro.display.underscreen.lightsensor.support/g' $DIROUT/my_product/build.prop
+		sed -i 's/ro.oplus.display.brightness.smooth/#ro.oplus.display.brightness.smooth/g' $DIROUT/my_product/build.prop
+		sed -i 's/ro.display.rc.size/#ro.display.rc.size/g' $DIROUT/my_product/build.prop
+		sed -i 's/ro.oplus.display.rc.size/#ro.oplus.display.rc.size/g' $DIROUT/my_product/build.prop
+		sed -i 's/ro.oplus.display.screenSizeInches.primary/#ro.oplus.display.screenSizeInches.primary/g' $DIROUT/my_product/build.prop
+		echo ro.display.rc.size=106,106,106,106 >> $DIROUT/my_product/build.prop
+		echo ro.oplus.display.rc.size=106,106,106,106 >> $DIROUT/my_product/build.prop
+		echo ro.oplus.display.screenSizeInches.primary=6.67 >> $DIROUT/my_product/build.prop
+		
+		sudo umount $DIROUT/my_product >> /dev/null 2>&1
+		rm -rf $DIROUT/my_product
 		
 		echo " "
 		echo "Zipping..."
@@ -668,7 +712,7 @@ raw_sparse() {
 		echo " "
 		echo "Converting raw image to sparse..."
 
-		img2simg $DIRIN/$imgname.img $DIROUT/$imgname.sparse.img >> $DIRSCRIPTS/log.txt
+		img2simg $DIRIN/$imgname.img $DIROUT/$imgname.sparse.img >> /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.img
 
 		echo " "
@@ -696,12 +740,12 @@ raw_datbr() {
 
 		echo " " 
 		echo "converting image : $imgname to sparse"
-		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> $DIRSCRIPTS/log.txt
+		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.img
 
 		echo " " 
 		echo "converting image : $imgname to new.dat"
-		python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> $DIRSCRIPTS/log.txt
+		python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.sparse.img
 		mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
 		mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
@@ -827,7 +871,7 @@ splits_main() {
 		    if [[ -f $DIRIN/$partition.img ]]; then
 			echo ""
 			echo "converting $partition into sparse"
-			img2simg $DIRIN/$partition.img $DIRIN/$partition.sparse.img >> $DIRSCRIPTS/log.txt
+			img2simg $DIRIN/$partition.img $DIRIN/$partition.sparse.img >> /dev/null 2>&1
 			rm -rf $DIRIN/$partition.img
 		    else
 		    	echo " "
@@ -839,7 +883,7 @@ splits_main() {
 		    if [[ -f $DIRIN/$partition.sparse.img ]]; then
 			echo " "
 			echo "converting $partition into new.dat"
-			python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$partition.sparse.img -o $DIRIN/ -v 4 >> $DIRSCRIPTS/log.txt
+			python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$partition.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
 			mv $DIRIN/system.new.dat $DIROUT/$partition.new.dat
 			mv $DIRIN/system.patch.dat $DIROUT/$partition.patch.dat
 			mv $DIRIN/system.transfer.list $DIROUT/$partition.transfer.list
@@ -1012,7 +1056,7 @@ splits_main() {
 		    if [[ -f $DIRIN/$partition.new.dat ]] && [[ -f $DIRIN/$partition.transfer.list ]]; then
 			echo " "
 			echo "Converting $partition.new.dat to $partition.img (raw)"
-			python3 $DIRSCRIPTS/bin/sdat2img.py $DIRIN/$partition.transfer.list $DIRIN/$partition.new.dat $DIROUT/$partition.img >> $DIRSCRIPTS/log.txt
+			python3 $DIRSCRIPTS/bin/sdat2img.py $DIRIN/$partition.transfer.list $DIRIN/$partition.new.dat $DIROUT/$partition.img >> /dev/null 2>&1
 			rm -rf $DIRIN/$partition.*
 		    else
 		    	echo " "
@@ -1097,7 +1141,7 @@ sparse_raw() {
 
 		if [ -f $DIRIN/*.sparse.img ]; then
 
-			img2img $DIRIN/$imgname.sparse.img $DIROUT/$imgname.img >> $DIRSCRIPTS/log.txt
+			img2img $DIRIN/$imgname.sparse.img $DIROUT/$imgname.img >> /dev/null 2>&1
 
 			rm -rf $DIRIN/*
 
@@ -1106,7 +1150,7 @@ sparse_raw() {
 
 		else
 
-			simg2img $DIRIN/$imgname.img $DIROUT/$imgname.img >> $DIRSCRIPTS/log.txt
+			simg2img $DIRIN/$imgname.img $DIROUT/$imgname.img >> /dev/null 2>&1
 
 			rm -rf $DIRIN/*
 
@@ -1132,7 +1176,7 @@ super_main() {
 
 			echo " "
 			echo "Unpacking $imgname.img..."
-			lpunpack $DIRIN/$imgname.img $DIRROM/super >> $DIRSCRIPTS/log.txt
+			lpunpack $DIRIN/$imgname.img $DIRROM/super >> /dev/null 2>&1
 			rm -rf $DIRIN/$imgname.*
 
 			echo " "
@@ -1161,12 +1205,12 @@ super_main() {
 
 			echo " "
 			echo "Converting $imgname.new.dat to $imgname.img (raw)..."
-			python3 $DIRSCRIPTS/bin/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img >> $DIRSCRIPTS/log.txt
+			python3 $DIRSCRIPTS/bin/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img >> /dev/null 2>&1
 			rm -rf $DIRIN/$imgname.*
 
 			echo " "
 			echo "Unpacking $imgname.img..."
-			lpunpack $DIROUT/$imgname.img $DIRROM/super >> $DIRSCRIPTS/log.txt
+			lpunpack $DIROUT/$imgname.img $DIRROM/super >> /dev/null
 			rm -rf $DIROUT/$imgname.*
 
 			echo " "
@@ -1298,7 +1342,7 @@ super_main() {
 
 		echo " "
 		echo "Converting raw $imgname.img to sparse..."
-		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> $DIRSCRIPTS/log.txt
+		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.img
 		echo " "
 		while true; do
@@ -1314,7 +1358,7 @@ super_main() {
 		done
 		echo " "
 		echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
-		python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> $DIRSCRIPTS/log.txt
+		python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.*
 		mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
 		mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
@@ -1397,18 +1441,18 @@ umount_main() {
 		clear
 		resize_to_build(){
 			if [ -f $DIRROM/${valset}_a.img ]; then
-				e2fsck -yf $DIRROM/${valset}_a.img >> $DIRSCRIPTS/log.txt
-				resize2fs -M $DIRROM/${valset}_a.img >> $DIRSCRIPTS/log.txt
-				e2fsck -yf $DIRROM/${valset}_a.img >> $DIRSCRIPTS/log.txt
+				e2fsck -yf $DIRROM/${valset}_a.img >> /dev/null
+				resize2fs -M $DIRROM/${valset}_a.img >> /dev/null
+				e2fsck -yf $DIRROM/${valset}_a.img >> /dev/null
 				
 				vsizenow=$(ls -nl $DIRROM/${valset}_a.img | awk '{print $5}')
 				sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
 				resize2fs $DIRROM/${valset}_a.img $sizeimg
 				e2fsck -yf $DIRROM/${valset}_a.img
 			else
-				e2fsck -yf $DIRROM/${valset}.img >> $DIRSCRIPTS/log.txt
-				resize2fs -M $DIRROM/${valset}.img >> $DIRSCRIPTS/log.txt
-				e2fsck -yf $DIRROM/${valset}.img >> $DIRSCRIPTS/log.txt
+				e2fsck -yf $DIRROM/${valset}.img >> /dev/null
+				resize2fs -M $DIRROM/${valset}.img >> /dev/null
+				e2fsck -yf $DIRROM/${valset}.img >> /dev/null
 				
 				vsizenow=$(ls -nl $DIRROM/${valset}.img | awk '{print $5}')
 				sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
@@ -1432,7 +1476,7 @@ umount_main() {
 			echo " "
 			echo "Unmounting $PARTITION..."
 			echo " "
-			sudo umount $DIRROM/$PARTITION >> $DIRSCRIPTS/log.txt
+			sudo umount $DIRROM/$PARTITION >> /dev/null 2>&1
 
 			echo "Resizing $PARTITION..."
 			echo " "
@@ -1447,23 +1491,23 @@ umount_main() {
 		clear
 		resize_to_build(){
 			if [ -f $DIRROM/${valset}_a.img ]; then
-				e2fsck -yf $DIRROM/${valset}_a.img >> $DIRSCRIPTS/log.txt
-				resize2fs -M $DIRROM/${valset}_a.img >> $DIRSCRIPTS/log.txt
-				e2fsck -yf $DIRROM/${valset}_a.img >> $DIRSCRIPTS/log.txt
+				e2fsck -yf $DIRROM/${valset}_a.img >> /dev/null
+				resize2fs -M $DIRROM/${valset}_a.img >> /dev/null
+				e2fsck -yf $DIRROM/${valset}_a.img >> /dev/null
 			else
-				e2fsck -yf $DIRROM/${valset}.img >> $DIRSCRIPTS/log.txt
-				resize2fs -M $DIRROM/${valset}.img >> $DIRSCRIPTS/log.txt
-				e2fsck -yf $DIRROM/${valset}.img >> $DIRSCRIPTS/log.txt
+				e2fsck -yf $DIRROM/${valset}.img >> /dev/null
+				resize2fs -M $DIRROM/${valset}.img >> /dev/null
+				e2fsck -yf $DIRROM/${valset}.img >> /dev/null
 			fi;
 		}
 		echo " "
 		echo "Unmounting partitions..."
 		echo " "
-		sudo umount $DIRROM/system >> $DIRSCRIPTS/log.txt
-		sudo umount $DIRROM/vendor >> $DIRSCRIPTS/log.txt
-		sudo umount $DIRROM/odm >> $DIRSCRIPTS/log.txt
-		sudo umount $DIRROM/product >> $DIRSCRIPTS/log.txt
-		sudo umount $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
+		sudo umount $DIRROM/system >> /dev/null 2>&1
+		sudo umount $DIRROM/vendor >> /dev/null 2>&1
+		sudo umount $DIRROM/odm >> /dev/null 2>&1
+		sudo umount $DIRROM/product >> /dev/null 2>&1
+		sudo umount $DIRROM/system_ext >> /dev/null 2>&1
 
 		echo "Resizing partitions..."
 		echo " "
@@ -1484,11 +1528,11 @@ umount_main() {
 		echo " "
 		echo "Unmounting partitions..."
 		echo " "
-		sudo umount $DIRROM/system >> $DIRSCRIPTS/log.txt
-		sudo umount $DIRROM/vendor >> $DIRSCRIPTS/log.txt
-		sudo umount $DIRROM/odm >> $DIRSCRIPTS/log.txt
-		sudo umount $DIRROM/product >> $DIRSCRIPTS/log.txt
-		sudo umount $DIRROM/system_ext >> $DIRSCRIPTS/log.txt
+		sudo umount $DIRROM/system >> /dev/null 2>&1
+		sudo umount $DIRROM/vendor >> /dev/null 2>&1
+		sudo umount $DIRROM/odm >> /dev/null 2>&1
+		sudo umount $DIRROM/product >> /dev/null 2>&1
+		sudo umount $DIRROM/system_ext >> /dev/null 2>&1
 	}
 	
 	while true; do
@@ -1636,7 +1680,6 @@ patch_oplus() {
 }
 
 start_tools() {
-	rm -rf $DIRSCRIPTS/log.txt
 	setup
 	while true; do
 	    banner
