@@ -1441,18 +1441,18 @@ umount_main() {
 		clear
 		resize_to_build(){
 			if [ -f $DIRROM/${valset}_a.img ]; then
-				e2fsck -yf $DIRROM/${valset}_a.img >> /dev/null
-				resize2fs -M $DIRROM/${valset}_a.img >> /dev/null
-				e2fsck -yf $DIRROM/${valset}_a.img >> /dev/null
+				e2fsck -yf $DIRROM/${valset}_a.img 2> /dev/null
+				resize2fs -M $DIRROM/${valset}_a.img 2> /dev/null
+				e2fsck -yf $DIRROM/${valset}_a.img 2> /dev/null
 				
 				vsizenow=$(ls -nl $DIRROM/${valset}_a.img | awk '{print $5}')
 				sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
 				resize2fs $DIRROM/${valset}_a.img $sizeimg
 				e2fsck -yf $DIRROM/${valset}_a.img
 			else
-				e2fsck -yf $DIRROM/${valset}.img >> /dev/null
-				resize2fs -M $DIRROM/${valset}.img >> /dev/null
-				e2fsck -yf $DIRROM/${valset}.img >> /dev/null
+				e2fsck -yf $DIRROM/${valset}.img 2> /dev/null
+				resize2fs -M $DIRROM/${valset}.img 2> /dev/null
+				e2fsck -yf $DIRROM/${valset}.img 2> /dev/null
 				
 				vsizenow=$(ls -nl $DIRROM/${valset}.img | awk '{print $5}')
 				sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
@@ -1491,13 +1491,13 @@ umount_main() {
 		clear
 		resize_to_build(){
 			if [ -f $DIRROM/${valset}_a.img ]; then
-				e2fsck -yf $DIRROM/${valset}_a.img >> /dev/null
-				resize2fs -M $DIRROM/${valset}_a.img >> /dev/null
-				e2fsck -yf $DIRROM/${valset}_a.img >> /dev/null
+				e2fsck -yf $DIRROM/${valset}_a.img 2> /dev/null
+				resize2fs -M $DIRROM/${valset}_a.img 2> /dev/null
+				e2fsck -yf $DIRROM/${valset}_a.img 2> /dev/null
 			else
-				e2fsck -yf $DIRROM/${valset}.img >> /dev/null
-				resize2fs -M $DIRROM/${valset}.img >> /dev/null
-				e2fsck -yf $DIRROM/${valset}.img >> /dev/null
+				e2fsck -yf $DIRROM/${valset}.img 2> /dev/null
+				resize2fs -M $DIRROM/${valset}.img 2> /dev/null
+				e2fsck -yf $DIRROM/${valset}.img 2> /dev/null
 			fi;
 		}
 		echo " "
