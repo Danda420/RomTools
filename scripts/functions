@@ -584,6 +584,7 @@ oplus_script() {
 		folder=($DIRROM/odm/etc/*)
 		echo "${folder[0]}"
 		cp -r $folder $DIRTOOLS/tmp/
+		build_type=$(echo $folder | tail -c 6)
 		
 		sudo umount $DIRROM/odm
 		sudo umount $DIRROM/vendor
@@ -681,6 +682,20 @@ oplus_script() {
 		
 		sudo umount $DIROUT/my_product >> /dev/null 2>&1
 		rm -rf $DIROUT/my_product
+		
+		sed -i 's/import/#import/g' $DIRTOOLS/tmp/build.prop
+		sed -i 's/import/#import/g' $DIRTOOLS/tmp/build.prop
+		echo "import /odm/etc/${build_type}/build.default.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_bigball/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_carrier/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_company/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_engineering/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_heytap/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_manifest/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_preload/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_product/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_region/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_stock/build.prop" >> $DIRTOOLS/tmp/build.prop
 		
 		echo " "
 		echo "Zipping..."
