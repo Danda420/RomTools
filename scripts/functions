@@ -1657,10 +1657,6 @@ patch_oplus() {
 		cp $DIRPATCH/${device}/init.usb.configfs.rc $DIRROM/system/system/etc/init/hw/
 		chmod 644 $DIRROM/system/system/etc/init/hw/init.usb.configfs.rc
 		
-		rm -rf $DIRROM/product/etc/device_features/*
-		cp $DIRPATCH/${device}/${device}.xml $DIRROM/product/etc/device_features/
-		chmod 644 $DIRROM/product/etc/device_features/${device}.xml
-		
 		cp $DIRPATCH/${device}/uinput-fpc.kl $DIRROM/system/system/usr/keylayout/
 		cp $DIRPATCH/${device}/uinput-goodix.kl $DIRROM/system/system/usr/keylayout/
 		chmod 644 $DIRROM/system/system/usr/keylayout/uinput-fpc.kl
