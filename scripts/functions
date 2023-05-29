@@ -638,6 +638,19 @@ oplus_script() {
 		convert
 		rm -rf $DIRSCRIPTS/ROM
 		rm -rf $DIRIN/system.img
+		echo " "
+		echo "Patching my_bigball..."
+		
+		mkdir $DIROUT/my_bigball
+		sudo mount -t ext4 -o loop $DIROUT/my_bigball.img $DIROUT/my_bigball >> /dev/null 2>&1
+		sudo chown -R $USER:$USER $DIROUT/my_bigball >> /dev/null 2>&1
+		
+		rm -rf $DIROUT/my_bigball/etc/battery/*
+		cp -r $DIRSCRIPTS/patch/general/etc/battery/* $DIROUT/my_bigball/etc/battery/
+		chmod 644 $DIROUT/my_bigball/etc/battery/*
+		
+		sudo umount $DIROUT/my_bigball >> /dev/null 2>&1
+		rm -rf $DIROUT/my_bigball
 		
 		echo " "
 		echo "Patching my_product..."
