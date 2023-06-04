@@ -1,120 +1,77 @@
 #!/bin/bash
-# https://github.com/rain2wood/erofs
-
-IMAGE=$(realpath $1)
-PARTITION=$2
-SIZE=$3
-
-rm -rf log.txt >> /dev/null
-touch log.txt
-
-NEWIMAGE="$PARTITION.img"
-LOCALDIR=$PWD
+img=$(realpath $1)
+partition=$2
+TOOLDIR=$PWD
+erofsdir=$TOOLDIR/erofs
 RUNDIR=$(dirname $1)
-MOUNTDIR="$LOCALDIR/ROM/$PARTITION"
-toolsdir="$LOCALDIR/bin"
-tmpdir="$LOCALDIR/tmp"
-fileconts="$tmpdir/plat_file_contexts"
-
-usage() {
-    echo "sudo ./$0 <image path> <partition name>"
-}
-
-if [[ $2 == "" ]]; then 
-    usage
-fi
+mount="$TOOLDIR/$partition"
+bin=$TOOLDIR/bin
+tmpdir="$TOOLDIR/tmp"
+fscontexts="$tmpdir/plat_file_contexts"
 
 mount() {
-    sudo rm -rf $tmpdir $MOUNTDIR
-    mkdir $MOUNTDIR
-    echo "[INFO] Mounting $PARTITION..."
-    sudo mount -t auto -o loop $IMAGE $MOUNTDIR
+    sudo rm -rf $tmpdir $mount
+    mkdir $mount
+    echo "- Mounting $partition..."
+    sudo mount -t auto -o loop $img $mount
 }
 
-contextfix() {
-    echo "/opconfig(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/opcust(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/3rdmodem(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/3rdmodemnvm(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/3rdmodemnvmbkp(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/cust(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/eng(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/hw_product(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/log(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/modem_log(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/patch_hw(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/preas(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/prets(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/pretvs(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/resetFactory.cfg(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/sec_storage(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/splash2(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/my_bigball(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/my_carrier(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/my_custom(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/my_company(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/my_engineering(/.*)?                u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/my_heytap(/.*)?                     u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/my_manifest(/.*)?                   u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/my_preload(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/my_product(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/my_region(/.*)?                     u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/my_stock(/.*)?                      u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/my_version(/.*)?                    u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/special_preload(/.*)?               u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/preavs(/.*)?                        u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/preload(/.*)?                       u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/version(/.*)?                       u:object_r:rootfs:s0" >> "$fileconts"
-    echo "/(oppo_custom|my_custom)/theme_bak(/.*)? u:object_r:oppo_theme_data_file:s0
-    /(my_(engineering|version|product|company|preload|bigball|carrier|region|stock|heytap|manifest|custom)|special_preload)(/.*)?           u:object_r:system_file:s0
-    /(my_(engineering|version|product|company|preload|bigball|carrier|region|stock|heytap|custom)|special_preload)/overlay(/.*)?   u:object_r:vendor_overlay_file:s0
-    /(my_(engineering|version|product|company|preload|bigball|carrier|region|stock|heytap|custom)|special_preload)/non_overlay/overlay(/.*)?   u:object_r:vendor_overlay_file:s0
-    /(my_(engineering|version|product|company|preload|bigball|carrier|region|stock|heytap|custom)|special_preload)/vendor_overlay/[0-9]+/.*   u:object_r:vendor_file:s0
-    /(my_(engineering|version|product|company|preload|bigball|carrier|region|stock|heytap|custom)|special_preload)/vendor/etc(/.*)?    u:object_r:vendor_configs_file:s0
-    /(my_version|odm)/build.prop                                             u:object_r:vendor_file:s0
-    /(my_version|odm)/vendor_overlay/[0-9]+/lib(64)?(/.*)?    u:object_r:same_process_hal_file:s0
-    /(my_version|odm)/vendor_overlay/[0-9]+/etc/camera(/.*)?  u:object_r:same_process_hal_file:s0
-    /(my_version|odm)/vendor_overlay/[0-9]+/camera(/.*)?      u:object_r:vendor_file:s0
-    /(my_version|odm)/lib64/camera(/.*)?                      u:object_r:vendor_file:s0
-    /(my_version|odm)/vendor_overlay/lib?(/.*)?         u:object_r:same_process_hal_file:s0
-    /(my_version|odm)/vendor_overlay/lib(64)?(/.*)?     u:object_r:same_process_hal_file:s0
-    /my_manifest/build.prop u:object_r:vendor_file:s0
-    /my_company/theme_bak(/.*)? u:object_r:oem_theme_data_file:s0
-    /my_product/etc/project_info.txt                                   u:object_r:vendor_file:s0
-    /my_product/product_overlay/framework(/.*)?          u:object_r:system_file:s0
-    /my_product/product_overlay/etc/permissions(/.*)?    u:object_r:system_file:s0
-    /(vendor|my_engineering|system/vendor)/bin/factory	u:object_r:factory_exec:s0
-    /(vendor|my_engineering|system/vendor)/bin/pcba_diag	u:object_r:pcba_diag_exec:s0
-    /my_product/lib(64)?/libcolorx-loader\.so                                                   u:object_r:same_process_hal_file:s0
-    /my_product/vendor/firmware(/.*)      u:object_r:vendor_file:s0
-    /my_version/vendor/firmware(/.*)?      u:object_r:vendor_file:s0" >> "$fileconts"
-    if [[ $PARTITION != "system" ]]; then
-        mkdir $LOCALDIR/system
-        sudo mount -t auto $RUNDIR/system.img $LOCALDIR/system
-        sudo cat $LOCALDIR/system/system/etc/selinux/plat_file_contexts >> $fileconts
-        sudo umount -f -l $LOCALDIR/system
-        rm -rf $LOCALDIR/system
+fs_contexts() {
+    if [[ $partition == "system_ext" ]]; then
+        $bin/unpack.erofs $img $erofsdir > /dev/null 2>&1 
+        cat $erofsdir/config/system_ext_file_contexts > $fscontexts
+        rm -rf $erofsdir
+    else
+        echo "/product(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/system(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/system_ext(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/cust(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/odm(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/vendor(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_bigball(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_carrier(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_custom(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_company(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_engineering(/.*)?                u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_heytap(/.*)?                     u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_manifest(/.*)?                   u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_preload(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_product(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_region(/.*)?                     u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_stock(/.*)?                      u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_version(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_reserve(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/special_preload(/.*)?               u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/preload(/.*)?                       u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/version(/.*)?                       u:object_r:rootfs:s0" >> "$fscontexts"
+        if [[ $partition != "system" ]]; then
+            mkdir $TOOLDIR/system
+            sudo mount -t auto $RUNDIR/system.img $TOOLDIR/system
+            sudo cat $TOOLDIR/system/system/etc/selinux/plat_file_contexts >> $fscontexts
+            sudo umount -f -l $TOOLDIR/system
+            rm -rf $TOOLDIR/system
+        fi
     fi
 }
 
 rebuild() {
     mkdir $tmpdir
-    echo "[INFO] Rebuilding $PARTITION as ext4 image..."
-    cp -fpr $(sudo find $MOUNTDIR | grep file_contexts) $tmpdir/ >/dev/null 2>&1 
-    contextfix
-    SIZE=`du -sk $MOUNTDIR | awk '{$1*=1024;$1=int($1*2);printf $1}'`
+    echo "- Rebuilding $partition as ext4 image..."
+    cp -fpr $(sudo find $mount | grep file_contexts) $tmpdir/ > /dev/null 2>&1 
+    fs_contexts
+    SIZE=`sudo du -sk $mount | awk '{$1*=1024;$1=int($1*2);printf $1}'`
     if (( $SIZE < 1474560 )); then
-        SIZE=`du -sk $MOUNTDIR | awk '{$1*=1024;$1=int($1*7);printf $1}'`
+        SIZE=`sudo du -sk $mount | awk '{$1*=1024;$1=int($1*7);printf $1}'`
     fi
-    if [[ $PARTITION == "system" ]]; then
-        sudo $toolsdir/mkuserimg_mke2fs.py "$MOUNTDIR/" "$NEWIMAGE" ext4 "/" $SIZE $fileconts -j "0" -T "1230768000" -L "/" -I "256" -M "/" -m "0" >> log.txt
+    if [[ $partition == "system" ]]; then
+        sudo $bin/mkuserimg_mke2fs.py "$mount/" "$partition.img" ext4 "/" $SIZE $fscontexts -j "0" -T "1230768000" -L "/" -I "256" -M "/" -m "0" > /dev/null 2>&1 
     else
-        sudo $toolsdir/mkuserimg_mke2fs.py "$MOUNTDIR/" "$NEWIMAGE" ext4 "/$PARTITION" $SIZE $fileconts -j "0" -T "1230768000" -L "$PARTITION" -I "256" -M "/$PARTITION" -m "0" >> log.txt
+        sudo $bin/mkuserimg_mke2fs.py "$mount/" "$partition.img" ext4 "/$partition" $SIZE $fscontexts -j "0" -T "1230768000" -L "$partition" -I "256" -M "/$partition" -m "0" > /dev/null 2>&1 
     fi
-    sudo umount -f -l $MOUNTDIR
-    rm -rf $MOUNTDIR 
+    sudo umount -f -l $mount
+    rm -rf $mount 
     sudo rm -rf $tmpdir
-    echo "[INFO] Done"
+    echo "- Done"
 }
 
 mount
