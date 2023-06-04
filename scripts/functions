@@ -39,6 +39,14 @@ give_perm() {
 	sudo chown -R $USER:$USER $DIRROM/product >> /dev/null 2>&1
 }
 
+restore_perm() {
+	sudo chown -R root:root $DIRROM/system >> /dev/null 2>&1
+	sudo chown -R root:root $DIRROM/vendor >> /dev/null 2>&1
+	sudo chown -R root:root $DIRROM/odm >> /dev/null 2>&1
+	sudo chown -R root:root $DIRROM/system_ext >> /dev/null 2>&1
+	sudo chown -R root:root $DIRROM/product >> /dev/null 2>&1
+}
+
 setup() {
 	clear
 	if [[ -d $DIRTOOLS/ROM ]] && [[ -d $DIRTOOLS/rom_input ]] && [[ -d $DIRTOOLS/rom_output ]]; then
@@ -199,6 +207,7 @@ erofs_ext4_main() {
 	erofs_ext4_normal() {
 		cd $DIRSCRIPTS
 		clear
+        mkdir $DIRSCRIPTS/ROM
 		if [[ -f $DIRIN/system.img ]]; then
 			echo "make sure image is on rom_input folder"
 			echo " "
@@ -231,6 +240,7 @@ erofs_ext4_main() {
 
 	erofs_ext4_oplus() {
 		cd $DIRSCRIPTS
+        mkdir $DIRSCRIPTS/ROM
 		clear
 		if [[ -f $DIRIN/system.img ]]; then
 		    convert(){
@@ -273,16 +283,21 @@ erofs_ext4_main() {
 		    convert
 		    partition=my_stock
 		    convert
+		    if [[ $(blkid -o value -s TYPE $DIROUT/product.img) == erofs ]]; then
+		      	partition=product
+			convert
+		    else
+		      	mv $DIRIN/product.img $DIRTOOLS/tmp/
+		    fi
 		    partition=system_ext
 		    convert
 		    partition=system
 		    convert
+		    rm -rf $DIRSCRIPTS/ROM
 		else
 			echo ""
 			echo "Put your system.img from the rom that you want to convert to $DIRIN"
 		fi
-
-		rm -rf $DIRSCRIPTS/ROM
 		cd $DIRTOOLS
 	}
 
@@ -547,7 +562,7 @@ oplus_script() {
 	cd $DIRSCRIPTS
 	clear
 	if [[ -f $DIRIN/payload.bin ]]; then
-
+        mkdir $DIRSCRIPTS/ROM
 		echo " "
 		echo "Extracting payload..."
 		$DIRSCRIPTS/bin/payload --output=$DIROUT $DIRIN/payload.bin
@@ -559,10 +574,9 @@ oplus_script() {
 		echo "Moving images..."
 		mkdir $DIRTOOLS/tmp
 		mv $DIROUT/my_* $DIRIN/
-		cp $DIROUT/system.img $DIRTOOLS/tmp/
 		mv $DIROUT/system.img $DIRIN/
-		mv $DIROUT/system_ext.img $DIRTOOLS/tmp/
-		mv $DIROUT/product.img $DIRTOOLS/tmp/
+		mv $DIROUT/system_ext.img $DIRIN/
+		mv $DIROUT/product.img $DIRIN/
 		mv $DIROUT/odm.img $DIRROM/
 		mv $DIROUT/vendor.img $DIRROM/
 		
@@ -592,9 +606,22 @@ oplus_script() {
 		rm -rf $DIRROM/odm.img
 		rm -rf $DIRROM/vendor.img
 		
+		sed -i 's/import/#import/g' $DIRTOOLS/tmp/build.prop
+		sed -i 's/import/#import/g' $DIRTOOLS/tmp/build.prop
+		echo "import /odm/etc/${build_type}/build.default.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_bigball/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_carrier/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_company/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_engineering/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_heytap/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_manifest/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_preload/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_product/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_region/build.prop" >> $DIRTOOLS/tmp/build.prop
+		echo "import /my_stock/build.prop" >> $DIRTOOLS/tmp/build.prop
+		
 		echo " "
-		echo "Converting my_xxx images to ext4"
-		mkdir $DIRSCRIPTS/ROM
+		echo "Converting images to ext4"
 		
 		convert(){
 		   if [[ -f $DIRIN/$partition.img ]]; then
@@ -636,8 +663,17 @@ oplus_script() {
 		convert
 		partition=my_stock
 		convert
+		if [[ $(blkid -o value -s TYPE $DIROUT/product.img) == erofs ]]; then
+		   partition=product
+		   convert
+		else
+		   mv $DIRIN/product.img $DIRTOOLS/tmp/
+		fi
+		partition=system_ext
+		convert
+		partition=system
+		convert
 		rm -rf $DIRSCRIPTS/ROM
-		rm -rf $DIRIN/system.img
 		echo " "
 		echo "Patching my_bigball..."
 		
@@ -649,6 +685,7 @@ oplus_script() {
 		cp -r $DIRSCRIPTS/patch/general/etc/battery/* $DIROUT/my_bigball/etc/battery/
 		chmod 644 $DIROUT/my_bigball/etc/battery/*
 		
+		sudo chown -R root:root $DIROUT/my_bigball >> /dev/null 2>&1
 		sudo umount $DIROUT/my_bigball >> /dev/null 2>&1
 		rm -rf $DIROUT/my_bigball
 		
@@ -693,22 +730,62 @@ oplus_script() {
 		echo ro.oplus.display.rc.size=106,106,106,106 >> $DIROUT/my_product/build.prop
 		echo ro.oplus.display.screenSizeInches.primary=6.67 >> $DIROUT/my_product/build.prop
 		
+		sudo chown -R root:root $DIROUT/my_product >> /dev/null 2>&1
 		sudo umount $DIROUT/my_product >> /dev/null 2>&1
 		rm -rf $DIROUT/my_product
+
+        	echo " "
+		echo "Patching system..."
 		
-		sed -i 's/import/#import/g' $DIRTOOLS/tmp/build.prop
-		sed -i 's/import/#import/g' $DIRTOOLS/tmp/build.prop
-		echo "import /odm/etc/${build_type}/build.default.prop" >> $DIRTOOLS/tmp/build.prop
-		echo "import /my_bigball/build.prop" >> $DIRTOOLS/tmp/build.prop
-		echo "import /my_carrier/build.prop" >> $DIRTOOLS/tmp/build.prop
-		echo "import /my_company/build.prop" >> $DIRTOOLS/tmp/build.prop
-		echo "import /my_engineering/build.prop" >> $DIRTOOLS/tmp/build.prop
-		echo "import /my_heytap/build.prop" >> $DIRTOOLS/tmp/build.prop
-		echo "import /my_manifest/build.prop" >> $DIRTOOLS/tmp/build.prop
-		echo "import /my_preload/build.prop" >> $DIRTOOLS/tmp/build.prop
-		echo "import /my_product/build.prop" >> $DIRTOOLS/tmp/build.prop
-		echo "import /my_region/build.prop" >> $DIRTOOLS/tmp/build.prop
-		echo "import /my_stock/build.prop" >> $DIRTOOLS/tmp/build.prop
+		mkdir $DIROUT/system
+		sudo mount -t ext4 -o loop $DIROUT/system.img $DIROUT/system >> /dev/null 2>&1
+		sudo chown -R $USER:$USER $DIROUT/system >> /dev/null 2>&1
+		
+		rm -rf $DIROUT/system/system/bin/logd
+		cp $DIRSCRIPTS/patch/general/system/bin/logd $DIROUT/system/system/bin/logd
+		chmod 755 $DIROUT/system/system/bin/logd
+		
+		rm -rf $DIROUT/system/system/etc/init/hw/init.usb.configfs.rc
+		cp $DIRSCRIPTS/patch/general/system/etc/init/hw/init.usb.configfs.rc $DIROUT/system/system/etc/init/hw/init.usb.configfs.rc
+		chmod 644 $DIROUT/system/system/etc/init/hw/init.usb.configfs.rc
+		
+		rm -rf $DIROUT/system/system/etc/init/logd.rc 
+		cp $DIRSCRIPTS/patch/general/system/etc/init/logd.rc $DIROUT/system/system/etc/init/logd.rc
+		chmod 644 $DIROUT/system/system/etc/init/logd.rc
+
+		rm -rf $DIROUT/system/system/lib/libvibratorservice.so
+		rm -rf $DIROUT/system/system/lib64/libvibratorservice.so
+		cp $DIRSCRIPTS/patch/general/system/lib/libvibratorservice.so $DIROUT/system/system/lib/libvibratorservice.so
+		cp $DIRSCRIPTS/patch/general/system/lib64/libvibratorservice.so $DIROUT/system/system/lib64/libvibratorservice.so
+		chmod 644 $DIROUT/system/system/lib/libvibratorservice.so
+		chmod 644 $DIROUT/system/system/lib64/libvibratorservice.so
+
+		rm -rf $DIROUT/system/system/lib64/libkeystore-attestation-application-id.so
+		cp $DIRSCRIPTS/patch/general/system/lib64/libkeystore-attestation-application-id.so $DIROUT/system/system/lib64/libkeystore-attestation-application-id.so
+		chmod 644 $DIROUT/system/system/lib64/libkeystore-attestation-application-id.so
+		
+		sudo chown -R root:root $DIROUT/system >> /dev/null 2>&1
+		sudo umount $DIROUT/system >> /dev/null 2>&1
+		rm -rf $DIROUT/system
+
+        	echo " "
+		echo "Patching system_ext..."
+		
+		mkdir $DIROUT/system_ext
+		sudo mount -t ext4 -o loop $DIROUT/system_ext.img $DIROUT/system_ext >> /dev/null 2>&1
+		sudo chown -R $USER:$USER $DIROUT/system_ext >> /dev/null 2>&1
+		
+		rm -rf $DIROUT/system_ext/bin/minidumpreader
+		rm -rf $DIROUT/system_ext/etc/init/self_init_*
+		echo ro.oplus.fs.zstd=1 >> $DIROUT/system_ext/etc/build.prop
+		
+		rm -rf $DIROUT/system_ext/etc/display_brightness_config_default.xml
+		cp $DIRSCRIPTS/patch/general/system_ext/etc/display_brightness_config_default.xml $DIROUT/system_ext/etc/display_brightness_config_default.xml
+		chmod 644 $DIROUT/system_ext/etc/display_brightness_config_default.xml
+		
+		sudo chown -R root:root $DIROUT/system_ext >> /dev/null 2>&1
+		sudo umount $DIROUT/system_ext >> /dev/null 2>&1
+		rm -rf $DIROUT/system_ext
 		
 		echo " "
 		echo "Zipping..."
@@ -720,7 +797,6 @@ oplus_script() {
 		echo "Cleaning..."
 		rm -rf $DIRTOOLS/tmp
 		rm -rf $DIROUT/*
-		
 	else
 		echo "no payload.bin file detected on $DIRIN"
 	fi
@@ -1504,6 +1580,7 @@ umount_main() {
 			echo " "
 			echo "Unmounting $PARTITION..."
 			echo " "
+			sudo chown -R root:root $DIRROM/$PARTITION >> /dev/null 2>&1
 			sudo umount $DIRROM/$PARTITION >> /dev/null 2>&1
 
 			echo "Resizing $PARTITION..."
@@ -1531,6 +1608,7 @@ umount_main() {
 		echo " "
 		echo "Unmounting partitions..."
 		echo " "
+		restore_perm
 		sudo umount $DIRROM/system >> /dev/null 2>&1
 		sudo umount $DIRROM/vendor >> /dev/null 2>&1
 		sudo umount $DIRROM/odm >> /dev/null 2>&1
@@ -1556,6 +1634,7 @@ umount_main() {
 		echo " "
 		echo "Unmounting partitions..."
 		echo " "
+		restore_perm
 		sudo umount $DIRROM/system >> /dev/null 2>&1
 		sudo umount $DIRROM/vendor >> /dev/null 2>&1
 		sudo umount $DIRROM/odm >> /dev/null 2>&1
