@@ -602,8 +602,10 @@ oplus_script() {
 		
 		echo " "
 		echo "Copying Props..."
-		sudo cp $DIRROM/vendor/build.prop $DIRTOOLS/tmp/vendor.prop
-		sudo chown $USER $DIRTOOLS/tmp/vendor.prop
+		sudo grep ro.oplus.version.base $DIRROM/vendor/build.prop >> $DIRTOOLS/tmp/oplus.prop
+		sudo grep ro.oplus.image.base.version $DIRROM/vendor/build.prop >> $DIRTOOLS/tmp/oplus.prop
+		sudo grep ro.oplus.image.vendor.version $DIRROM/vendor/build.prop >> $DIRTOOLS/tmp/oplus.prop
+		sudo chown $USER $DIRTOOLS/tmp/oplus.prop
 		
 		sudo cp $DIRROM/odm/build.prop $DIRTOOLS/tmp/
 		sudo chown $USER $DIRTOOLS/tmp/build.prop
@@ -726,6 +728,22 @@ oplus_script() {
 		sudo chown -R root:root $DIROUT/my_product >> /dev/null 2>&1
 		sudo umount $DIROUT/my_product >> /dev/null 2>&1
 		rm -rf $DIROUT/my_product
+		
+		echo " "
+		echo "Patching my_stock..."
+		
+		mkdir $DIROUT/my_stock
+		sudo mount -t ext4 -o loop $DIROUT/my_stock.img $DIROUT/my_stock >> /dev/null 2>&1
+		sudo chown -R $USER:$USER $DIROUT/my_stock >> /dev/null 2>&1
+		
+		rm -rf $DIROUT/my_stock/app/FileEncryption
+		rm -rf $DIROUT/my_stock/app/ChildrenSpace
+		rm -rf $DIROUT/my_stock/app/RomUpdate
+		rm -rf $DIROUT/my_stock/priv-app/PlayAutoInstallConfig
+		
+		sudo chown -R root:root $DIROUT/my_stock >> /dev/null 2>&1
+		sudo umount $DIROUT/my_stock >> /dev/null 2>&1
+		rm -rf $DIROUT/my_stock
 
         	echo " "
 		echo "Patching system..."
