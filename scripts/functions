@@ -7,6 +7,9 @@ DIRSCRIPTS=$DIRTOOLS/scripts
 MERGE=$DIRTOOLS/scripts/merge_non_dynamic
 OPLUSMERGE=$DIRTOOLS/scripts/oplus
 DIRSUPER=$DIRTOOLS/ROM/super
+G='\033[1;32m'
+R='\033[1;31m'
+NC='\033[0m'
 
 restart_tool() {
 	echo " "
@@ -25,10 +28,10 @@ restart_tool() {
 
 banner() {
 	clear
-	echo "========================="
-	echo "   ROM TOOLS FOR LINUX   "
-	echo "        by  Danda        "
-	echo "========================="
+	echo -e "${G}========================="
+	echo -e "${G}   ROM TOOLS FOR LINUX   "
+	echo -e "${G}        by  Danda        "
+	echo -e "${G}=========================${NC}"
 }
 
 give_perm() {
@@ -188,8 +191,8 @@ convert_erofs_ext4(){
 		echo ""
 	else
 		echo ""
-		echo "theres no image named "$partition.img" in $DIRIN"
-		echo ""
+		echo -e "${R}theres no image named "$partition.img" in $DIRIN"
+		echo -e "${NC}"
 	 fi
 }
 		
@@ -208,8 +211,8 @@ rebuild_ext4(){
 		echo ""
 	 else
 		echo ""
-		echo "theres no image named "$partition.img" in $DIRIN"
-		echo ""
+		echo -e "${R}theres no image named "$partition.img" in $DIRIN"
+		echo -e "${NC}"
 	fi
 }
 
@@ -251,7 +254,7 @@ datbr_raw() {
 		echo "Done! Output : $DIROUT"
 	else
 
-		echo "theres no image "$imgname.new.dat.br""
+		echo -e "${R}theres no image "$imgname.new.dat.br"${NC}"
 	fi
 }
 
@@ -268,7 +271,8 @@ erofs_ext4_main() {
 			convert_erofs_ext4
 		else
 			echo ""
-			echo "Put your system.img from the rom that you want to convert to $DIRIN"
+			echo -e "${R}Put your system.img from the rom that you want to convert to $DIRIN"
+			echo -e "${NC}"
 		fi
 		cd $DIRTOOLS
 	}
@@ -310,7 +314,8 @@ erofs_ext4_main() {
 		    convert_erofs_ext4
 		else
 			echo ""
-			echo "Put your system.img from the rom that you want to convert to $DIRIN"
+			echo -e "${R}Put your system.img from the rom that you want to convert to $DIRIN"
+			echo -e "${NC}"
 		fi
 		cd $DIRTOOLS
 	}
@@ -396,7 +401,8 @@ merge_main() {
 		echo "merged all fs context and config.. Output : $DIROUT"
 
 		else
-			echo "Error : put your system_file_contexts & system_fs_config to $DIRIN"
+			echo -e "${R}Error : put your system_file_contexts & system_fs_config to $DIRIN"
+			echo -e "${NC}"
 			
 		fi
 	}
@@ -427,7 +433,8 @@ merge_main() {
 			mv $DIRIN/system_fs_config $DIROUT/
 
 		else
-			echo "Error : you probably missed some important partitions fs conf and context..."
+			echo -e "${R}Error : you probably missed some important partitions fs conf and context..."
+			echo -e "${NC}"
 			
 		fi
 	}
@@ -567,7 +574,8 @@ payload() {
 
 	else
 
-		echo "there's no payload.bin in $DIRIN"
+		echo -e "${R}there's no payload.bin in $DIRIN"
+		echo -e "${NC}"
 
 	fi
 }
@@ -825,7 +833,8 @@ oplus_script() {
 		rm -rf $DIRTOOLS/tmp
 		rm -rf $DIROUT/*
 	else
-		echo "no payload.bin file detected on $DIRIN"
+		echo -e "${R}no payload.bin file detected on $DIRIN"
+		echo -e "${NC}"
 	fi
 	
 	cd $DIRTOOLS
@@ -850,7 +859,8 @@ raw_sparse() {
 		echo "Done! Output : $DIROUT"
 
 	else
-		echo "there's no $imgname.img in $DIRIN"
+		echo -e "${R}there's no $imgname.img in $DIRIN"
+		echo -e "${NC}"
 	fi
 }
 
@@ -895,7 +905,8 @@ raw_datbr() {
 		echo "Done! Output : $DIROUT"
 		
 	else
-		echo "there's no $imgname.img in $DIRIN"
+		echo -e "${R}there's no $imgname.img in $DIRIN"
+		echo -e "${NC}"
 	fi
 }
 
@@ -1006,7 +1017,8 @@ splits_main() {
 			rm -rf $DIRIN/$partition.img
 		    else
 		    	echo " "
-		    	echo "there's no $partition.img supplied! skipping..."
+		    	echo -e "${R}there's no $partition.img supplied! skipping..."
+		    	echo -e "${NC}"
 		    fi
 		}
 
@@ -1022,7 +1034,8 @@ splits_main() {
 			rm -rf $DIRIN/$partition.*
 		    else
 		    	echo " "
-		    	echo "there's no $partition.sparse.img supplied! skipping..."
+		    	echo -e "${R}there's no $partition.sparse.img supplied! skipping..."
+		    	echo -e "${NC}"
 		    fi
 		}
 
@@ -1034,7 +1047,8 @@ splits_main() {
 			rm -rf $DIROUT/$partition.new.dat
 		    else
 		    	echo " "
-		    	echo "there's no $partition.new.dat supplied! skipping..."
+		    	echo -e "${R}there's no $partition.new.dat supplied! skipping..."
+		    	echo -e "${NC}"
 		    fi
 		}
 
@@ -1179,7 +1193,8 @@ splits_main() {
 			rm -rf $DIRIN/$partition.new.dat.br
 		    else
 		    	echo " "
-		    	echo "there's no $partition.new.dat.br supplied! skipping..."
+		    	echo -e "${R}there's no $partition.new.dat.br supplied! skipping..."
+		    	echo -e "${NC}"
 		    fi
 		}
 
@@ -1191,7 +1206,8 @@ splits_main() {
 			rm -rf $DIRIN/$partition.*
 		    else
 		    	echo " "
-		    	echo "there's no $partition.new.dat and/or $partition.transfer.list supplied! skipping..."
+		    	echo -e "${R}there's no $partition.new.dat and/or $partition.transfer.list supplied! skipping..."
+		    	echo -e "${NC}"
 		    fi
 		}
 
@@ -1290,7 +1306,8 @@ sparse_raw() {
 
 		fi
 	else
-		echo "there's no image named $imgname.img or $imgname.sparse.img in $DIRIN"
+		echo -e "${R}there's no image named $imgname.img or $imgname.sparse.img in $DIRIN"
+		echo -e "${NC}"
 	fi
 }
 
@@ -1315,7 +1332,8 @@ super_main() {
 
 		else
 
-			echo "theres no image "$imgname.img""
+			echo -e "${R}theres no image "$imgname.img""
+			echo -e "${NC}"
 		fi
 	}
 
@@ -1349,7 +1367,8 @@ super_main() {
 
 		else
 
-			echo "theres no image "$imgname.new.dat.br""
+			echo -e "${R}theres no image "$imgname.new.dat.br""
+			echo -e "${NC}"
 		fi
 	}
 
@@ -1616,7 +1635,8 @@ umount_main() {
 			valset=$PARTITION
 			resize_to_build
 		else
-			echo "there's no partition named : $PARTITION"
+			echo -e "${R}there's no partition named : $PARTITION"
+			echo -e "${NC}"
 		fi
 	}
 	umount_resize() {
@@ -1709,21 +1729,15 @@ zip_main() {
 	oplus_zip() {
 		ZIPNAME=$DIRTOOLS/oplus.zip
 		clear
-
 		cd $DIROUT
-
 		zip $ZIPNAME my_* system.img vendor.img odm.img product.img system_ext.img
-
 		cd $DIRTOOLS
 	}
 	splits_zip() {
 		ZIPNAME=$DIRTOOLS/split-partition.zip
 		clear
-
 		cd $DIROUT
-
 		zip $ZIPNAME dynamic_partitions_op_list system.* vendor.* odm.* product.* system_ext.*
-
 		cd $DIRTOOLS
 	}
 	
