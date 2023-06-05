@@ -86,7 +86,7 @@ clean() {
 
 apexconverter() {
 	clear
-	convert() {
+	convert_apex() {
 		mkdir $DIRIN/tmp
 		echo "==========================="
 		echo ""
@@ -112,59 +112,59 @@ apexconverter() {
 	}
 
 	apex=com.android.apex.cts.shim.apex
-	convert
+	convert_apex
 	apex=com.android.i18n.apex
-	convert
+	convert_apex
 	apex=com.android.runtime.apex
-	convert
+	convert_apex
 	apex=com.android.uwb.apex
-	convert
+	convert_apex
 	apex=com.android.vndk.current.apex
-	convert
+	convert_apex
 	apex=com.android.wifi.apex
-	convert
+	convert_apex
 	apex=com.google.android.adbd_trimmed.apex
-	convert
+	convert_apex
 	apex=com.google.android.adservices.apex
-	convert
+	convert_apex
 	apex=com.google.android.appsearch.apex
-	convert
+	convert_apex
 	apex=com.google.android.art.apex
-	convert
+	convert_apex
 	apex=com.google.android.cellbroadcast.apex
-	convert
+	convert_apex
 	apex=com.google.android.conscrypt.apex
-	convert
+	convert_apex
 	apex=com.google.android.extservices.apex
-	convert
+	convert_apex
 	apex=com.google.android.ipsec.apex
-	convert
+	convert_apex
 	apex=com.google.android.media.apex
-	convert
+	convert_apex
 	apex=com.google.android.media.swcodec.apex
-	convert
+	convert_apex
 	apex=com.google.android.mediaprovider.apex
-	convert
+	convert_apex
 	apex=com.google.android.neuralnetworks.apex
-	convert
+	convert_apex
 	apex=com.google.android.ondevicepersonalization.apex
-	convert
+	convert_apex
 	apex=com.google.android.os.statsd.apex
-	convert
+	convert_apex
 	apex=com.google.android.permission.apex
-	convert
+	convert_apex
 	apex=com.google.android.resolv.apex
-	convert
+	convert_apex
 	apex=com.google.android.scheduling.apex
-	convert
+	convert_apex
 	apex=com.google.android.sdkext.apex
-	convert
+	convert_apex
 	apex=com.google.android.tethering.apex
-	convert
+	convert_apex
 	apex=com.google.android.tzdata4.apex
-	convert
+	convert_apex
 	apex=com.google.mainline.primary.libs.apex
-	convert
+	convert_apex
 
 	cd $DIROUT/
 	zip -r $DIRIN/non-updatable.apex.zip *
@@ -173,6 +173,58 @@ apexconverter() {
 	mv $DIRIN/non-updatable.apex.zip $DIROUT/
 }
 
+convert_erofs_ext4(){
+	if [[ -f $DIRIN/$partition.img ]]; then
+		echo " "
+		echo "Starting conversion..."
+		echo ""
+		sudo $DIRSCRIPTS/bin/erofs-ext4 $DIRIN/$partition.img $partition
+		rm -rf $DIRIN/$partition.img
+		mv $DIRSCRIPTS/$partition.img $DIROUT/
+		sudo chown $USER $DIROUT/$partition.img
+		echo ""
+		echo "Conversion done..."
+		echo "Output: $DIROUT"
+		echo ""
+	else
+		echo ""
+		echo "theres no image named "$partition.img" in $DIRIN"
+		echo ""
+	 fi
+}
+		
+rebuild_ext4(){
+	if [[ -f $DIRIN/$partition.img ]]; then
+		echo " "
+		echo "Starting rebuilding..."
+		echo ""
+		sudo $DIRSCRIPTS/bin/rebuild-ext4 $DIRIN/$partition.img $partition
+		rm -rf $DIRIN/$partition.img
+		mv $DIRSCRIPTS/$partition.img $DIROUT/
+		sudo chown $USER $DIROUT/$partition.img
+		echo ""
+		echo "Rebuild done..."
+		echo "Output: $DIROUT"
+		echo ""
+	 else
+		echo ""
+		echo "theres no image named "$partition.img" in $DIRIN"
+		echo ""
+	fi
+}
+
+rebuild_ext4_single() {
+		cd $DIRSCRIPTS
+		clear
+		echo " "
+		echo "Input image name :"
+		read
+		partition=$REPLY
+		rebuild_ext4
+		echo ""
+		cd $DIRTOOLS
+}
+		
 datbr_raw() {
 	clear
 	echo " "
@@ -207,93 +259,55 @@ erofs_ext4_main() {
 	erofs_ext4_normal() {
 		cd $DIRSCRIPTS
 		clear
-        mkdir $DIRSCRIPTS/ROM
 		if [[ -f $DIRIN/system.img ]]; then
 			echo "make sure image is on rom_input folder"
 			echo " "
 			echo "Input image name :"
 			read
 			partition=$REPLY
-
-			if [[ -f $DIRIN/$partition.img ]]; then
-				echo " "
-				echo "Starting conversion..."
-				echo ""
-				sudo $DIRSCRIPTS/bin/erofs-ext4 $DIRIN/$partition.img $partition
-				rm -rf $DIRIN/$partition.img
-				mv $DIRSCRIPTS/$partition.img $DIROUT/
-				sudo chown $USER $DIROUT/$partition.img
-				echo ""
-				echo "Conversion done..."
-				echo "Output: $DIROUT"
-			else
-				echo "theres no image named "$partition.img" in $DIRIN"
-			fi
+			convert_erofs_ext4
 		else
 			echo ""
 			echo "Put your system.img from the rom that you want to convert to $DIRIN"
 		fi
-
-		rm -rf $DIRSCRIPTS/ROM
 		cd $DIRTOOLS
 	}
 
 	erofs_ext4_oplus() {
 		cd $DIRSCRIPTS
-        mkdir $DIRSCRIPTS/ROM
 		clear
 		if [[ -f $DIRIN/system.img ]]; then
-		    convert(){
-			if [[ -f $DIRIN/$partition.img ]]; then
-				echo " "
-				echo "Starting conversion..."
-				echo ""
-				sudo $DIRSCRIPTS/bin/erofs-ext4 $DIRIN/$partition.img $partition
-				rm -rf $DIRIN/$partition.img
-				mv $DIRSCRIPTS/$partition.img $DIROUT/
-				sudo chown $USER $DIROUT/$partition.img
-				echo ""
-				echo "Conversion done..."
-				echo "Output: $DIROUT"
-				echo ""
-			else
-				echo ""
-				echo "theres no image named "$partition.img" in $DIRIN"
-				echo ""
-			fi
-		    }
-		    
 		    partition=my_bigball
-		    convert
+		    convert_erofs_ext4
 		    partition=my_carrier
-		    convert
+		    convert_erofs_ext4
 		    partition=my_company
-		    convert
+		    convert_erofs_ext4
 		    partition=my_engineering
-		    convert
+		    convert_erofs_ext4
 		    partition=my_heytap
-		    convert
+		    convert_erofs_ext4
 		    partition=my_manifest
-		    convert
+		    convert_erofs_ext4
 		    partition=my_preload
-		    convert
+		    convert_erofs_ext4
 		    partition=my_product
-		    convert
+		    convert_erofs_ext4
 		    partition=my_region
-		    convert
+		    convert_erofs_ext4
 		    partition=my_stock
-		    convert
+		    convert_erofs_ext4
 		    if [[ $(blkid -o value -s TYPE $DIROUT/product.img) == erofs ]]; then
 		      	partition=product
-			convert
+			convert_erofs_ext4
 		    else
-		      	mv $DIRIN/product.img $DIRTOOLS/tmp/
+		      	partition=product
+			rebuild_ext4
 		    fi
 		    partition=system_ext
-		    convert
+		    convert_erofs_ext4
 		    partition=system
-		    convert
-		    rm -rf $DIRSCRIPTS/ROM
+		    convert_erofs_ext4
 		else
 			echo ""
 			echo "Put your system.img from the rom that you want to convert to $DIRIN"
@@ -562,7 +576,6 @@ oplus_script() {
 	cd $DIRSCRIPTS
 	clear
 	if [[ -f $DIRIN/payload.bin ]]; then
-        mkdir $DIRSCRIPTS/ROM
 		echo " "
 		echo "Extracting payload..."
 		$DIRSCRIPTS/bin/payload --output=$DIROUT $DIRIN/payload.bin
@@ -622,58 +635,38 @@ oplus_script() {
 		
 		echo " "
 		echo "Converting images to ext4"
-		
-		convert(){
-		   if [[ -f $DIRIN/$partition.img ]]; then
-			echo " "
-			echo "Starting conversion..."
-			echo ""
-			sudo $DIRSCRIPTS/bin/erofs-ext4 $DIRIN/$partition.img $partition
-			rm -rf $DIRIN/$partition.img
-			mv $DIRSCRIPTS/$partition.img $DIROUT/
-			sudo chown $USER $DIROUT/$partition.img
-			echo ""
-			echo "Conversion done..."
-			echo "Output: $DIROUT"
-			echo ""
-		   else
-			echo ""
-			echo "theres no image named "$partition.img" in $DIRIN"
-			echo ""
-		   fi
-		}
 		    
 		partition=my_bigball
-		convert
+		convert_erofs_ext4
 		partition=my_carrier
-		convert
+		convert_erofs_ext4
 		partition=my_company
-		convert
+		convert_erofs_ext4
 		partition=my_engineering
-		convert
+		convert_erofs_ext4
 		partition=my_heytap
-		convert
+		convert_erofs_ext4
 		partition=my_manifest
-		convert
+		convert_erofs_ext4
 		partition=my_preload
-		convert
+		convert_erofs_ext4
 		partition=my_product
-		convert
+		convert_erofs_ext4
 		partition=my_region
-		convert
+		convert_erofs_ext4
 		partition=my_stock
-		convert
+		convert_erofs_ext4
 		if [[ $(blkid -o value -s TYPE $DIROUT/product.img) == erofs ]]; then
 		   partition=product
-		   convert
+		   convert_erofs_ext4
 		else
-		   mv $DIRIN/product.img $DIRTOOLS/tmp/
+		   partition=product
+		   rebuild_ext4
 		fi
 		partition=system_ext
-		convert
+		convert_erofs_ext4
 		partition=system
-		convert
-		rm -rf $DIRSCRIPTS/ROM
+		convert_erofs_ext4
 		echo " "
 		echo "Patching my_bigball..."
 		
@@ -767,6 +760,22 @@ oplus_script() {
 		sudo chown -R root:root $DIROUT/system >> /dev/null 2>&1
 		sudo umount $DIROUT/system >> /dev/null 2>&1
 		rm -rf $DIROUT/system
+		
+		echo " "
+		echo "Patching product..."
+		
+		mkdir $DIROUT/product
+		sudo mount -t ext4 -o loop $DIROUT/product.img $DIROUT/product >> /dev/null 2>&1
+		sudo chown -R $USER:$USER $DIROUT/product >> /dev/null 2>&1
+		
+		rm -rf $DIROUT/product/etc/init/init.oplus.nandswap.rc
+		rm -rf $DIROUT/product/bin/init.oplus.nandswap.sh
+		cp $DIRSCRIPTS/patch/general/product/bin/init.oplus.nandswap.sh $DIROUT/product/bin/init.oplus.nandswap.sh
+		chmod 755 $DIROUT/product/bin/init.oplus.nandswap.sh
+		
+		sudo chown -R root:root $DIROUT/product >> /dev/null 2>&1
+		sudo umount $DIROUT/product >> /dev/null 2>&1
+		rm -rf $DIROUT/product
 
         	echo " "
 		echo "Patching system_ext..."
@@ -1798,12 +1807,13 @@ start_tools() {
 	    echo "9. Unpack payload.bin"
 	    echo "10. Merge fs context and config to system"
 	    echo "11. Convert erofs to ext4"
-	    echo "12. Auto ZIP"
-	    echo "13. idk... port oplus? build oplus? convert oplus?"
-	    echo "14. Patch oplus rom for specific device"
-	    echo "15. Convert updatable apex to non updatable"
-	    echo "16. Clean up folders"
-	    echo "17. Exit tool"
+	    echo "12. Rebuild EXT4 Images (removes avb)"
+	    echo "13. Auto ZIP"
+	    echo "14. idk... port oplus? build oplus? convert oplus?"
+	    echo "15. Patch oplus rom for specific device"
+	    echo "16. Convert updatable apex to non updatable"
+	    echo "17. Clean up folders"
+	    echo "18. Exit tool"
 	    
 	    read -p "" choose
 	    case $choose in
@@ -1862,33 +1872,38 @@ start_tools() {
 		
 	erofs_ext4_main
 	restart_tool;;
-
+	
 		12 ) 
 		
-	zip_main
+	rebuild_ext4_single
 	restart_tool;;
 
 		13 ) 
 		
+	zip_main
+	restart_tool;;
+
+		14 ) 
+		
 	oplus_script
 	restart_tool;;
 	
-		14 )
+		15 )
 		
 	patch_oplus
 	restart_tool;;
 
-		15 ) 
+		16 ) 
 		
 	apexconverter
 	restart_tool;;
 
-		16 ) 
+		17 ) 
 		
 	clean
 	restart_tool;;
 
-		17 )  
+		18 )  
 	clear	
 	exit;;
 		* ) start_tools;;

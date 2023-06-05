@@ -1,0 +1,57 @@
+#!/bin/bash
+
+img=$(realpath $1)
+partition=$2
+TOOLSDIR=$PWD
+mount="$TOOLSDIR/$partition"
+bin="$TOOLSDIR/bin"
+tmpdir="$TOOLSDIR/tmp"
+fscontexts="$tmpdir/plat_file_contexts"
+
+
+mount() {
+    sudo rm -rf $tmpdir $mount
+    mkdir $mount
+    echo "- Mounting $partition..."
+    sudo mount -t auto -o ro,nosuid,nodev,relatime,uhelper=udisks2,loop $img $mount > /dev/null 2>&1 
+}
+
+fs_contexts() {
+        echo "/product(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/system(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/system_ext(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/cust(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/odm(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/vendor(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_bigball(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_carrier(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_custom(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_company(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_engineering(/.*)?                u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_heytap(/.*)?                     u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_manifest(/.*)?                   u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_preload(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_product(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_region(/.*)?                     u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_stock(/.*)?                      u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_version(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+        echo "/my_reserve(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+}
+
+rebuild() {
+    mkdir $tmpdir
+    echo "- Rebuilding $partition..."
+    fs_contexts
+    SIZE=`sudo du -sk $mount | awk '{$1*=1024;$1=int($1*2);printf $1}'`
+    if (( $SIZE < 1474560 )); then
+        SIZE=`sudo du -sk $mount | awk '{$1*=1024;$1=int($1*7);printf $1}'`
+    fi
+    sudo $bin/mkuserimg_mke2fs.py "$mount/" "$partition.img" ext4 "/$partition" $SIZE $fscontexts -j "0" -T "1230768000" -L "$partition" -I "256" -M "/$partition" -m "0" > /dev/null 2>&1
+    sudo umount -f -l $mount
+    rm -rf $mount
+    sudo rm -rf $tmpdir
+    echo "- Done!"
+}
+
+mount
+rebuild
