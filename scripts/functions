@@ -10,6 +10,7 @@ DIRSUPER=$DIRTOOLS/ROM/super
 G='\033[1;32m'
 R='\033[1;31m'
 NC='\033[0m'
+today=$(date '+%Y%m%d-%H%M%S')
 
 restart_tool() {
 	echo " "
@@ -31,6 +32,10 @@ banner() {
 	echo -e "${G}========================="
 	echo -e "${G}   ROM TOOLS FOR LINUX   "
 	echo -e "${G}        by  Danda        "
+	echo -e "${G}========================="
+	echo -e "${H} Linux : $get_os "
+	echo -e "${H} User : $USER "
+	echo -e "${H} Date : $today "
 	echo -e "${G}=========================${NC}"
 }
 
@@ -1829,6 +1834,34 @@ patch_oplus() {
 	done
 }
 
+linux_os(){
+	os_ver=$(cat /etc/os-release)
+	read_version=$(grep 'PRETTY_NAME=' <<< $os_ver);
+	get_os=$(echo $read_version | sed 's/PRETTY_NAME=//g' | sed 's/"//g');
+}
+
+linux_os;
+install_req(){
+	echo " "
+	echo -e "$G Check installation tools $NC"
+	echo " "
+	if [[ $get_os == *"Ubuntu"* ]] || [[ $get_os == *"Debian"* ]]; then
+		sudo apt update && sudo apt upgrade
+		sudo apt install brotli android-sdk-libsparse-utils gawk wget build-essential libncursesw5-dev libssl-dev \
+				 libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev libffi-dev zlib1g-dev
+    elif [[ $get_os == *"Ende"* ]] || [[ $get_os == *"Arch"* ]]; then
+		pacman -S android-tools;
+		pacman -S gawk;
+	elif [[ $get_os == *"Fedora"* ]]; then
+		dnf install android-tools
+	else
+		echo " "
+		echo -e "$R Your linux os not support yet $NC"
+		echo " "
+	fi;
+
+}
+
 start_tools() {
 	setup
 	while true; do
@@ -1851,11 +1884,17 @@ start_tools() {
 	    echo "15. Patch oplus rom for specific device"
 	    echo "16. Convert updatable apex to non updatable"
 	    echo "17. Clean up folders"
-	    echo "18. Exit tool"
+	    echo "0. Install tools"
+	    echo "x. Exit tool"
 	    
 	    read -p "" choose
 	    case $choose in
 	    
+		0 ) 
+
+	install_req
+	restart_tool;;
+
 		1 ) 
 
 	super_main
@@ -1941,7 +1980,7 @@ start_tools() {
 	clean
 	restart_tool;;
 
-		18 )  
+		x )  
 	clear	
 	exit;;
 		* ) start_tools;;
