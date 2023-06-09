@@ -2,7 +2,6 @@
 img=$(realpath $1)
 partition=$2
 TOOLDIR=$PWD
-erofsdir=$TOOLDIR/erofs
 RUNDIR=$(dirname $1)
 mount="$TOOLDIR/$partition"
 bin=$TOOLDIR/bin
@@ -17,40 +16,35 @@ mount() {
 }
 
 fs_contexts() {
+    echo "/cust(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+    echo "/my_bigball(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+    echo "/my_carrier(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+    echo "/my_custom(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+    echo "/my_company(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+    echo "/my_engineering(/.*)?                u:object_r:rootfs:s0" >> "$fscontexts"
+    echo "/my_heytap(/.*)?                     u:object_r:rootfs:s0" >> "$fscontexts"
+    echo "/my_manifest(/.*)?                   u:object_r:rootfs:s0" >> "$fscontexts"
+    echo "/my_preload(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+    echo "/my_product(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+    echo "/my_region(/.*)?                     u:object_r:rootfs:s0" >> "$fscontexts"
+    echo "/my_stock(/.*)?                      u:object_r:rootfs:s0" >> "$fscontexts"
+    echo "/my_version(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+    echo "/my_reserve(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
+    echo "/special_preload(/.*)?               u:object_r:rootfs:s0" >> "$fscontexts"
+    echo "/preload(/.*)?                       u:object_r:rootfs:s0" >> "$fscontexts"
+    echo "/version(/.*)?                       u:object_r:rootfs:s0" >> "$fscontexts"
+    if [[ $partition != "system" ]]; then
+        mkdir $TOOLDIR/system
+        sudo mount -t auto $RUNDIR/system.img $TOOLDIR/system
+        sudo cat $TOOLDIR/system/system/etc/selinux/plat_file_contexts >> $fscontexts
+        sudo umount -f -l $TOOLDIR/system
+        rm -rf $TOOLDIR/system
+    fi
     if [[ $partition == "system_ext" ]]; then
-        $bin/unpack.erofs $img $erofsdir > /dev/null 2>&1 
-        cat $erofsdir/config/system_ext_file_contexts > $fscontexts
-        rm -rf $erofsdir
-    else
-        echo "/product(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/system(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/system_ext(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/cust(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/odm(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/vendor(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/my_bigball(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/my_carrier(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/my_custom(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/my_company(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/my_engineering(/.*)?                u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/my_heytap(/.*)?                     u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/my_manifest(/.*)?                   u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/my_preload(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/my_product(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/my_region(/.*)?                     u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/my_stock(/.*)?                      u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/my_version(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/my_reserve(/.*)?                    u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/special_preload(/.*)?               u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/preload(/.*)?                       u:object_r:rootfs:s0" >> "$fscontexts"
-        echo "/version(/.*)?                       u:object_r:rootfs:s0" >> "$fscontexts"
-        if [[ $partition != "system" ]]; then
-            mkdir $TOOLDIR/system
-            sudo mount -t auto $RUNDIR/system.img $TOOLDIR/system
-            sudo cat $TOOLDIR/system/system/etc/selinux/plat_file_contexts >> $fscontexts
-            sudo umount -f -l $TOOLDIR/system
-            rm -rf $TOOLDIR/system
-        fi
+        sudo cat $mount/etc/selinux/system_ext_file_contexts >> $fscontexts
+    fi
+    if [[ $partition == "vendor" ]]; then
+    	    sudo cat $mount/etc/selinux/vendor_file_contexts >> $fscontexts
     fi
 }
 
@@ -76,3 +70,4 @@ rebuild() {
 
 mount
 rebuild
+exit

@@ -219,12 +219,18 @@ rebuild_ext4(){
 rebuild_ext4_single() {
 		cd $DIRSCRIPTS
 		clear
-		echo " "
-		echo "Input image name :"
-		read
-		partition=$REPLY
-		rebuild_ext4
-		echo ""
+		if [[ -f $DIRIN/system.img ]]; then
+			echo "make sure image is on rom_input folder"
+			echo " "
+			echo "Input image name :"
+			read
+			partition=$REPLY
+			rebuild_ext4
+		else
+			echo ""
+			echo -e "${R}Put your system.img from the rom that you want to rebuild to $DIRIN"
+			echo -e "${NC}"
+		fi
 		cd $DIRTOOLS
 }
 		
@@ -1942,4 +1948,3 @@ start_tools() {
 	    esac
 	done
 }
-
