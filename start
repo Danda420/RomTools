@@ -1,0 +1,5 @@
+#!/bin/bash
+
+source ./scripts/functions
+
+start_tools

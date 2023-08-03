@@ -1,0 +1,72 @@
+#!/bin/bash
+
+DIRTOOLS=$PWD
+DIRROM=$DIRTOOLS/ROM
+DIRSCRIPTS=$DIRTOOLS/scripts
+OPTIONS=loop
+partitions="system vendor odm product system_ext"
+
+resize_img_to_edit(){
+	if [ -f $DIRROM/${valset}_a.img ]; then
+		getsize=$(ls -nl $DIRROM/${valset}_a.img | awk '{print $5}')
+		readmb=$(($getsize / 100000000))
+		readgiga=$(($getsize / 1000000000))
+		cval=$(($readmb - $readgiga))
+		if [[ $cval -gt 5 ]]; then
+			vplus=2;
+		else
+			vplus=1;
+		fi
+		sizeimg=$(($readgiga + $vplus))G
+		fallocate -l $sizeimg $DIRROM/${valset}_a.img
+		e2fsck -yf $DIRROM/${valset}_a.img
+		resize2fs $DIRROM/${valset}_a.img $sizeimg
+		e2fsck -yf $DIRROM/${valset}_a.img
+	else
+		getsize=$(ls -nl $DIRROM/${valset}.img | awk '{print $5}')
+		readmb=$(($getsize / 100000000))
+		readgiga=$(($getsize / 1000000000))
+		cval=$(($readmb - $readgiga))
+		if [[ $cval -gt 5 ]]; then
+			vplus=2;
+		else
+			vplus=1;
+		fi
+		sizeimg=$(($readgiga + $vplus))G
+		fallocate -l $sizeimg $DIRROM/${valset}.img
+		e2fsck -yf $DIRROM/${valset}.img
+		resize2fs $DIRROM/${valset}.img $sizeimg
+		e2fsck -yf $DIRROM/${valset}.img
+	fi
+}
+
+echo " "
+echo "Resizing partitions..."
+
+valset=system
+resize_img_to_edit > /dev/null 2>&1
+valset=vendor
+resize_img_to_edit > /dev/null 2>&1
+valset=odm
+resize_img_to_edit > /dev/null 2>&1
+valset=system_ext
+resize_img_to_edit > /dev/null 2>&1
+valset=product
+resize_img_to_edit > /dev/null 2>&1
+
+
+echo " "
+echo "Mounting partitions..."
+if [[ -f $DIRROM/system_a.img ]] || [[ -f $DIRROM/vendor_a.img ]] || [[ -f $DIRROM/odm_a.img ]] || [[ -f $DIRROM/product_a.img ]] || [[ -f $DIRROM/system_ext_a.img ]]; then
+	for partition in $partitions
+	do
+	  sudo mount -t ext4 -o $OPTIONS $DIRROM/${partition}_a.img $DIRROM/$partition >> /dev/null 2>&1
+	done
+else
+	for partition in $partitions
+	do
+	  sudo mount -t ext4 -o $OPTIONS $DIRROM/$partition.img $DIRROM/$partition >> /dev/null 2>&1
+	done
+fi
+
+exit
