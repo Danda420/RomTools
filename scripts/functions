@@ -114,6 +114,7 @@ brsuffix() {
 
 convert_erofs_ext4(){
 	if [[ -f $DIRIN/$partition.img ]]; then
+		cd $DIRSCRIPTS
 		echo " "
 		echo "Starting conversion..."
 		echo ""
@@ -124,6 +125,7 @@ convert_erofs_ext4(){
 		echo "Conversion done..."
 		echo "Output: $DIROUT"
 		echo ""
+		cd $DIRTOOLS
 	else
 		echo ""
 		echo -e "${R}there's no image named "$partition.img" in $DIRIN"
@@ -136,10 +138,19 @@ rebuild_ext4(){
 		echo " "
 		echo "Starting rebuilding..."
 		echo ""
-		sudo $DIRSCRIPTS/bin/rebuild-ext4 $DIRIN/$partition.img $partition
+		echo "- Extracting $partition"
+		mkdir $DIRROM/rebuildimg
+		sudo $DIRSCRIPTS/bin/imgextractor.py $DIRIN/$partition.img $DIRROM/rebuildimg > /dev/null 2>&1
 		rm -rf $DIRIN/$partition.img
-		mv $DIRSCRIPTS/$partition.img $DIROUT/
-		sudo chown $USER $DIROUT/$partition.img
+		foldersize=$(sudo du -s -B1 $DIRROM/rebuildimg/$partition | awk '{print $1}')
+		SIZE=$(($foldersize + $foldersize * 1/10))
+		if (( $SIZE < 1474560 )); then
+			SIZE=`sudo du -sk $DIRROM/rebuildimg/$partition | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+		fi
+		echo "- Rebuilding $partition..."
+		sudo $DIRSCRIPTS/bin/make_ext4fs -J -T -1 -S "$DIRROM/rebuildimg/config/$partition/${partition}_file_contexts" -C "$DIRROM/rebuildimg/config/$partition/${partition}_fs_config" -l "$SIZE" -L "$partition" -a "/$partition" "$DIROUT/$partition.img" "$DIRROM/rebuildimg/$partition" > /dev/null 2>&1
+		sudo rm -rf $DIRROM/rebuildimg
+		echo "- Done!"
 		echo ""
 		echo "Rebuild done..."
 		echo "Output: $DIROUT"
@@ -152,7 +163,6 @@ rebuild_ext4(){
 }
 
 rebuild_ext4_single() {
-		cd $DIRSCRIPTS
 		clear
 		echo "make sure image is on rom_input folder"
 		echo " "
@@ -160,7 +170,6 @@ rebuild_ext4_single() {
 		read
 		partition=$REPLY
 		rebuild_ext4
-		cd $DIRTOOLS
 }
 
 delapps_system() {
@@ -296,7 +305,6 @@ repack_ext4_img_samesize() {
 
 erofs_ext4_main() {
 	erofs_ext4_normal() {
-		cd $DIRSCRIPTS
 		clear
 		echo "make sure image is on rom_input folder"
 		echo " "
@@ -304,11 +312,9 @@ erofs_ext4_main() {
 		read
 		partition=$REPLY
 		convert_erofs_ext4
-		cd $DIRTOOLS
 	}
 
 	erofs_ext4_oplus() {
-		cd $DIRSCRIPTS
 		clear
 		for partition in $oplus_partitions
 		do
@@ -759,7 +765,7 @@ oplus_port() {
 		echo "- Done"
 		rm -rf $erofsdir
 	}
-	cd $DIRSCRIPTS
+	
 	clear
 	if [[ -f $DIRIN/payload.bin ]]; then
 		echo " "
@@ -885,12 +891,9 @@ oplus_port() {
 		echo -e "${R}no payload.bin file detected on $DIRIN"
 		echo -e "${NC}"
 	fi
-	
-	cd $DIRTOOLS
 }
 
 oplus_port_1() {
-	cd $DIRSCRIPTS
 	clear
 	if [[ -f $DIRIN/payload.bin ]]; then
 		echo " "
@@ -1243,8 +1246,6 @@ oplus_port_1() {
 		echo -e "${R}no payload.bin file detected on $DIRIN"
 		echo -e "${NC}"
 	fi
-	
-	cd $DIRTOOLS
 }
 
 oplus_port_main() {
