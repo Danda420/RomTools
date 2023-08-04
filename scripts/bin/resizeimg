@@ -18,10 +18,10 @@ resize_img_to_edit(){
 			vplus=1;
 		fi
 		sizeimg=$(($readgiga + $vplus))G
-		fallocate -l $sizeimg $DIRROM/${valset}_a.img
-		e2fsck -yf $DIRROM/${valset}_a.img
-		resize2fs $DIRROM/${valset}_a.img $sizeimg
-		e2fsck -yf $DIRROM/${valset}_a.img
+		sudo fallocate -l $sizeimg $DIRROM/${valset}_a.img
+		sudo e2fsck -yf $DIRROM/${valset}_a.img
+		sudo resize2fs $DIRROM/${valset}_a.img $sizeimg
+		sudo e2fsck -yf $DIRROM/${valset}_a.img
 	else
 		getsize=$(ls -nl $DIRROM/${valset}.img | awk '{print $5}')
 		readmb=$(($getsize / 100000000))
@@ -33,10 +33,10 @@ resize_img_to_edit(){
 			vplus=1;
 		fi
 		sizeimg=$(($readgiga + $vplus))G
-		fallocate -l $sizeimg $DIRROM/${valset}.img
-		e2fsck -yf $DIRROM/${valset}.img
-		resize2fs $DIRROM/${valset}.img $sizeimg
-		e2fsck -yf $DIRROM/${valset}.img
+		sudo fallocate -l $sizeimg $DIRROM/${valset}.img
+		sudo e2fsck -yf $DIRROM/${valset}.img
+		sudo resize2fs $DIRROM/${valset}.img $sizeimg
+		sudo e2fsck -yf $DIRROM/${valset}.img
 	fi
 }
 

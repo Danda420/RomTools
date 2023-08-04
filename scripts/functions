@@ -1999,23 +1999,23 @@ umount_main() {
 		clear
 		resize_to_build(){
 			if [ -f $DIRROM/${valset}_a.img ]; then
-				e2fsck -yf $DIRROM/${valset}_a.img > /dev/null 2>&1
-				resize2fs -M $DIRROM/${valset}_a.img > /dev/null 2>&1
-				e2fsck -yf $DIRROM/${valset}_a.img > /dev/null 2>&1
+				sudo e2fsck -yf $DIRROM/${valset}_a.img > /dev/null 2>&1
+				sudo resize2fs -M $DIRROM/${valset}_a.img > /dev/null 2>&1
+				sudo e2fsck -yf $DIRROM/${valset}_a.img > /dev/null 2>&1
 				
 				vsizenow=$(ls -nl $DIRROM/${valset}_a.img | awk '{print $5}')
 				sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
-				resize2fs $DIRROM/${valset}_a.img $sizeimg
-				e2fsck -yf $DIRROM/${valset}_a.img
+				sudo resize2fs $DIRROM/${valset}_a.img $sizeimg
+				sudo e2fsck -yf $DIRROM/${valset}_a.img
 			else
-				e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
-				resize2fs -M $DIRROM/${valset}.img > /dev/null 2>&1
-				e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
+				sudo e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
+				sudo resize2fs -M $DIRROM/${valset}.img > /dev/null 2>&1
+				sudo e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
 				
 				vsizenow=$(ls -nl $DIRROM/${valset}.img | awk '{print $5}')
 				sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
-				resize2fs $DIRROM/${valset}.img $sizeimg > /dev/null 2>&1
-				e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
+				sudo resize2fs $DIRROM/${valset}.img $sizeimg > /dev/null 2>&1
+				sudo e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
 			fi;
 		}
 
@@ -2051,13 +2051,13 @@ umount_main() {
 		clear
 		resize_to_build(){
 			if [ -f $DIRROM/${valset}_a.img ]; then
-				e2fsck -yf $DIRROM/${valset}_a.img > /dev/null 2>&1
-				resize2fs -M $DIRROM/${valset}_a.img > /dev/null 2>&1
-				e2fsck -yf $DIRROM/${valset}_a.img > /dev/null 2>&1
+				sudo e2fsck -yf $DIRROM/${valset}_a.img > /dev/null 2>&1
+				sudo resize2fs -M $DIRROM/${valset}_a.img > /dev/null 2>&1
+				sudo e2fsck -yf $DIRROM/${valset}_a.img > /dev/null 2>&1
 			else
-				e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
-				resize2fs -M $DIRROM/${valset}.img > /dev/null 2>&1
-				e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
+				sudo e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
+				sudo resize2fs -M $DIRROM/${valset}.img > /dev/null 2>&1
+				sudo e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
 			fi;
 		}
 		echo " "
