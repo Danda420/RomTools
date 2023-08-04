@@ -235,6 +235,7 @@ unpack_ext4_img() {
 		fi
 		echo ""
 		sudo $DIRSCRIPTS/bin/imgextractor.py $DIRIN/$image.img $DIRROM/EXT4
+		sudo chown -R $USER:$USER $DIRROM/EXT4
 		echo ""
 		echo "Output: $DIRROM/EXT4/$image"
 		rm -rf $DIRIN/$image.img
@@ -258,18 +259,8 @@ repack_ext4_img_foldersize() {
 		if (( $SIZE < 1474560 )); then
 		    SIZE=`sudo du -sk $DIRROM/EXT4/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
-		sudo $DIRSCRIPTS/bin/mkuserimg_mke2fs.py "$DIRROM/EXT4/$image/" "$DIROUT/$image.new.img" ext4 "/$image" $SIZE $DIRROM/EXT4/config/$image/${image}_file_contexts -j "0" -T "1230768000" -L "$image" -I "256" -M "/$partition" --reserved_percent "0" > /dev/null 2>&1 
-		mkdir $DIROUT/$image
-		sudo mount -t auto -o loop $DIROUT/$image.new.img $DIROUT/$image
-		if [[ $image == system ]] || [[ $image == system_a ]] || [[ $image == system_b ]]; then 
-			sudo chown -R 0:2000 $DIROUT/$image/system/bin
-			sudo chmod -R 755 $DIROUT/$image/system/bin
-		else
-			sudo chown -R 0:2000 $DIROUT/$image/bin
-			sudo chmod -R 755 $DIROUT/$image/bin
-		fi
-		sudo umount $DIROUT/$image
-		rm -rf $DIROUT/$image
+		sudo $DIRSCRIPTS/bin/make_ext4fs -J -T -1 -S "$DIRROM/EXT4/config/$image/${image}_file_contexts" -C "$DIRROM/EXT4/config/$image/${image}_fs_config" -l "$SIZE" -L "$image" -a "/$image" "$DIROUT/$image.new.img" "$DIRROM/EXT4/$image" 
+		echo ""
 		echo "- Done!"
 		echo ""
 		echo "Output: $DIROUT/$image.new.img"
@@ -292,18 +283,8 @@ repack_ext4_img_samesize() {
 		if (( $SIZE < 1474560 )); then
 		    SIZE=`sudo du -sk $DIRROM/EXT4/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
-		sudo $DIRSCRIPTS/bin/mkuserimg_mke2fs.py "$DIRROM/EXT4/$image/" "$DIROUT/$image.new.img" ext4 "/$image" $SIZE $DIRROM/EXT4/config/$image/${image}_file_contexts -j "0" -T "1230768000" -L "$image" -I "256" -M "/$partition" --reserved_percent "0" > /dev/null 2>&1 
-		mkdir $DIROUT/$image
-		sudo mount -t auto -o loop $DIROUT/$image.new.img $DIROUT/$image
-		if [[ $image == system ]] || [[ $image == system_a ]] || [[ $image == system_b ]]; then 
-			sudo chown -R 0:2000 $DIROUT/$image/system/bin
-			sudo chmod -R 755 $DIROUT/$image/system/bin
-		else
-			sudo chown -R 0:2000 $DIROUT/$image/bin
-			sudo chmod -R 755 $DIROUT/$image/bin
-		fi
-		sudo umount $DIROUT/$image
-		rm -rf $DIROUT/$image
+		sudo $DIRSCRIPTS/bin/make_ext4fs -J -T -1 -S "$DIRROM/EXT4/config/$image/${image}_file_contexts" -C "$DIRROM/EXT4/config/$image/${image}_fs_config" -l "$SIZE" -L "$image" -a "/$image" "$DIROUT/$image.new.img" "$DIRROM/EXT4/$image" 
+		echo ""
 		echo "- Done!"
 		echo ""
 		echo "Output: $DIROUT/$image.new.img"

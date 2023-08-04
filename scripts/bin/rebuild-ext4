@@ -20,18 +20,7 @@ rebuild() {
     if (( $SIZE < 1474560 )); then
         SIZE=`sudo du -sk $extracted_dir/$partition | awk '{$1*=1024;$1=int($1*8);printf $1}'`
     fi
-    sudo $bin/mkuserimg_mke2fs.py "$extracted_dir/$partition/" "$partition.img" ext4 "/$partition" $SIZE $extracted_dir/config/$partition/${partition}_file_contexts -j "0" -T "1230768000" -L "$partition" -I "256" -M "/$partition" --reserved_percent "0" > /dev/null 2>&1 
-    mkdir mount
-    sudo mount -t auto -o loop $partition.img mount
-    if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then 
-	sudo chown -R 0:2000 mount/system/bin
-	sudo chmod -R 755 mount/system/bin
-    else
-	sudo chown -R 0:2000 mount/bin
-	sudo chmod -R 755 mount/bin
-    fi
-    sudo umount mount
-    rm -rf mount
+    sudo $bin/make_ext4fs -J -T -1 -S "$extracted_dir/config/$partition/${partition}_file_contexts" -C "$extracted_dir/config/$partition/${partition}_fs_config" -l "$SIZE" -L "$partition" -a "/$partition" "$partition.img" "$extracted_dir/$partition" > /dev/null 2>&1
     rm -rf $extracted_dir
     echo "- Done!"
 }
