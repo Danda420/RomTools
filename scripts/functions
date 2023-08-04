@@ -1861,9 +1861,11 @@ super_main() {
 			    case $choose in
 				[1]* ) 
 					slot=_a
+					emptyslot=_b
 					break;;
 				[2]* )
 					slot=_b
+					emptyslot=_a
 					break;;
 				* ) echo "Please answer 1 or 2.";;
 			    esac
@@ -1885,23 +1887,22 @@ super_main() {
 				echo "($TOTALSIZE/$max_size_super)"
 				echo ""
 				echo "Compiling super : $imgname.img (raw)..."
-				if [[ $slot == "_a" ]]; then
-					lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot --device=super:$size_super:$first_sector --group=$group_table:$max_size_super --group=$group_table2:$max_size_super2 \
-						--partition=odm_a:none:$ODMSIZE:$group_table --image=odm_a=$DIRSUPER/odm_a.img \
-						--partition=product_a:none:$PRODUCTSIZE:$group_table --image=product_a=$DIRSUPER/product_a.img \
-						--partition=system_a:none:$SYSTEMSIZE:$group_table --image=system_a=$DIRSUPER/system_a.img \
-						--partition=system_ext_a:none:$SYSEXTSIZE:$group_table --image=system_ext_a=$DIRSUPER/system_ext_a.img \
-						--partition=vendor_a:none:$VENDORSIZE:$group_table --image=vendor_a=$DIRSUPER/vendor_a.img \
-						--output=$DIRIN/$imgname.img
-				elif [[ $slot == "_b" ]]; then
-					lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot --device=super:$size_super:$first_sector --group=$group_table:$max_size_super --group=$group_table2:$max_size_super2 \
-						--partition=odm_b:none:$ODMSIZE:$group_table2 --image=odm_b=$DIRSUPER/odm_b.img \
-						--partition=product_b:none:$PRODUCTSIZE:$group_table2 --image=product_b=$DIRSUPER/product_b.img \
-						--partition=system_b:none:$SYSTEMSIZE:$group_table2 --image=system_b=$DIRSUPER/system_b.img \
-						--partition=system_ext_b:none:$SYSEXTSIZE:$group_table2 --image=system_ext_b=$DIRSUPER/system_ext_b.img \
-						--partition=vendor_b:none:$VENDORSIZE:$group_table2 --image=vendor_b=$DIRSUPER/vendor_b.img \
-						--output=$DIRIN/$imgname.img
-				fi
+				lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot --device=super:$size_super:$first_sector --group=$group_table:$max_size_super --group=$group_table2:$max_size_super2 \
+					--partition=odm${slot}:none:$ODMSIZE:$group_table --image=odm${slot}=$DIRSUPER/odm${slot}.img \
+					--partition=product${slot}:none:$PRODUCTSIZE:$group_table --image=product${slot}=$DIRSUPER/product${slot}.img \
+					--partition=system${slot}:none:$SYSTEMSIZE:$group_table --image=system${slot}=$DIRSUPER/system${slot}.img \
+					--partition=system_ext${slot}:none:$SYSEXTSIZE:$group_table --image=system_ext${slot}=$DIRSUPER/system_ext${slot}.img \
+					--partition=vendor${slot}:none:$VENDORSIZE:$group_table --image=vendor${slot}=$DIRSUPER/vendor${slot}.img \
+					--output=$DIRIN/$imgname.img
+				
+				echo ""
+				touch $DIRIN/tmp.img
+				lpadd $DIRIN/$imgname.img odm${emptyslot} $group_table2 $DIRIN/tmp.img
+				lpadd $DIRIN/$imgname.img product${emptyslot} $group_table2 $DIRIN/tmp.img
+				lpadd $DIRIN/$imgname.img system${emptyslot} $group_table2 $DIRIN/tmp.img
+				lpadd $DIRIN/$imgname.img system_ext${emptyslot} $group_table2 $DIRIN/tmp.img
+				lpadd $DIRIN/$imgname.img vendor${emptyslot} $group_table2 $DIRIN/tmp.img
+				rm -rf $DIRIN/tmp.img
 			fi
 		fi
 
