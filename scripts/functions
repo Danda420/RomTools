@@ -169,7 +169,13 @@ rebuild_ext4_single() {
 		echo "Input image name :"
 		read
 		partition=$REPLY
-		rebuild_ext4
+		if [[ $(blkid -o value -s TYPE $DIRIN/$partition.img) == ext4 ]]; then
+		   rebuild_ext4
+		else
+		   echo ""
+		   echo -e "${R}$partition.img fs type is $(blkid -o value -s TYPE $DIRIN/$partition.img), aborting..."
+		   echo -e "${NC}"
+		fi
 }
 
 delapps_system() {
@@ -239,6 +245,7 @@ unpack_ext4_img() {
 	read
 	image=$REPLY
 	if [[ -f $DIRIN/$image.img ]]; then
+	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
 		if [[ ! -d $DIRROM/EXT4 ]]; then
 			mkdir $DIRROM/EXT4
 		fi
@@ -248,6 +255,11 @@ unpack_ext4_img() {
 		echo ""
 		echo "Output: $DIRROM/EXT4/$image"
 		rm -rf $DIRIN/$image.img
+	   else
+	   	echo ""
+		echo -e "${R}$partition.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
+		echo -e "${NC}"
+	   fi
 	else
 		echo -e "${R}Error: no image named $image.img in $DIRIN"
 		echo -e "${NC}"
@@ -311,7 +323,13 @@ erofs_ext4_main() {
 		echo "Input image name :"
 		read
 		partition=$REPLY
-		convert_erofs_ext4
+		if [[ $(blkid -o value -s TYPE $DIRIN/$partition.img) == erofs ]]; then
+		   convert_erofs_ext4
+		else
+		   echo ""
+		   echo -e "${R}$partition.img fs type is $(blkid -o value -s TYPE $DIRIN/$partition.img), aborting..."
+		   echo -e "${NC}"
+		fi
 	}
 
 	erofs_ext4_oplus() {
@@ -1799,9 +1817,40 @@ super_main() {
 			* ) echo "Please answer yes or no.";;
 		    esac
 		done
+		
+		while true; do
+		   echo ""
+		   echo "Compress image to :"
+		   echo "1. raw"
+		   echo "2. sparse"
+		   echo "3. new.dat"
+		   echo "4. dat.brotli"
+		   read -p "" choose
+		   case $choose in
+			[1]* ) 
+				COMPRESSION=raw
+				break;;
+			[2]* )
+				COMPRESSION=sparse
+				break;;
+			[3]* )
+				COMPRESSION=dat
+				break;;
+			[4]* )
+				COMPRESSION=br
+				echo " "
+				echo "Input Brotli compression level (0-11) :"
+				read
+				COMPLVL=$REPLY
+				
+				brsuffix
+				break;;
+					
+			* ) echo "Please answer with one of the above selections.";;
+		   esac
+		done
 
 		if [[ $meta_slot == 2 ]]; then
-			echo " "
 			echo "A only detected..."
 			echo "Compiling super with A only format"
 			echo " "
@@ -1831,7 +1880,6 @@ super_main() {
 					--output=$DIRIN/$imgname.img
 			fi
 		else
-			echo " "
 			echo "Virtual A/B detected..."
 			echo "Compiling super with Virtual A/B format"
 			echo " "
@@ -1890,73 +1938,55 @@ super_main() {
 
 		rm -rf $DIRSUPER/*
 
-		echo " "
-		while true; do
-		    read -p "Continue compressing to $imgname.img (sparse)? (Y/N)" yn
-		    case $yn in
-			[Yy]* ) break;;
-			[Nn]* ) 
+		if [[ $COMPRESSION == raw ]]; then
+			mv $DIRIN/$imgname.img $DIROUT/$imgname.img
+			echo "super build done! Output : $DIROUT"
+		elif [[ $COMPRESSION == sparse ]]; then
+			echo " "
+			echo "Converting raw $imgname.img to sparse..."
+			img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
+			rm -rf $DIRIN/$imgname.img
+			mv $DIRIN/$imgname.sparse.img $DIROUT/$imgname.sparse.img
+			echo "compession done! Output : $DIROUT"
+		elif [[ $COMPRESSION == dat ]]; then	
+			echo " "
+			echo "Converting raw $imgname.img to sparse..."
+			img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
+			rm -rf $DIRIN/$imgname.img
 			
-		mv $DIRIN/$imgname.img $DIROUT/$imgname.img
-		restart_tool;;
-			* ) echo "Please answer yes or no.";;
-		    esac
-		done
-
-		echo " "
-		echo "Converting raw $imgname.img to sparse..."
-		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
-		rm -rf $DIRIN/$imgname.img
-		echo " "
-		while true; do
-		    read -p "Continue compressing to $imgname.new.dat? (Y/N)" yn
-		    case $yn in
-			[Yy]* ) break;;
-			[Nn]* ) 
+			echo " "
+			echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
+			python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
+			rm -rf $DIRIN/$imgname.*
+			mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
+			mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
+			mv $DIRIN/system.transfer.list $DIROUT/$imgname.transfer.list
+			rm -rf $DIRIN/$imgname.*
+			echo "compession done! Output : $DIROUT"
+		elif [[ $COMPRESSION == br ]]; then
+			echo " "
+			echo "Converting raw $imgname.img to sparse..."
+			img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
+			rm -rf $DIRIN/$imgname.img
 			
-		mv $DIRIN/$imgname.sparse.img $DIROUT/$imgname.img
-		restart_tool;;
-			* ) echo "Please answer yes or no.";;
-		    esac
-		done
-		echo " "
-		echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
-		python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
-		rm -rf $DIRIN/$imgname.*
-		mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
-		mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
-		mv $DIRIN/system.transfer.list $DIROUT/$imgname.transfer.list
-		rm -rf $DIRIN/$imgname.*
-
-		echo " "
-		while true; do
-		    read -p "Compress $imgname.new.dat using brotli? (Y/N)" yn
-		    case $yn in
-			[Yy]* ) break;;
-			[Nn]* ) restart_tool;;
-			* ) echo "Please answer yes or no.";;
-		    esac
-		done
-
-
-		echo " "
-		echo " "
-		echo "Input Brotli compression level (0-11) :"
-		read
-		COMPLVL=$REPLY
-		
-		brsuffix
-
-		echo "Compressing to $imgname.new.dat.$BRSUF..."
-
-		brotli -q $COMPLVL --suffix=.$BRSUF $DIROUT/$imgname.new.dat
-
-		echo "cleaning..."
-		echo " "
-
-		rm -rf $DIROUT/$imgname.new.dat
-
-		echo "compession done! Output : $DIROUT"
+			echo " "
+			echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
+			python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
+			rm -rf $DIRIN/$imgname.*
+			mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
+			mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
+			mv $DIRIN/system.transfer.list $DIROUT/$imgname.transfer.list
+			rm -rf $DIRIN/$imgname.*
+			
+			echo " "
+			echo "Compressing to $imgname.new.dat.$BRSUF..."
+			brotli -q $COMPLVL --suffix=.$BRSUF $DIROUT/$imgname.new.dat
+			echo " "
+			echo "cleaning..."
+			echo " "
+			rm -rf $DIROUT/$imgname.new.dat
+			echo "compession done! Output : $DIROUT"
+		fi
 	}
 	
 	while true; do
@@ -2224,34 +2254,44 @@ patch_oplus() {
 	done
 }
 
-linux_os(){
-	os_ver=$(cat /etc/os-release)
-	read_version=$(grep 'PRETTY_NAME=' <<< $os_ver);
-	get_os=$(echo $read_version | sed 's/PRETTY_NAME=//g' | sed 's/"//g');
-}
-
-linux_os;
-install_req(){
-	echo " "
-	echo -e "$G Check installation tools $NC"
-	echo " "
-	if [[ $get_os == *"Ubuntu"* ]] || [[ $get_os == *"Debian"* ]]; then
+install_req() {
+	while true; do
+	    banner
+	    echo ""
+	    echo "Choose your linux distribution base"
+	    echo "1. Arch"
+	    echo "2. Redhat"
+	    echo "3. Ubuntu"
+	    echo "4. Back to main menu"
+	    read -p "" choose
+	    case $choose in
+		1 ) 
+		sudo pacman -S android-tools
+		sudo pacman -S gawk
+		sudo pacman -S erofs-utils
+		restart_tool;;
+		
+		2 )
+		sudo dnf install android-tools
+		sudo dnf install erofs-utils
+		sudo dnf install gawk
+		restart_tool;;
+		
+		3 )
 		sudo apt update && sudo apt upgrade
 		sudo apt install brotli android-sdk-libsparse-utils gawk wget build-essential libncursesw5-dev libssl-dev \
 				 libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev libffi-dev zlib1g-dev
-    elif [[ $get_os == *"Ende"* ]] || [[ $get_os == *"Arch"* ]]; then
-		sudo pacman -S android-tools;
-		sudo pacman -S gawk;
-		sudo pacman -S erofs-utils;
-	elif [[ $get_os == *"Fedora"* ]]; then
-		sudo dnf install android-tools
-	else
-		echo " "
-		echo -e "$R Your linux os not support yet $NC"
-		echo " "
-	fi;
-
+		restart_tool;;
+		
+		4 )
+		start_tools;;
+		
+		* ) 
+		install_req;;
+	    esac
+	done
 }
+
 
 repack_ext4() {
 	while true; do
