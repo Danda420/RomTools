@@ -101,17 +101,6 @@ clean() {
 	echo "Done!"
 }
 
-brsuffix() {
-	echo " "
-	echo "Input Brotli suffix (leave it empty for the default one) :"
-	read
-	BRSUF=$REPLY
-	  
-	if [[ $BRSUF == "" ]]; then
-	     BRSUF=br
-	fi
-}
-
 convert_erofs_ext4(){
 	if [[ -f $DIRIN/$partition.img ]]; then
 		cd $DIRSCRIPTS
@@ -212,16 +201,14 @@ datbr_raw() {
 	echo "Input image/partition name :"
 	read
 	imgname=$REPLY
-	
-	brsuffix
 
-	if [ -f $DIRIN/$imgname.new.dat.$BRSUF ]; then
+	if [ -f $DIRIN/$imgname.new.dat.br ]; then
 
 		echo "Unpacking..."
 		echo " "
-		brotli -d --suffix=.$BRSUF $DIRIN/$imgname.new.dat.$BRSUF
+		brotli -d $DIRIN/$imgname.new.dat.br
 
-		rm -rf $DIRIN/$imgname.new.dat.$BRSUF
+		rm -rf $DIRIN/$imgname.new.dat.br
 
 		python3 $DIRSCRIPTS/bin/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img  >> /dev/null 2>&1
 		echo " "
@@ -233,8 +220,70 @@ datbr_raw() {
 		echo "Done! Output : $DIROUT"
 	else
 
-		echo -e "${R}there's no image "$imgname.new.dat.$BRSUF"${NC}"
+		echo -e "${R}there's no image "$imgname.new.dat.br"${NC}"
 	fi
+}
+
+compress_zstd() {
+	clear
+	echo " "
+	echo "Input file name :"
+	read
+	filename=$REPLY
+	
+	if [ -f $DIRIN/$filename ]; then
+		echo " "
+		echo "Input zstd suffix (leave it empty if you want .zst) :"
+		read
+		ZSTDSUFFIX=.$REPLY
+		if [[ $ZSTDSUFFIX == "." ]]; then
+			ZSTDSUFFIX=.zst
+		elif [[ $ZSTDSUFFIX == ". " ]]; then
+			ZSTDSUFFIX=""
+		fi
+		
+		echo " "
+		echo "Input zstd compression lvl (1-19) :"
+		read
+		ZSTDLVL=$REPLY
+		
+		echo " "
+		echo "Compressing $filename to ${filename}$ZSTDSUFFIX (zstd)"
+		zstd -${ZSTDLVL} $DIRIN/$filename -o $DIROUT/${filename}$ZSTDSUFFIX
+		rm -rf $DIRIN/$filename
+		echo " "
+		echo "Done! Output : $DIROUT"
+	else
+
+		echo -e "${R}there's no file named "$filename" in $DIRIN ${NC}"
+	fi	
+}
+
+decompress_zstd() {
+	clear
+	echo " "
+	echo "Input file name :"
+	read
+	filename=$REPLY
+	
+	if [ -f $DIRIN/$filename ]; then
+		mv $DIRIN/$filename $DIRIN/$filename.zst
+		
+		echo " "
+		echo "Input $filename output name :"
+		read
+		outputname=$REPLY
+		
+		echo " "
+		echo "Decompressing $filename (zstd)"
+		zstd -d $DIRIN/$filename.zst -o $DIROUT/$outputname
+		rm -rf $DIRIN/$filename.*
+		echo " "
+		echo "Done! Output : $DIROUT"
+	else
+
+		echo -e "${R}there's no file named "$filename" in $DIRIN ${NC}"
+	fi	
 }
 
 unpack_ext4_img() {
@@ -1327,8 +1376,6 @@ raw_datbr() {
 	echo "Input image/partition name :"
 	read
 	imgname=$REPLY
-	
-	brsuffix
 
 	if [ -f $DIRIN/$imgname.img ]; then
 
@@ -1354,7 +1401,7 @@ raw_datbr() {
 		echo " " 
 		echo "compressing image : $imgname using brotli..."
 
-		brotli -q $COMPLVL --suffix=.$BRSUF $DIROUT/$imgname.new.dat
+		brotli -q $COMPLVL $DIROUT/$imgname.new.dat
 		echo " "
 		echo "cleaning..."
 
@@ -1490,7 +1537,7 @@ splits_main() {
 		    if [[ -f $DIROUT/$partition.new.dat ]]; then
 			echo " " 
 			echo "compressing $partition using brotli..."
-			brotli -q $COMPLVL --suffix=.$BRSUF $DIROUT/$partition.new.dat
+			brotli -q $COMPLVL $DIROUT/$partition.new.dat
 			rm -rf $DIROUT/$partition.new.dat
 		    else
 		    	echo " "
@@ -1589,7 +1636,6 @@ splits_main() {
 			echo " "
 
 			brotli_lvl
-			brsuffix
 			a_dp_op_list
 			compress
 			break;;
@@ -1601,7 +1647,6 @@ splits_main() {
 			echo " "
 
 			brotli_lvl
-			brsuffix
 			ab_dp_op_list
 			compress
 			break;;
@@ -1615,14 +1660,14 @@ splits_main() {
 	splits_decompress() {
 		clear
 		datbr() {
-		    if [[ -f $DIRIN/$partition.new.dat.$BRSUF ]]; then
+		    if [[ -f $DIRIN/$partition.new.dat.br ]]; then
 			echo " "
 			echo "Decompressing $partition using brotli..."
-			brotli -d --suffix=.$BRSUF $DIRIN/$partition.new.dat.$BRSUF
-			rm -rf $DIRIN/$partition.new.dat.$BRSUF
+			brotli -d $DIRIN/$partition.new.dat.br
+			rm -rf $DIRIN/$partition.new.dat.br
 		    else
 		    	echo " "
-		    	echo -e "${R}there's no $partition.new.dat.$BRSUF supplied! skipping...${NC}"
+		    	echo -e "${R}there's no $partition.new.dat.br supplied! skipping...${NC}"
 		    fi
 		}
 
@@ -1637,8 +1682,6 @@ splits_main() {
 		    	echo -e "${R}there's no $partition.new.dat and/or $partition.transfer.list supplied! skipping...${NC}"
 		    fi
 		}
-		
-		brsuffix
 
 		echo "========================================="
 
@@ -1664,7 +1707,7 @@ splits_main() {
 	while true; do
 	    banner
 	    echo " "
-	    echo "1. Repack Splits (raw to dat.brotli)"
+	    echo "1. Repack Splits (raw to dat.br)"
 	    echo "2. Unpack Splits"
 	    echo "3. Back to main menu"
 	    
@@ -1762,14 +1805,12 @@ super_main() {
 		echo "Input Super image name :"
 		read
 		imgname=$REPLY
-		
-		brsuffix
 
-		if [ -f $DIRIN/$imgname.new.dat.$BRSUF ]; then
+		if [ -f $DIRIN/$imgname.new.dat.br ]; then
 
 			echo "Decompressing brotli..."
-			brotli -d --suffix=.$BRSUF $DIRIN/$imgname.new.dat.$BRSUF
-			rm -rf $DIRIN/$imgname.new.dat.$BRSUF
+			brotli -d $DIRIN/$imgname.new.dat.br
+			rm -rf $DIRIN/$imgname.new.dat.br
 
 			echo " "
 			echo "Converting $imgname.new.dat to $imgname.img (raw)..."
@@ -1788,7 +1829,7 @@ super_main() {
 
 		else
 
-			echo -e "${R}theres no image "$imgname.new.dat.$BRSUF""
+			echo -e "${R}theres no image "$imgname.new.dat.br""
 			echo -e "${NC}"
 		fi
 	}
@@ -1824,7 +1865,8 @@ super_main() {
 		   echo "1. raw"
 		   echo "2. sparse"
 		   echo "3. new.dat"
-		   echo "4. dat.brotli"
+		   echo "4. dat.br"
+		   echo "5. zstd"
 		   read -p "" choose
 		   case $choose in
 			[1]* ) 
@@ -1842,8 +1884,22 @@ super_main() {
 				echo "Input Brotli compression level (0-11) :"
 				read
 				COMPLVL=$REPLY
-				
-				brsuffix
+				break;;
+			[5]* )
+				COMPRESSION=zstd
+				echo " "
+				echo "Input zstd suffix (leave it empty if you want .zst) :"
+				read
+				ZSTDSUFFIX=.$REPLY
+				if [[ $ZSTDSUFFIX == "." ]]; then
+					ZSTDSUFFIX=.zst
+				elif [[ $ZSTDSUFFIX == ". " ]]; then
+					ZSTDSUFFIX=""
+				fi
+				echo " "
+				echo "Input zstd compression lvl (1-19) :"
+				read
+				ZSTDLVL=$REPLY
 				break;;
 					
 			* ) echo "Please answer with one of the above selections.";;
@@ -1851,6 +1907,7 @@ super_main() {
 		done
 
 		if [[ $meta_slot == 2 ]]; then
+			echo " "
 			echo "A only detected..."
 			echo "Compiling super with A only format"
 			echo " "
@@ -1878,8 +1935,10 @@ super_main() {
 					--partition=odm:none:$ODMSIZE:$group_table --image=odm=$DIRSUPER/odm.img \
 					--partition=system_ext:none:$SYSEXTSIZE:$group_table --image=system_ext=$DIRSUPER/system_ext.img \
 					--output=$DIRIN/$imgname.img
+				rm -rf $DIRSUPER/*
 			fi
 		else
+			echo " "
 			echo "Virtual A/B detected..."
 			echo "Compiling super with Virtual A/B format"
 			echo " "
@@ -1933,12 +1992,13 @@ super_main() {
 				lpadd $DIRIN/$imgname.img system_ext${emptyslot} $group_table2 $DIRIN/tmp.img
 				lpadd $DIRIN/$imgname.img vendor${emptyslot} $group_table2 $DIRIN/tmp.img
 				rm -rf $DIRIN/tmp.img
+				rm -rf $DIRSUPER/*
 			fi
 		fi
 
-		rm -rf $DIRSUPER/*
 
 		if [[ $COMPRESSION == raw ]]; then
+			echo " "
 			mv $DIRIN/$imgname.img $DIROUT/$imgname.img
 			echo "super build done! Output : $DIROUT"
 		elif [[ $COMPRESSION == sparse ]]; then
@@ -1979,21 +2039,28 @@ super_main() {
 			rm -rf $DIRIN/$imgname.*
 			
 			echo " "
-			echo "Compressing to $imgname.new.dat.$BRSUF..."
-			brotli -q $COMPLVL --suffix=.$BRSUF $DIROUT/$imgname.new.dat
+			echo "Compressing to $imgname.new.dat.br..."
+			brotli -q $COMPLVL $DIROUT/$imgname.new.dat
 			echo " "
 			echo "cleaning..."
 			echo " "
 			rm -rf $DIROUT/$imgname.new.dat
 			echo "compession done! Output : $DIROUT"
+		elif [[ $COMPRESSION == zstd ]]; then
+			echo " "
+			echo "Compressing $imgname.img to ${imgname}$ZSTDSUFFIX (zstd)"
+			zstd -${ZSTDLVL} $DIRIN/$imgname.img -o $DIROUT/${imgname}$ZSTDSUFFIX
+			rm -rf $DIRIN/$imgname.img
+			echo " "
+			echo "super build done! Output : $DIROUT"
 		fi
 	}
 	
 	while true; do
 	    banner
 	    echo " "
-	    echo "1. Repack Super (raw, sparse, .dat, brotli)"
-	    echo "2. Unpack Super (dat.brotli)"
+	    echo "1. Repack Super (raw, sparse, .dat, .br, zstd)"
+	    echo "2. Unpack Super (dat.br)"
 	    echo "3. Unpack Super (raw)"
 	    echo "4. Back to main menu"
 	    
@@ -2359,8 +2426,8 @@ cd_cv_main() {
 	while true; do
 	    banner
 	    echo " "
-	    echo "1. Convert dat.brotli to raw img"
-	    echo "2. Convert raw .img to dat.brotli"
+	    echo "1. Convert dat.br to raw img"
+	    echo "2. Convert raw .img to dat.br"
 	    echo "3. Convert raw to sparse"
 	    echo "4. Convert sparse to raw"
 	    echo "5. Back to main menu"
@@ -2386,7 +2453,7 @@ cd_cv_main() {
 		4 )
 		
 	sparse_raw
-	start_tools;;
+	restart_tool;;
 
 		5 ) 
 	   
@@ -2394,6 +2461,37 @@ cd_cv_main() {
 
 
 		* ) cd_cv_main;;
+	    esac
+	done
+}
+
+zstd_main() {
+	while true; do
+	    banner
+	    echo " "
+	    echo "1. Compress zstd"
+	    echo "2. Decompress zstd"
+	    echo "3. Back to main menu"
+	    
+	    read -p "" choose
+	    case $choose in
+	    
+		1 ) 
+
+	compress_zstd
+	restart_tool;;
+
+		2 ) 
+	   
+	decompress_zstd
+	restart_tool;;
+
+		3 ) 
+	   
+	start_tools;;
+
+
+		* ) unpack_repack_main;;
 	    esac
 	done
 }
@@ -2416,6 +2514,7 @@ start_tools() {
 	    echo "11. Merge fs context and config to system"
 	    echo "12. Patch oplus rom for specific device"
 	    echo "13. Auto ZIP"
+	    echo "14. Zstd Tools"
 	    echo "c. Clean up folders"
 	    echo "0. Install proprietary packages"
 	    echo "x. Exit tool"
@@ -2491,6 +2590,11 @@ start_tools() {
 		13 ) 
 		
 	zip_main
+	restart_tool;;
+	
+		14 ) 
+		
+	zstd_main
 	restart_tool;;
 
 		c ) 
