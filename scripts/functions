@@ -364,6 +364,33 @@ repack_ext4_img_samesize() {
 	fi
 }
 
+repack_ext4_img_inputsize() {
+	clear
+	echo " "
+	echo "Input image name that you want to repack :"
+	read
+	image=$REPLY
+	if [[ -d $DIRROM/EXT4/$image ]]; then
+		echo " "
+		echo "Input partition size in bytes :"
+		read
+		SIZE=$REPLY
+		if (( $SIZE < 1474560 )); then
+		    SIZE=`sudo du -sk $DIRROM/EXT4/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+		fi
+		echo ""
+		echo "- Repacking $image..."
+		sudo $DIRSCRIPTS/bin/make_ext4fs -J -T -1 -S "$DIRROM/EXT4/config/$image/${image}_file_contexts" -C "$DIRROM/EXT4/config/$image/${image}_fs_config" -l "$SIZE" -L "$image" -a "/$image" "$DIROUT/$image.new.img" "$DIRROM/EXT4/$image" 
+		echo ""
+		echo "- Done!"
+		echo ""
+		echo "Output: $DIROUT/$image.new.img"
+	else
+		echo -e "${R}Error: no unpacked image named $image in $DIRROM/EXT4"
+		echo -e "${NC}"
+	fi
+}
+
 erofs_ext4_main() {
 	erofs_ext4_normal() {
 		clear
@@ -1797,6 +1824,38 @@ super_main() {
 			echo -e "${NC}"
 		fi
 	}
+	
+	super_u_zstd() {
+		clear
+		echo " "
+		echo "Input file name :"
+		read
+		filename=$REPLY
+		
+		if [ -f $DIRIN/$filename ]; then
+			mv $DIRIN/$filename $DIRIN/$filename.zst
+			
+			echo " "
+			echo "Decompressing $filename (zstd)"
+			zstd -d $DIRIN/$filename.zst -o $DIRIN/super.img
+			rm -rf $DIRIN/$filename.*
+
+			echo " "
+			echo "Unpacking super..."
+			mkdir $DIRSUPER/config
+			lpdump --slot=0 $DIRIN/super.img > $DIRSUPER/config/super_config.txt
+			lpunpack $DIRIN/super.img $DIRROM/super >> /dev/null 2>&1
+			rm -rf $DIRIN/super.img
+
+			echo " "
+			echo "Done! Output : $DIRROM/super"
+
+		else
+
+			echo -e "${R}there's no file named "$filename" in $DIRIN"
+			echo -e "${NC}"
+		fi
+	}
 
 	super_u_datbr() {
 		clear
@@ -2061,8 +2120,9 @@ super_main() {
 	    echo " "
 	    echo "1. Repack Super (raw, sparse, .dat, .br, zstd)"
 	    echo "2. Unpack Super (dat.br)"
-	    echo "3. Unpack Super (raw)"
-	    echo "4. Back to main menu"
+	    echo "3. Unpack Super (zstd)"
+	    echo "4. Unpack Super (raw)"
+	    echo "5. Back to main menu"
 	    
 	    read -p "" choose
 	    case $choose in
@@ -2078,11 +2138,16 @@ super_main() {
 	restart_tool;;
 
 		3 ) 
-	   
+		
+	super_u_zstd
+	restart_tool;;
+	
+		4 ) 
+		
 	super_u_raw
 	restart_tool;;
 
-		4 ) 
+		5 ) 
 	   
 	start_tools;;
 
@@ -2366,7 +2431,8 @@ repack_ext4() {
 	    echo " "
 	    echo "1. Repack EXT4 image with old image size"
 	    echo "2. Repack EXT4 image with folder size"
-	    echo "3. Back to main menu"
+	    echo "3. Repack EXT4 image and manually input size"
+	    echo "4. Back to main menu"
 	    
 	    read -p "" choose
 	    case $choose in
@@ -2380,8 +2446,13 @@ repack_ext4() {
 	   
 	repack_ext4_img_foldersize
 	restart_tool;;
-
+	
 		3 ) 
+	   
+	repack_ext4_img_inputsize
+	restart_tool;;
+	
+		4 ) 
 	   
 	start_tools;;
 
@@ -2395,8 +2466,8 @@ unpack_repack_main() {
 	while true; do
 	    banner
 	    echo " "
-	    echo "1. Unpack EXT4 image"
-	    echo "2. Repack EXT4 image"
+	    echo "1. Repack EXT4 image"
+	    echo "2. Unpack EXT4 image"
 	    echo "3. Back to main menu"
 	    
 	    read -p "" choose
@@ -2404,12 +2475,12 @@ unpack_repack_main() {
 	    
 		1 ) 
 
-	unpack_ext4_img
+	repack_ext4
 	restart_tool;;
 
 		2 ) 
 	   
-	repack_ext4
+	unpack_ext4_img
 	restart_tool;;
 
 		3 ) 
