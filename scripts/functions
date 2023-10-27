@@ -10,7 +10,6 @@ DIRSUPER=$DIRTOOLS/ROM/super
 erofsdir=$DIRROM/erofs
 partitions="system vendor odm product system_ext"
 oplus_partitions="my_bigball my_carrier my_company my_engineering my_heytap my_manifest my_preload my_product my_region my_stock"
-applist=$(cat $DIRSCRIPTS/patch/OplusDebloatList)
 G='\033[1;32m'
 R='\033[1;31m'
 NC='\033[0m'
@@ -101,6 +100,12 @@ clean() {
 	echo "Done!"
 }
 
+resize_img_smallest(){
+	sudo e2fsck -yf $DIRIMG_RESIZE_SMALLEST > /dev/null 2>&1
+	sudo resize2fs -M $DIRIMG_RESIZE_SMALLEST > /dev/null 2>&1
+	sudo e2fsck -yf $DIRIMG_RESIZE_SMALLEST > /dev/null 2>&1
+}
+
 convert_erofs_ext4(){
 	if [[ -f $DIRIN/$partition.img ]]; then
 		cd $DIRSCRIPTS
@@ -137,7 +142,13 @@ rebuild_ext4(){
 			SIZE=`sudo du -sk $DIRROM/rebuildimg/$partition | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
 		echo "- Rebuilding $partition..."
-		sudo $DIRSCRIPTS/bin/make_ext4fs -J -T -1 -S "$DIRROM/rebuildimg/config/$partition/${partition}_file_contexts" -C "$DIRROM/rebuildimg/config/$partition/${partition}_fs_config" -l "$SIZE" -L "$partition" -a "/$partition" "$DIROUT/$partition.img" "$DIRROM/rebuildimg/$partition" > /dev/null 2>&1
+		if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
+			sudo $DIRSCRIPTS/bin/make_ext4fs -J -T -1 -S "$DIRROM/rebuildimg/config/$partition/${partition}_file_contexts" -C "$DIRROM/rebuildimg/config/$partition/${partition}_fs_config" -l "$SIZE" -L "/" -a "/$partition" "$DIROUT/$partition.img" "$DIRROM/rebuildimg/$partition" > /dev/null 2>&1
+		else
+			sudo $DIRSCRIPTS/bin/make_ext4fs -J -T -1 -S "$DIRROM/rebuildimg/config/$partition/${partition}_file_contexts" -C "$DIRROM/rebuildimg/config/$partition/${partition}_fs_config" -l "$SIZE" -L "$partition" -a "/$partition" "$DIROUT/$partition.img" "$DIRROM/rebuildimg/$partition" > /dev/null 2>&1
+		fi
+		DIRIMG_RESIZE_SMALLEST=$DIROUT/$partition.img
+		resize_img_smallest
 		sudo rm -rf $DIRROM/rebuildimg
 		echo "- Done!"
 		echo ""
@@ -165,34 +176,6 @@ rebuild_ext4_single() {
 		   echo -e "${R}$partition.img fs type is $(blkid -o value -s TYPE $DIRIN/$partition.img), aborting..."
 		   echo -e "${NC}"
 		fi
-}
-
-delapps_system() {
-  if [[ -d $erofsdir/system/$partition/app/$appname ]]; then
-     rm -rf $erofsdir/system/$partition/app/$appname
-  elif [[ -d $erofsdir/system/$partition/priv-app/$appname ]]; then
-     rm -rf $erofsdir/system/$partition/priv-app/$appname
-  elif [[ -d $erofsdir/system/$partition/del-app/$appname ]]; then
-     rm -rf $erofsdir/system/$partition/del-app/$appname
-  fi
-}
-
-delapps_system_1() {
-  if [[ -d $DIROUT/$partition/app/$appname ]]; then
-     rm -rf $DIROUT/$partition/app/$appname
-  elif [[ -d $DIROUT/$partition/priv-app/$appname ]]; then
-     rm -rf $DIROUT/$partition/priv-app/$appname
-  elif [[ -d $DIROUT/$partition/del-app/$appname ]]; then
-     rm -rf $DIROUT/$partition/del-app/$appname
-  fi
-}
-
-delapps_sysext() {
-  if [[ -d $DIROUT/system_ext/app/$appname ]]; then
-     rm -rf $DIROUT/system_ext/app/$appname
-  elif [[ -d $DIROUT/system_ext/priv-app/$appname ]]; then
-     rm -rf $DIROUT/system_ext/priv-app/$appname
-  fi
 }
 
 datbr_raw() {
@@ -286,13 +269,7 @@ decompress_zstd() {
 	fi	
 }
 
-unpack_ext4_img() {
-	clear
-	echo "make sure image is on rom_input folder"
-	echo " "
-	echo "Input image name :"
-	read
-	image=$REPLY
+unpack_ext4() {
 	if [[ -f $DIRIN/$image.img ]]; then
 	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
 		if [[ ! -d $DIRROM/EXT4 ]]; then
@@ -306,13 +283,31 @@ unpack_ext4_img() {
 		rm -rf $DIRIN/$image.img
 	   else
 	   	echo ""
-		echo -e "${R}$partition.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
+		echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
 		echo -e "${NC}"
 	   fi
 	else
 		echo -e "${R}Error: no image named $image.img in $DIRIN"
 		echo -e "${NC}"
 	fi
+}
+
+repack_ext4_cmd() {
+	if [[ $image == system ]] || [[ $image == system_a ]] || [[ $image == system_b ]]; then
+		sudo $DIRSCRIPTS/bin/make_ext4fs -J -T -1 -S "$DIRROM/EXT4/config/$image/${image}_file_contexts" -C "$DIRROM/EXT4/config/$image/${image}_fs_config" -l "$SIZE" -L "/" -a "/$image" "$DIROUT/$image.new.img" "$DIRROM/EXT4/$image"
+	else
+		sudo $DIRSCRIPTS/bin/make_ext4fs -J -T -1 -S "$DIRROM/EXT4/config/$image/${image}_file_contexts" -C "$DIRROM/EXT4/config/$image/${image}_fs_config" -l "$SIZE" -L "$image" -a "/$image" "$DIROUT/$image.new.img" "$DIRROM/EXT4/$image"
+	fi
+}
+
+unpack_ext4_img() {
+	clear
+	echo "make sure image is on rom_input folder"
+	echo " "
+	echo "Input image name :"
+	read
+	image=$REPLY
+	unpack_ext4
 }
 
 repack_ext4_img_foldersize() {
@@ -329,7 +324,9 @@ repack_ext4_img_foldersize() {
 		if (( $SIZE < 1474560 )); then
 		    SIZE=`sudo du -sk $DIRROM/EXT4/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
-		sudo $DIRSCRIPTS/bin/make_ext4fs -J -T -1 -S "$DIRROM/EXT4/config/$image/${image}_file_contexts" -C "$DIRROM/EXT4/config/$image/${image}_fs_config" -l "$SIZE" -L "$image" -a "/$image" "$DIROUT/$image.new.img" "$DIRROM/EXT4/$image" 
+		repack_ext4_cmd
+		DIRIMG_RESIZE_SMALLEST=$DIROUT/$image.new.img
+		resize_img_smallest
 		echo ""
 		echo "- Done!"
 		echo ""
@@ -353,7 +350,7 @@ repack_ext4_img_samesize() {
 		if (( $SIZE < 1474560 )); then
 		    SIZE=`sudo du -sk $DIRROM/EXT4/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
-		sudo $DIRSCRIPTS/bin/make_ext4fs -J -T -1 -S "$DIRROM/EXT4/config/$image/${image}_file_contexts" -C "$DIRROM/EXT4/config/$image/${image}_fs_config" -l "$SIZE" -L "$image" -a "/$image" "$DIROUT/$image.new.img" "$DIRROM/EXT4/$image" 
+		repack_ext4_cmd
 		echo ""
 		echo "- Done!"
 		echo ""
@@ -380,7 +377,7 @@ repack_ext4_img_inputsize() {
 		fi
 		echo ""
 		echo "- Repacking $image..."
-		sudo $DIRSCRIPTS/bin/make_ext4fs -J -T -1 -S "$DIRROM/EXT4/config/$image/${image}_file_contexts" -C "$DIRROM/EXT4/config/$image/${image}_fs_config" -l "$SIZE" -L "$image" -a "/$image" "$DIROUT/$image.new.img" "$DIRROM/EXT4/$image" 
+		repack_ext4_cmd
 		echo ""
 		echo "- Done!"
 		echo ""
@@ -774,6 +771,10 @@ splits_main() {
 			echo "add odm qti_dynamic_partitions" >>  $dynamic_part_op_list
 			echo "# Add partition system_ext to group qti_dynamic_partitions" >>  $dynamic_part_op_list
 			echo "add system_ext qti_dynamic_partitions" >>  $dynamic_part_op_list
+			if [[ -f $DIRIN/mi_ext.img ]]; then
+			   echo "# Add partition mi_ext to group qti_dynamic_partitions" >>  $dynamic_part_op_list
+			   echo "add mi_ext qti_dynamic_partitions" >>  $dynamic_part_op_list
+			fi
 			echo "# Grow partition system from 0 to $SYSTEMSIZE" >>  $dynamic_part_op_list
 			echo "resize system $SYSTEMSIZE" >>  $dynamic_part_op_list
 			echo "# Grow partition vendor from 0 to $VENDORSIZE" >>  $dynamic_part_op_list
@@ -784,6 +785,10 @@ splits_main() {
 			echo "resize odm $ODMSIZE" >>  $dynamic_part_op_list
 			echo "# Grow partition system_ext from 0 to $SYSEXTSIZE" >>  $dynamic_part_op_list
 			echo "resize system_ext $SYSEXTSIZE" >>  $dynamic_part_op_list
+			if [[ -f $DIRIN/mi_ext.img ]]; then
+			   echo "# Grow partition mi_ext from 0 to $MIEXTSIZE" >>  $dynamic_part_op_list
+			   echo "resize mi_ext $MIEXTSIZE" >>  $dynamic_part_op_list
+			fi
 		}
 
 		ab_dp_op_list() {
@@ -818,6 +823,12 @@ splits_main() {
 			echo "add odm_a qti_dynamic_partitions_a" >> $dynamic_part_op_list
 			echo "# Add partition odm_b to group qti_dynamic_partitions_b" >> $dynamic_part_op_list
 			echo "add odm_b qti_dynamic_partitions_b" >> $dynamic_part_op_list
+			if [[ -f $DIRIN/mi_ext.img ]]; then
+			   echo "# Add partition mi_ext_a to group qti_dynamic_partitions" >>  $dynamic_part_op_list
+			   echo "add mi_ext_a qti_dynamic_partitions" >>  $dynamic_part_op_list
+			   echo "# Add partition mi_ext_b to group qti_dynamic_partitions" >>  $dynamic_part_op_list
+			   echo "add mi_ext_b qti_dynamic_partitions" >>  $dynamic_part_op_list
+			fi
 			echo "# Grow partition system_a from 0 to $SYSTEMSIZE" >> $dynamic_part_op_list
 			echo "resize system_a $SYSTEMSIZE" >> $dynamic_part_op_list
 			echo "# Grow partition system_ext_a from 0 to $SYSEXTSIZE" >> $dynamic_part_op_list
@@ -828,6 +839,10 @@ splits_main() {
 			echo "resize vendor_a $VENDORSIZE" >> $dynamic_part_op_list
 			echo "# Grow partition odm_a from 0 to $ODMSIZE" >> $dynamic_part_op_list
 			echo "resize odm_a $ODMSIZE" >> $dynamic_part_op_list
+			if [[ -f $DIRIN/mi_ext.img ]]; then
+			   echo "# Grow partition mi_ext_a from 0 to $MIEXTSIZE" >>  $dynamic_part_op_list
+			   echo "resize mi_ext_a $MIEXTSIZE" >>  $dynamic_part_op_list
+			fi
 		}
 
 		brotli_lvl() {
@@ -884,6 +899,10 @@ splits_main() {
 			do
 			  sparse
 			done
+			if [[ -f $DIRIN/mi_ext.img ]]; then
+			   partition=mi_ext
+			   sparse
+			fi
 
 			echo " "
 			echo "========================================="
@@ -892,6 +911,10 @@ splits_main() {
 			do
 			  img2sdat
 			done
+			if [[ -f $DIRIN/mi_ext.sparse.img ]]; then
+			   partition=mi_ext
+			   img2sdat
+			fi
 
 			echo " "
 			echo "========================================="
@@ -900,6 +923,10 @@ splits_main() {
 			do
 			  datbr
 			done
+			if [[ -f $DIROUT/mi_ext.new.dat ]]; then
+			   partition=mi_ext
+			   datbr
+			fi
 
 			echo " "
 			echo "========================================="
@@ -922,12 +949,18 @@ splits_main() {
 		if [[ ! -f $DIRIN/system_ext.img ]]; then
 			touch $DIRIN/system_ext.img
 		fi
+		if [[ ! -f $DIRIN/mi_ext.img ]]; then
+			touch $DIRIN/mi_ext.img
+		fi
 		
 		ODMSIZE=$(ls -nl $DIRIN/odm.img | awk '{print $5}')
 		PRODUCTSIZE=$(ls -nl $DIRIN/product.img | awk '{print $5}')
 		SYSTEMSIZE=$(ls -nl $DIRIN/system.img | awk '{print $5}')
 		SYSEXTSIZE=$(ls -nl $DIRIN/system_ext.img | awk '{print $5}')
 		VENDORSIZE=$(ls -nl $DIRIN/vendor.img | awk '{print $5}')
+		if [[ -f $DIRIN/mi_ext.img ]]; then
+		    MIEXTSIZE=$(ls -nl $DIRIN/mi_ext.img | awk '{print $5}')
+		fi
 			
 		TOTALSIZE=$(( $ODMSIZE + $PRODUCTSIZE + $SYSTEMSIZE + $SYSEXTSIZE + $VENDORSIZE ))
 		
@@ -945,6 +978,9 @@ splits_main() {
 		fi
 		if [[ $SYSEXTSIZE == 0 ]]; then
 			rm -rf $DIRIN/system_ext.img
+		fi
+		if [[ $MIEXTSIZE == 0 ]]; then
+			rm -rf $DIRIN/mi_ext.img
 		fi
 
 		if (( $TOTALSIZE > $SUPERSIZE )); then
@@ -1021,6 +1057,10 @@ splits_main() {
 		do
 		  datbr
 		done
+		if [[ -f $DIRIN/mi_ext.new.dat.br ]]; then
+		   partition=mi_ext
+		   datbr
+		fi
 
 		echo " "
 		echo "========================================="
@@ -1029,6 +1069,10 @@ splits_main() {
 		do
 		  sdat2img
 		done
+		if [[ -f $DIRIN/mi_ext.new.dat ]]; then
+		   partition=mi_ext
+		   sdat2img
+		fi
 
 		echo " "
 		echo "========================================="
