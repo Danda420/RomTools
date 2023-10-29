@@ -1252,6 +1252,10 @@ super_main() {
 		group_table2=$(cat $DIRSUPER/config/super_config.txt | grep -A10 "Group table:" | grep "Name:" | awk '{ print $2 }' | sed -n "3p")
 		max_size_super2=$max_size_super
 		
+		configsize=$(du -s -b $DIRSUPER/config | awk '{print $1}')
+		superdirsize=$(du -s -b $DIRSUPER | awk '{print $1}')
+		TOTALSIZE=$(( $superdirsize - $configsize ))
+		
 		clear
 		echo " "
 		echo "Input Raw Super image name :"
@@ -1320,13 +1324,8 @@ super_main() {
 			echo "Compiling super with A only format"
 			echo " "
 
-			ODMSIZE=$(ls -nl $DIRSUPER/odm.img | awk '{print $5}')
-			PRODUCTSIZE=$(ls -nl $DIRSUPER/product.img | awk '{print $5}')
-			SYSTEMSIZE=$(ls -nl $DIRSUPER/system.img | awk '{print $5}')
-			SYSEXTSIZE=$(ls -nl $DIRSUPER/system_ext.img | awk '{print $5}')
-			VENDORSIZE=$(ls -nl $DIRSUPER/vendor.img | awk '{print $5}')
+			part_list=$(cat $DIRSUPER/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }')
 			
-			TOTALSIZE=$(( $ODMSIZE + $PRODUCTSIZE + $SYSTEMSIZE + $SYSEXTSIZE + $VENDORSIZE ))
 			if (( $TOTALSIZE > $max_size_super )); then
 				echo "Total size of all partitions exceeds max super size, aborting..."
 				echo "($TOTALSIZE/$max_size_super)"
@@ -1336,13 +1335,23 @@ super_main() {
 				echo "($TOTALSIZE/$max_size_super)"
 				echo ""
 				echo "Compiling super : $imgname.img (raw)..."
-				lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot --device=super:$size_super:$first_sector --group=$group_table:$max_size_super \
-					--partition=system:none:$SYSTEMSIZE:$group_table --image=system=$DIRSUPER/system.img \
-					--partition=vendor:none:$VENDORSIZE:$group_table --image=vendor=$DIRSUPER/vendor.img \
-					--partition=product:none:$PRODUCTSIZE:$group_table --image=product=$DIRSUPER/product.img \
-					--partition=odm:none:$ODMSIZE:$group_table --image=odm=$DIRSUPER/odm.img \
-					--partition=system_ext:none:$SYSEXTSIZE:$group_table --image=system_ext=$DIRSUPER/system_ext.img \
-					--output=$DIRIN/$imgname.img
+				
+				echo "#!/bin/bash" > $DIRSCRIPTS/build_super.sh
+				echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot --device=super:$size_super:$first_sector --group=$group_table:$max_size_super '\'" >> $DIRSCRIPTS/build_super.sh
+
+				for partition in $part_list; do
+				   partition_size=$(ls -nl $DIRSUPER/$partition.img | awk '{print $5}')
+				   echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$DIRSUPER/$partition.img '\'" >> $DIRSCRIPTS/build_super.sh
+				done
+
+				echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super.sh
+				echo "exit" >> $DIRSCRIPTS/build_super.sh
+				
+				sed -i "s/[']//g" $DIRSCRIPTS/build_super.sh
+				chmod 755 $DIRSCRIPTS/build_super.sh
+				$DIRSCRIPTS/build_super.sh
+				
+				rm -rf $DIRSCRIPTS/build_super.sh
 				rm -rf $DIRSUPER/*
 			fi
 		else
@@ -1368,13 +1377,9 @@ super_main() {
 			    esac
 			done
 			
-			ODMSIZE=$(ls -nl $DIRSUPER/odm${slot}.img | awk '{print $5}')
-			PRODUCTSIZE=$(ls -nl $DIRSUPER/product${slot}.img | awk '{print $5}')
-			SYSTEMSIZE=$(ls -nl $DIRSUPER/system${slot}.img | awk '{print $5}')
-			SYSEXTSIZE=$(ls -nl $DIRSUPER/system_ext${slot}.img | awk '{print $5}')
-			VENDORSIZE=$(ls -nl $DIRSUPER/vendor${slot}.img | awk '{print $5}')
+			ab_part_list=$(cat $DIRSUPER/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }' | grep ${slot})
+			ab_part_list_empty=$(cat $DIRSUPER/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }' | grep ${emptyslot})
 			
-			TOTALSIZE=$(( $ODMSIZE + $PRODUCTSIZE + $SYSTEMSIZE + $SYSEXTSIZE + $VENDORSIZE ))
 			if (( $TOTALSIZE > $max_size_super )); then
 				echo "Total size of all partitions exceeds max super size, aborting..."
 				echo "($TOTALSIZE/$max_size_super)"
@@ -1384,22 +1389,27 @@ super_main() {
 				echo "($TOTALSIZE/$max_size_super)"
 				echo ""
 				echo "Compiling super : $imgname.img (raw)..."
-				lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot --device=super:$size_super:$first_sector --group=$group_table:$max_size_super --group=$group_table2:$max_size_super2 \
-					--partition=odm${slot}:none:$ODMSIZE:$group_table --image=odm${slot}=$DIRSUPER/odm${slot}.img \
-					--partition=product${slot}:none:$PRODUCTSIZE:$group_table --image=product${slot}=$DIRSUPER/product${slot}.img \
-					--partition=system${slot}:none:$SYSTEMSIZE:$group_table --image=system${slot}=$DIRSUPER/system${slot}.img \
-					--partition=system_ext${slot}:none:$SYSEXTSIZE:$group_table --image=system_ext${slot}=$DIRSUPER/system_ext${slot}.img \
-					--partition=vendor${slot}:none:$VENDORSIZE:$group_table --image=vendor${slot}=$DIRSUPER/vendor${slot}.img \
-					--output=$DIRIN/$imgname.img
 				
-				echo ""
-				touch $DIRIN/tmp.img
-				lpadd $DIRIN/$imgname.img odm${emptyslot} $group_table2 $DIRIN/tmp.img
-				lpadd $DIRIN/$imgname.img product${emptyslot} $group_table2 $DIRIN/tmp.img
-				lpadd $DIRIN/$imgname.img system${emptyslot} $group_table2 $DIRIN/tmp.img
-				lpadd $DIRIN/$imgname.img system_ext${emptyslot} $group_table2 $DIRIN/tmp.img
-				lpadd $DIRIN/$imgname.img vendor${emptyslot} $group_table2 $DIRIN/tmp.img
-				rm -rf $DIRIN/tmp.img
+				echo "#!/bin/bash" > $DIRSCRIPTS/build_super.sh
+				echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot --device=super:$size_super:$first_sector --group=$group_table:$max_size_super --group=$group_table2:$max_size_super2 '\'" >> $DIRSCRIPTS/build_super.sh
+				for partition in $ab_part_list; do
+				   partition_size=$(ls -nl $DIRSUPER/$partition.img | awk '{print $5}')
+				   echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$DIRSUPER/$partition.img '\'" >> $DIRSCRIPTS/build_super.sh
+				done
+				echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super.sh
+				
+				echo "touch $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super.sh
+				for emptypartition in $ab_part_list_empty; do
+				   echo "lpadd $DIRIN/$imgname.img $emptypartition $group_table2 $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super.sh
+				done
+				echo "rm -rf $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super.sh
+				echo "exit" >> $DIRSCRIPTS/build_super.sh
+				
+				sed -i "s/[']//g" $DIRSCRIPTS/build_super.sh
+				chmod 755 $DIRSCRIPTS/build_super.sh
+				$DIRSCRIPTS/build_super.sh
+				
+				rm -rf $DIRSCRIPTS/build_super.sh
 				rm -rf $DIRSUPER/*
 			fi
 		fi
