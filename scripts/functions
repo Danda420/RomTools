@@ -13,6 +13,7 @@ oplus_partitions="my_bigball my_carrier my_company my_engineering my_heytap my_m
 G='\033[1;32m'
 R='\033[1;31m'
 NC='\033[0m'
+LC='\033[1;36m'
 
 restart_tool() {
 	echo " "
@@ -31,10 +32,10 @@ restart_tool() {
 
 banner() {
 	clear
-	echo -e "${G}========================="
-	echo -e "${G}   ROM TOOLS FOR LINUX   "
-	echo -e "${G}        by  Danda        "
-	echo -e "${G}=========================${NC}"
+	echo -e "${LC}========================="
+	echo -e "${LC}   ROM TOOLS FOR LINUX   "
+	echo -e "${LC}        by  Danda        "
+	echo -e "${LC}=========================${NC}"
 }
 
 give_perm() {
@@ -64,13 +65,7 @@ restore_perm() {
 
 setup() {
 	clear
-	if [[ -d $DIRTOOLS/ROM ]] && [[ -d $DIRTOOLS/rom_input ]] && [[ -d $DIRTOOLS/rom_output ]]; then
-
-		echo ""
-
-	else
-		echo "creating dirs"
-
+	if [[ ! -d $DIRTOOLS/ROM ]] && [[ ! -d $DIRTOOLS/rom_input ]] && [[ ! -d $DIRTOOLS/rom_output ]]; then
 		mkdir $DIRTOOLS/rom_input
 		mkdir $DIRTOOLS/rom_output
 		mkdir $DIRTOOLS/ROM
@@ -80,8 +75,6 @@ setup() {
 		mkdir $DIRTOOLS/ROM/system_ext
 		mkdir $DIRTOOLS/ROM/vendor
 		mkdir $DIRTOOLS/ROM/super
-
-		echo "Done!"
 	fi
 }
 
@@ -97,7 +90,7 @@ clean() {
 	sudo rm -rf $DIRSCRIPTS/bin/__pycache__
 	sudo rm -rf $DIRSCRIPTS/bin/*.pyc
 
-	echo "Done!"
+	echo -e "${G}Done!${NC}"
 }
 
 resize_img_smallest(){
@@ -116,8 +109,13 @@ convert_erofs_ext4(){
 		rm -rf $DIRIN/$partition.img
 		mv $DIRSCRIPTS/$partition.img $DIROUT/
 		echo ""
-		echo "Conversion done..."
-		echo "Output: $DIROUT"
+		if [[ -f $DIROUT/$partition.img ]]; then
+		   echo -e "${G}Conversion done..."
+		   echo -e "Output : $DIROUT/$partition.img ${NC}"
+		else
+		   echo -e "${R}Conversion Failed!"
+		   echo -e "${NC}"
+		fi
 		echo ""
 		cd $DIRTOOLS
 	else
@@ -152,8 +150,13 @@ rebuild_ext4(){
 		sudo rm -rf $DIRROM/rebuildimg
 		echo "- Done!"
 		echo ""
-		echo "Rebuild done..."
-		echo "Output: $DIROUT"
+		if [[ -f $DIROUT/$partition.img ]]; then
+		   echo -e "${G}Rebuild done..."
+		   echo -e "Output : $DIROUT/$partition.img ${NC}"
+		else
+		   echo -e "${R}Rebuild Failed!"
+		   echo -e "${NC}"
+		fi
 		echo ""
 	 else
 		echo ""
@@ -200,7 +203,12 @@ datbr_raw() {
 		rm -rf $DIRIN/$imgname.*
 
 		echo " "
-		echo "Done! Output : $DIROUT"
+		if [[ -f $DIROUT/$imgname.img ]]; then
+		   echo -e "${G}Done! Output : $DIROUT/$imgname.img ${NC}"
+		else
+		   echo -e "${R}Decompression Failed!"
+		   echo -e "${NC}"
+		fi
 	else
 
 		echo -e "${R}there's no image "$imgname.new.dat.br"${NC}"
@@ -235,7 +243,12 @@ compress_zstd() {
 		zstd -${ZSTDLVL} $DIRIN/$filename -o $DIROUT/${filename}$ZSTDSUFFIX
 		rm -rf $DIRIN/$filename
 		echo " "
-		echo "Done! Output : $DIROUT"
+		if [[ -f $DIROUT/${filename}$ZSTDSUFFIX ]]; then
+		   echo -e "${G}Done! Output : $DIROUT/${filename}$ZSTDSUFFIX ${NC}"
+		else
+		   echo -e "${R}Compression Failed!"
+		   echo -e "${NC}"
+		fi
 	else
 
 		echo -e "${R}there's no file named "$filename" in $DIRIN ${NC}"
@@ -262,7 +275,12 @@ decompress_zstd() {
 		zstd -d $DIRIN/$filename.zst -o $DIROUT/$outputname
 		rm -rf $DIRIN/$filename.*
 		echo " "
-		echo "Done! Output : $DIROUT"
+		if [[ -f $DIROUT/$outputname ]]; then
+		   echo -e "${G}Done! Output : $DIROUT/$outputname ${NC}"
+		else
+		   echo -e "${R}Decompression Failed!"
+		   echo -e "${NC}"
+		fi
 	else
 
 		echo -e "${R}there's no file named "$filename" in $DIRIN ${NC}"
@@ -279,7 +297,7 @@ unpack_ext4() {
 		sudo $DIRSCRIPTS/bin/imgextractor.py $DIRIN/$image.img $DIRROM/EXT4
 		sudo chown -R $USER:$USER $DIRROM/EXT4
 		echo ""
-		echo "Output: $DIRROM/EXT4/$image"
+		echo -e "${G}Output : $DIRROM/EXT4/$image ${NC}"
 		rm -rf $DIRIN/$image.img
 	   else
 	   	echo ""
@@ -330,7 +348,13 @@ repack_ext4_img_foldersize() {
 		echo ""
 		echo "- Done!"
 		echo ""
-		echo "Output: $DIROUT/$image.new.img"
+		if [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
+		   echo -e "${G}Repack done..."
+		   echo -e "Output : $DIROUT/$image.new.img ${NC}"
+		else
+		   echo -e "${R}Repack Failed!"
+		   echo -e "${NC}"
+		fi
 	else
 		echo -e "${R}Error: no unpacked image named $image in $DIRROM/EXT4"
 		echo -e "${NC}"
@@ -354,7 +378,13 @@ repack_ext4_img_samesize() {
 		echo ""
 		echo "- Done!"
 		echo ""
-		echo "Output: $DIROUT/$image.new.img"
+		if [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
+		   echo -e "${G}Repack done..."
+		   echo -e "Output : $DIROUT/$image.new.img ${NC}"
+		else
+		   echo -e "${R}Repack Failed!"
+		   echo -e "${NC}"
+		fi
 	else
 		echo -e "${R}Error: no unpacked image named $image in $DIRROM/EXT4"
 		echo -e "${NC}"
@@ -381,7 +411,13 @@ repack_ext4_img_inputsize() {
 		echo ""
 		echo "- Done!"
 		echo ""
-		echo "Output: $DIROUT/$image.new.img"
+		if [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
+		   echo -e "${G}Repack done..."
+		   echo -e "Output : $DIROUT/$image.new.img ${NC}"
+		else
+		   echo -e "${R}Repack Failed!"
+		   echo -e "${NC}"
+		fi
 	else
 		echo -e "${R}Error: no unpacked image named $image in $DIRROM/EXT4"
 		echo -e "${NC}"
@@ -486,7 +522,7 @@ merge_main() {
 		   mv $DIRIN/system_file_contexts $DIROUT/
 		   mv $DIRIN/system_fs_config $DIROUT/
 			
-		echo "merged all fs context and config.. Output : $DIROUT"
+		echo -e "${G}merged all fs context and config.. Output : $DIROUT ${NC}"
 
 		else
 			echo -e "${R}Error: put your system_file_contexts & system_fs_config to $DIRIN"
@@ -646,7 +682,7 @@ payload() {
 		rm -rf $DIRIN/payload.bin
 
 		echo " "
-		echo "Done! Output : $DIROUT"
+		echo -e "Done! Output : $DIROUT ${NC}"
 
 	else
 
@@ -691,7 +727,12 @@ raw_sparse() {
 		rm -rf $DIRIN/$imgname.img
 
 		echo " "
-		echo "Done! Output : $DIROUT"
+		if [[ -f $DIROUT/$imgname.sparse.img ]]; then
+		   echo -e "${G}Done! Output : $DIROUT/$imgname.sparse.img ${NC}"
+		else
+		   echo -e "${R}Conversion Failed!"
+		   echo -e "${NC}"
+		fi
 
 	else
 		echo -e "${R}there's no $imgname.img in $DIRIN"
@@ -736,7 +777,12 @@ raw_datbr() {
 
 		rm -rf $DIROUT/$imgname.new.dat
 		echo " "
-		echo "Done! Output : $DIROUT"
+		if [[ -f $DIROUT/$imgname.new.dat.br ]]; then
+		   echo -e "Done! Output : $DIROUT/$imgname.new.dat.br ${NC}"
+		else
+		   echo -e "${R}Decompression Failed!"
+		   echo -e "${NC}"
+		fi
 		
 	else
 		echo -e "${R}there's no $imgname.img in $DIRIN"
@@ -931,7 +977,7 @@ splits_main() {
 			echo " "
 			echo "========================================="
 			echo " "
-			echo "Done! Output : $DIROUT"
+			echo -e "${G}Done! Output : $DIROUT ${NC}"
 
 		}
 		if [[ ! -f $DIRIN/system.img ]]; then
@@ -1077,7 +1123,7 @@ splits_main() {
 		echo " "
 		echo "========================================="
 		echo " "
-		echo "Done! Output : $DIROUT"
+		echo -e "${G}Done! Output : $DIROUT ${NC}"
 	}
 
 	while true; do
@@ -1124,21 +1170,18 @@ sparse_raw() {
 		if [ -f $DIRIN/*.sparse.img ]; then
 
 			img2img $DIRIN/$imgname.sparse.img $DIROUT/$imgname.img >> /dev/null 2>&1
-
-			rm -rf $DIRIN/*
-
-			echo " "
-			echo "Done! Output : $DIROUT"
-
+			rm -rf $DIRIN/$imgname.sparse.img
 		else
 
 			simg2img $DIRIN/$imgname.img $DIROUT/$imgname.img >> /dev/null 2>&1
-
-			rm -rf $DIRIN/*
-
-			echo " "
-			echo "Done! Output : $DIROUT"
-
+			rm -rf $DIRIN/$imgname.img
+		fi
+		echo " "
+		if [[ $(ls -l $DIROUT/$imgname.img | awk '{print $5}') != "0" ]]; then
+		   echo -e "${G}Done! Output : $DIROUT/$imgname.img ${NC}"
+		else
+		   echo -e "${R}Decompression Failed!"
+		   echo -e "${NC}"
 		fi
 	else
 		echo -e "${R}there's no image named $imgname.img or $imgname.sparse.img in $DIRIN"
@@ -1161,11 +1204,11 @@ super_main() {
 			echo "Unpacking $imgname.img..."
 			mkdir $DIRSUPER/config
 			lpdump --slot=0 $DIRIN/$imgname.img > $DIRSUPER/config/super_config.txt
-			lpunpack $DIRIN/$imgname.img $DIRROM/super >> /dev/null 2>&1
+			lpunpack $DIRIN/$imgname.img $DIRROM/super
 			rm -rf $DIRIN/$imgname.*
 
 			echo " "
-			echo "Done! Output : $DIRROM/super"
+			echo -e "${G}Done! Output : $DIRROM/super ${NC}"
 
 		else
 
@@ -1193,11 +1236,11 @@ super_main() {
 			echo "Unpacking super..."
 			mkdir $DIRSUPER/config
 			lpdump --slot=0 $DIRIN/super.img > $DIRSUPER/config/super_config.txt
-			lpunpack $DIRIN/super.img $DIRROM/super >> /dev/null 2>&1
+			lpunpack $DIRIN/super.img $DIRROM/super
 			rm -rf $DIRIN/super.img
 
 			echo " "
-			echo "Done! Output : $DIRROM/super"
+			echo -e "${G}Done! Output : $DIRROM/super ${NC}"
 
 		else
 
@@ -1229,11 +1272,11 @@ super_main() {
 			echo "Unpacking $imgname.img..."
 			mkdir $DIRSUPER/config
 			lpdump --slot=0 $DIROUT/$imgname.img > $DIRSUPER/config/super_config.txt
-			lpunpack $DIROUT/$imgname.img $DIRROM/super >> /dev/null
+			lpunpack $DIROUT/$imgname.img $DIRROM/super
 			rm -rf $DIROUT/$imgname.*
 
 			echo " "
-			echo "Done! Output : $DIRROM/super"
+			echo -e "${G}Done! Output : $DIRROM/super ${NC}"
 
 		else
 
@@ -1245,16 +1288,23 @@ super_main() {
 	super_r() {
 		meta_size=$(cat $DIRSUPER/config/super_config.txt | awk '/Metadata max size:/ { print $4 }')
 		meta_slot=$(cat $DIRSUPER/config/super_config.txt | awk '/Metadata slot count:/ { print $4 }')
-		size_super=$(cat $DIRSUPER/config/super_config.txt | awk '/Size:/ { print $2 }')
 		first_sector=$(cat $DIRSUPER/config/super_config.txt | awk '/First sector:/ { print ($3 * 512)}')
 		group_table=$(cat $DIRSUPER/config/super_config.txt | grep -A10 "Group table:" | grep "Name:" | awk '{ print $2 }' | sed -n "2p")
-		max_size_super=$(cat $DIRSUPER/config/super_config.txt | grep -A11 "Group table:" | grep "Maximum size:" | awk '{ print $3 }' | sed -n "2p")
 		group_table2=$(cat $DIRSUPER/config/super_config.txt | grep -A10 "Group table:" | grep "Name:" | awk '{ print $2 }' | sed -n "3p")
+		virtualAB=$(cat $DIRSUPER/config/super_config.txt | awk '/Header flags:/ { print $3 }')
+		size_super=$(cat $DIRSUPER/config/super_config.txt | awk '/Size:/ { print $2 }')
+		max_size_super=$(cat $DIRSUPER/config/super_config.txt | grep -A11 "Group table:" | grep "Maximum size:" | awk '{ print $3 }' | sed -n "2p")
 		max_size_super2=$max_size_super
 		
 		configsize=$(du -s -b $DIRSUPER/config | awk '{print $1}')
 		superdirsize=$(du -s -b $DIRSUPER | awk '{print $1}')
 		TOTALSIZE=$(( $superdirsize - $configsize ))
+		
+		if [[ $virtualAB = "virtual_ab_device" ]]; then
+		    virtualABOption="--virtual-ab "
+		else
+		    virtualABOption=""
+		fi
 		
 		clear
 		echo " "
@@ -1354,7 +1404,7 @@ super_main() {
 				rm -rf $DIRSCRIPTS/build_super.sh
 				rm -rf $DIRSUPER/*
 			fi
-		else
+		elif [[ $meta_slot == 3 ]]; then
 			echo " "
 			echo "Virtual A/B detected..."
 			echo "Compiling super with Virtual A/B format"
@@ -1391,18 +1441,25 @@ super_main() {
 				echo "Compiling super : $imgname.img (raw)..."
 				
 				echo "#!/bin/bash" > $DIRSCRIPTS/build_super.sh
-				echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot --device=super:$size_super:$first_sector --group=$group_table:$max_size_super --group=$group_table2:$max_size_super2 '\'" >> $DIRSCRIPTS/build_super.sh
+				if [[ $group_table2 != "" ]]; then
+				    echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super --group=$group_table2:$max_size_super2 '\'" >> $DIRSCRIPTS/build_super.sh
+				else
+				    echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super '\'" >> $DIRSCRIPTS/build_super.sh
+				fi
+				
 				for partition in $ab_part_list; do
 				   partition_size=$(ls -nl $DIRSUPER/$partition.img | awk '{print $5}')
 				   echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$DIRSUPER/$partition.img '\'" >> $DIRSCRIPTS/build_super.sh
 				done
 				echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super.sh
 				
-				echo "touch $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super.sh
-				for emptypartition in $ab_part_list_empty; do
-				   echo "lpadd $DIRIN/$imgname.img $emptypartition $group_table2 $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super.sh
-				done
-				echo "rm -rf $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super.sh
+				if [[ $group_table2 != "" ]]; then
+				    echo "touch $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super.sh
+				    for emptypartition in $ab_part_list_empty; do
+				       echo "lpadd $DIRIN/$imgname.img $emptypartition $group_table2 $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super.sh
+				    done
+				    echo "rm -rf $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super.sh
+				fi
 				echo "exit" >> $DIRSCRIPTS/build_super.sh
 				
 				sed -i "s/[']//g" $DIRSCRIPTS/build_super.sh
@@ -1412,20 +1469,33 @@ super_main() {
 				rm -rf $DIRSCRIPTS/build_super.sh
 				rm -rf $DIRSUPER/*
 			fi
+		else
+			echo -e "${R}Meta slot $meta_slot is not supported!"
+			echo -e "${NC}"
 		fi
 
 
 		if [[ $COMPRESSION == raw ]]; then
 			echo " "
 			mv $DIRIN/$imgname.img $DIROUT/$imgname.img
-			echo "super build done! Output : $DIROUT"
+			if [[ -f $DIROUT/$imgname.img ]]; then
+			   echo -e "${G}super build done! Output : $DIROUT/$imgname.img ${NC}"
+			else
+			   echo -e "${R}Build Failed!"
+			   echo -e "${NC}"
+			fi
 		elif [[ $COMPRESSION == sparse ]]; then
 			echo " "
 			echo "Converting raw $imgname.img to sparse..."
 			img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
 			rm -rf $DIRIN/$imgname.img
 			mv $DIRIN/$imgname.sparse.img $DIROUT/$imgname.sparse.img
-			echo "compession done! Output : $DIROUT"
+			if [[ -f $DIROUT/$imgname.sparse.img ]]; then
+			   echo -e "${G}super build done! Output : $DIROUT/$imgname.sparse.img ${NC}"
+			else
+			   echo -e "${R}Build Failed!"
+			   echo -e "${NC}"
+			fi
 		elif [[ $COMPRESSION == dat ]]; then	
 			echo " "
 			echo "Converting raw $imgname.img to sparse..."
@@ -1440,7 +1510,12 @@ super_main() {
 			mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
 			mv $DIRIN/system.transfer.list $DIROUT/$imgname.transfer.list
 			rm -rf $DIRIN/$imgname.*
-			echo "compession done! Output : $DIROUT"
+			if [[ -f $DIROUT/$imgname.new.dat ]]; then
+			   echo -e "${G}super build done! Output : $DIROUT/$imgname.new.dat ${NC}"
+			else
+			   echo -e "${R}Build Failed!"
+			   echo -e "${NC}"
+			fi
 		elif [[ $COMPRESSION == br ]]; then
 			echo " "
 			echo "Converting raw $imgname.img to sparse..."
@@ -1463,14 +1538,24 @@ super_main() {
 			echo "cleaning..."
 			echo " "
 			rm -rf $DIROUT/$imgname.new.dat
-			echo "compession done! Output : $DIROUT"
+			if [[ -f $DIROUT/$imgname.new.dat.br ]]; then
+			   echo -e "${G}super build done! Output : $DIROUT/$imgname.new.dat.br ${NC}"
+			else
+			   echo -e "${R}Build Failed!"
+			   echo -e "${NC}"
+			fi
 		elif [[ $COMPRESSION == zstd ]]; then
 			echo " "
 			echo "Compressing $imgname.img to ${imgname}$ZSTDSUFFIX (zstd)"
 			zstd -${ZSTDLVL} $DIRIN/$imgname.img -o $DIROUT/${imgname}$ZSTDSUFFIX
 			rm -rf $DIRIN/$imgname.img
 			echo " "
-			echo "super build done! Output : $DIROUT"
+			if [[ -f $DIROUT/${imgname}$ZSTDSUFFIX ]]; then
+			   echo -e "${G}super build done! Output : $DIROUT/${imgname}$ZSTDSUFFIX ${NC}"
+			else
+			   echo -e "${R}Build Failed!"
+			   echo -e "${NC}"
+			fi
 		fi
 	}
 	
@@ -1717,7 +1802,7 @@ patch_oplus() {
 		chmod 644 $DIRROM/system/system/usr/keylayout/uinput-fpc.kl
 		chmod 644 $DIRROM/system/system/usr/keylayout/uinput-goodix.kl
 		
-		echo "patching done..."
+		echo -e "${G}patching done... ${NC}"
 		echo ""
 	}
 
@@ -1757,21 +1842,15 @@ install_req() {
 	    read -p "" choose
 	    case $choose in
 		1 ) 
-		sudo pacman -S android-tools
-		sudo pacman -S gawk
-		sudo pacman -S erofs-utils
+		sudo pacman -Sy --noconfirm android-tools gawk erofs-utils brotli cpio
 		restart_tool;;
 		
 		2 )
-		sudo dnf install android-tools
-		sudo dnf install erofs-utils
-		sudo dnf install gawk
+		sudo dnf install android-tools erofs-utils gawk cpio
 		restart_tool;;
 		
 		3 )
-		sudo apt update && sudo apt upgrade
-		sudo apt install brotli android-sdk-libsparse-utils gawk wget build-essential libncursesw5-dev libssl-dev \
-				 libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev libffi-dev zlib1g-dev
+		sudo apt install brotli android-sdk-libsparse-utils gawk wget android-tools cpio
 		restart_tool;;
 		
 		4 )

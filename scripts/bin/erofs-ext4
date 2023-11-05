@@ -15,6 +15,8 @@ unpack_erofs() {
     if [[ $partition == system ]]; then
     	cat $extracted_dir/system/etc/selinux/plat_file_contexts > $fscontexts
     	cat $bin/other_file_contexts >> $fscontexts
+    elif [[ $partition == mi_ext ]]; then
+    	echo "/mi_ext(/.*)?                    u:object_r:rootfs:s0" > $fscontexts
     fi
 }
 

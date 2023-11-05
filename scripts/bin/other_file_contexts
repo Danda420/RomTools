@@ -1,4 +1,7 @@
 /cust(/.*)?                    u:object_r:rootfs:s0
+/mi_ext(/.*)?                    u:object_r:rootfs:s0
+/opconfig(/.*)?                    u:object_r:rootfs:s0
+/opcust(/.*)?                    u:object_r:rootfs:s0
 /my_bigball(/.*)?                    u:object_r:rootfs:s0
 /my_carrier(/.*)?                    u:object_r:rootfs:s0
 /my_custom(/.*)?                    u:object_r:rootfs:s0
