@@ -93,6 +93,58 @@ clean() {
 	echo -e "${G}Done!${NC}"
 }
 
+file_selector() {
+	if ls -1 $DIRIN/*$file_extension > /dev/null 2>&1 ; then
+	   ls -1 $DIRIN/*$file_extension | sed 's:.*/::' | awk '{print NR ".", $0}'
+	else
+	   if [[ $file_extension == "" ]]; then
+	      echo -e "${R}No file(s) found in rom_input folder ${NC}"
+	      echo ""
+	   else
+	      echo -e "${R}No file(s) found in rom_input folder with $file_extension file extension ${NC}"
+	      echo ""
+	   fi
+	fi
+	echo "x. Back to main menu"
+	read
+	CHOOSE=$REPLY
+	if [[ $CHOOSE == "x" ]]; then
+	   start_tools
+	else
+	   if [[ $file_extension == "" ]]; then
+	      FILE=$(ls -1 $DIRIN | awk '{print NR ".", $0}' | grep grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
+	      clear
+	      echo "Selected: $FILE"
+	   else
+	      file1=$(ls -1 $DIRIN/*$file_extension | awk '{print NR ".", $0}' | grep grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}' | sed "s/$file_extension//")
+	      file2=${file1%/}
+	      file3=${file2##*/}
+	      FILE=$file3
+	      clear
+	      echo "Selected: $FILE"
+	   fi
+	fi
+}
+
+folder_selector() {
+	if ls -1 $DIRROM/EXT4 > /dev/null 2>&1 ; then
+	   ls -1 $DIRROM/EXT4 | grep -v "config" | awk '{print NR ".", $0}'
+	else
+	   echo -e "${R}No extracted partition(s) found! ${NC}"
+	   echo ""
+	fi
+	echo "x. Back to main menu"
+	read
+	CHOOSE=$REPLY
+	if [[ $CHOOSE == "x" ]]; then
+	   start_tools
+	else
+	   FOLDER=$(ls -1 $DIRROM/EXT4 | grep -v "config" | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
+	   clear
+	   echo "Selected: $FOLDER"
+	fi
+}
+
 resize_img_smallest(){
 	sudo e2fsck -yf $DIRIMG_RESIZE_SMALLEST > /dev/null 2>&1
 	sudo resize2fs -M $DIRIMG_RESIZE_SMALLEST > /dev/null 2>&1
@@ -167,11 +219,13 @@ rebuild_ext4(){
 
 rebuild_ext4_single() {
 		clear
-		echo "make sure image is on rom_input folder"
+		banner
 		echo " "
-		echo "Input image name :"
-		read
-		partition=$REPLY
+		echo "choose which image you wanted to rebuild"
+		echo " "
+		file_extension=".img"
+		file_selector
+		partition=$FILE
 		if [[ $(blkid -o value -s TYPE $DIRIN/$partition.img) == ext4 ]]; then
 		   rebuild_ext4
 		else
@@ -183,10 +237,13 @@ rebuild_ext4_single() {
 
 datbr_raw() {
 	clear
+	banner
 	echo " "
-	echo "Input image/partition name :"
-	read
-	imgname=$REPLY
+	echo "choose which image you wanted to extract"
+	echo " "
+	file_extension=".new.dat.br"
+	file_selector
+	imgname=$FILE
 
 	if [ -f $DIRIN/$imgname.new.dat.br ]; then
 
@@ -209,18 +266,18 @@ datbr_raw() {
 		   echo -e "${R}Decompression Failed!"
 		   echo -e "${NC}"
 		fi
-	else
-
-		echo -e "${R}there's no image "$imgname.new.dat.br"${NC}"
 	fi
 }
 
 compress_zstd() {
 	clear
+	banner
 	echo " "
-	echo "Input file name :"
-	read
-	filename=$REPLY
+	echo "choose which file you wanted to compress"
+	echo " "
+	file_extension=""
+	file_selector
+	filename=$FILE
 	
 	if [ -f $DIRIN/$filename ]; then
 		echo " "
@@ -249,18 +306,18 @@ compress_zstd() {
 		   echo -e "${R}Compression Failed!"
 		   echo -e "${NC}"
 		fi
-	else
-
-		echo -e "${R}there's no file named "$filename" in $DIRIN ${NC}"
 	fi	
 }
 
 decompress_zstd() {
 	clear
+	banner
 	echo " "
-	echo "Input file name :"
-	read
-	filename=$REPLY
+	echo "choose which file you wanted to decompress"
+	echo " "
+	file_extension=""
+	file_selector
+	filename=$FILE
 	
 	if [ -f $DIRIN/$filename ]; then
 		mv $DIRIN/$filename $DIRIN/$filename.zst
@@ -281,9 +338,6 @@ decompress_zstd() {
 		   echo -e "${R}Decompression Failed!"
 		   echo -e "${NC}"
 		fi
-	else
-
-		echo -e "${R}there's no file named "$filename" in $DIRIN ${NC}"
 	fi	
 }
 
@@ -320,20 +374,24 @@ repack_ext4_cmd() {
 
 unpack_ext4_img() {
 	clear
-	echo "make sure image is on rom_input folder"
+	banner
 	echo " "
-	echo "Input image name :"
-	read
-	image=$REPLY
+	echo "choose which image you wanted to unpack"
+	echo " "
+	file_extension=".img"
+	file_selector
+	image=$FILE
 	unpack_ext4
 }
 
 repack_ext4_img_foldersize() {
 	clear
+	banner
 	echo " "
-	echo "Input image name that you want to repack :"
-	read
-	image=$REPLY
+	echo "choose which partition you wanted to repack"
+	echo " "
+	folder_selector
+	image=$FOLDER
 	if [[ -d $DIRROM/EXT4/$image ]]; then
 		echo ""
 		echo "- Repacking $image..."
@@ -355,18 +413,17 @@ repack_ext4_img_foldersize() {
 		   echo -e "${R}Repack Failed!"
 		   echo -e "${NC}"
 		fi
-	else
-		echo -e "${R}Error: no unpacked image named $image in $DIRROM/EXT4"
-		echo -e "${NC}"
 	fi
 }
 
 repack_ext4_img_samesize() {
 	clear
+	banner
 	echo " "
-	echo "Input image name that you want to repack :"
-	read
-	image=$REPLY
+	echo "choose which partition you wanted to repack"
+	echo " "
+	folder_selector
+	image=$FOLDER
 	if [[ -d $DIRROM/EXT4/$image ]]; then
 		echo ""
 		echo "- Repacking $image..."
@@ -385,18 +442,17 @@ repack_ext4_img_samesize() {
 		   echo -e "${R}Repack Failed!"
 		   echo -e "${NC}"
 		fi
-	else
-		echo -e "${R}Error: no unpacked image named $image in $DIRROM/EXT4"
-		echo -e "${NC}"
 	fi
 }
 
 repack_ext4_img_inputsize() {
 	clear
+	banner
 	echo " "
-	echo "Input image name that you want to repack :"
-	read
-	image=$REPLY
+	echo "choose which partition you wanted to repack"
+	echo " "
+	folder_selector
+	image=$FOLDER
 	if [[ -d $DIRROM/EXT4/$image ]]; then
 		echo " "
 		echo "Input partition size in bytes :"
@@ -418,20 +474,19 @@ repack_ext4_img_inputsize() {
 		   echo -e "${R}Repack Failed!"
 		   echo -e "${NC}"
 		fi
-	else
-		echo -e "${R}Error: no unpacked image named $image in $DIRROM/EXT4"
-		echo -e "${NC}"
 	fi
 }
 
 erofs_ext4_main() {
 	erofs_ext4_normal() {
 		clear
-		echo "make sure image is on rom_input folder"
+		banner
 		echo " "
-		echo "Input image name :"
-		read
-		partition=$REPLY
+		echo "choose which image you wanted to convert to ext4"
+		echo " "
+		file_extension=".img"
+		file_selector
+		partition=$FILE
 		if [[ $(blkid -o value -s TYPE $DIRIN/$partition.img) == erofs ]]; then
 		   convert_erofs_ext4
 		else
@@ -692,20 +747,19 @@ payload() {
 	fi
 }
 
-
 custom_scripts() {
 	clear
 	banner
 	echo ""
 	echo "Choose which script to run :"
-	ls -1 $DIRSCRIPTS/custom_scripts | awk '{print NR, $0}'
+	ls -1 $DIRSCRIPTS/custom_scripts | awk '{print NR ".", $0}'
 	echo "x. Back to main menu"
 	read
 	CHOOSE=$REPLY
 	if [[ $CHOOSE == "x" ]]; then
 	   start_tools
 	else
-	   SCRIPT=$(ls -1 $DIRSCRIPTS/custom_scripts | awk '{print NR, $0}' | grep $CHOOSE | awk '{print $2}')
+	   SCRIPT=$(ls -1 $DIRSCRIPTS/custom_scripts | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
 	   exec $DIRSCRIPTS/custom_scripts/$SCRIPT
 	fi
 	
@@ -713,10 +767,13 @@ custom_scripts() {
 
 raw_sparse() {
 	clear
+	banner
 	echo " "
-	echo "Input image/partition name :"
-	read
-	imgname=$REPLY
+	echo "choose which image you wanted to convert to sparse img"
+	echo " "
+	file_extension=".img"
+	file_selector
+	imgname=$FILE
 
 	if [ -f $DIRIN/$imgname.img ]; then
 
@@ -733,22 +790,20 @@ raw_sparse() {
 		   echo -e "${R}Conversion Failed!"
 		   echo -e "${NC}"
 		fi
-
-	else
-		echo -e "${R}there's no $imgname.img in $DIRIN"
-		echo -e "${NC}"
 	fi
 }
 
 raw_datbr() {
 	clear
+	banner
 	echo " "
-	echo "Input image/partition name :"
-	read
-	imgname=$REPLY
+	echo "choose which image you wanted to compress"
+	echo " "
+	file_extension=".img"
+	file_selector
+	imgname=$FILE
 
 	if [ -f $DIRIN/$imgname.img ]; then
-
 		echo " "
 		echo "Input Brotli compression level (0-11) :"
 		read
@@ -783,10 +838,6 @@ raw_datbr() {
 		   echo -e "${R}Decompression Failed!"
 		   echo -e "${NC}"
 		fi
-		
-	else
-		echo -e "${R}there's no $imgname.img in $DIRIN"
-		echo -e "${NC}"
 	fi
 }
 
@@ -1158,24 +1209,19 @@ splits_main() {
 
 sparse_raw() {
 	clear
+	banner
 	echo " "
-	echo "Input image/partition name :"
-	read
-	imgname=$REPLY
-	if [ -f $DIRIN/$imgname.* ]; then
-
+	echo "choose which image you wanted to convert to raw img"
+	echo " "
+	file_extension=".img"
+	file_selector
+	imgname=$FILE
+	
+	if [ -f $DIRIN/$imgname.img ]; then
 		echo " "
 		echo "Converting sparse to raw image..."
-
-		if [ -f $DIRIN/*.sparse.img ]; then
-
-			img2img $DIRIN/$imgname.sparse.img $DIROUT/$imgname.img >> /dev/null 2>&1
-			rm -rf $DIRIN/$imgname.sparse.img
-		else
-
-			simg2img $DIRIN/$imgname.img $DIROUT/$imgname.img >> /dev/null 2>&1
-			rm -rf $DIRIN/$imgname.img
-		fi
+		simg2img $DIRIN/$imgname.img $DIROUT/$imgname.img >> /dev/null 2>&1
+		rm -rf $DIRIN/$imgname.img
 		echo " "
 		if [[ $(ls -l $DIROUT/$imgname.img | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}Done! Output : $DIROUT/$imgname.img ${NC}"
@@ -1183,23 +1229,21 @@ sparse_raw() {
 		   echo -e "${R}Decompression Failed!"
 		   echo -e "${NC}"
 		fi
-	else
-		echo -e "${R}there's no image named $imgname.img or $imgname.sparse.img in $DIRIN"
-		echo -e "${NC}"
 	fi
 }
 
 super_main() {
 	super_u_raw() {
 		clear
+		banner
 		echo " "
+		echo "choose which super partition you wanted to extract"
 		echo " "
-		echo "Input Super image name :"
-		read
-		imgname=$REPLY
+		file_extension=".img"
+		file_selector
+		imgname=$FILE
 
 		if [ -f $DIRIN/$imgname.img ]; then
-
 			echo " "
 			echo "Unpacking $imgname.img..."
 			mkdir $DIRSUPER/config
@@ -1209,20 +1253,18 @@ super_main() {
 
 			echo " "
 			echo -e "${G}Done! Output : $DIRROM/super ${NC}"
-
-		else
-
-			echo -e "${R}there's no image "$imgname.img""
-			echo -e "${NC}"
 		fi
 	}
 	
 	super_u_zstd() {
 		clear
+		banner
 		echo " "
-		echo "Input file name :"
-		read
-		filename=$REPLY
+		echo "choose which super partition you wanted to extract"
+		echo " "
+		file_extension=""
+		file_selector
+		filename=$FILE
 		
 		if [ -f $DIRIN/$filename ]; then
 			mv $DIRIN/$filename $DIRIN/$filename.zst
@@ -1241,21 +1283,18 @@ super_main() {
 
 			echo " "
 			echo -e "${G}Done! Output : $DIRROM/super ${NC}"
-
-		else
-
-			echo -e "${R}there's no file named "$filename" in $DIRIN"
-			echo -e "${NC}"
 		fi
 	}
 
 	super_u_datbr() {
 		clear
+		banner
 		echo " "
+		echo "choose which super partition you wanted to extract"
 		echo " "
-		echo "Input Super image name :"
-		read
-		imgname=$REPLY
+		file_extension=".new.dat.br"
+		file_selector
+		imgname=$FILE
 
 		if [ -f $DIRIN/$imgname.new.dat.br ]; then
 
@@ -1277,11 +1316,6 @@ super_main() {
 
 			echo " "
 			echo -e "${G}Done! Output : $DIRROM/super ${NC}"
-
-		else
-
-			echo -e "${R}theres no image "$imgname.new.dat.br""
-			echo -e "${NC}"
 		fi
 	}
 
