@@ -1,0 +1,4 @@
+custom_scripts/*
+patch/*
+bin/__pycache__
+enableLogs

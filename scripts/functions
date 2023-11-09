@@ -112,11 +112,11 @@ file_selector() {
 	   start_tools
 	else
 	   if [[ $file_extension == "" ]]; then
-	      FILE=$(ls -1 $DIRIN | awk '{print NR ".", $0}' | grep grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
+	      FILE=$(ls -1 $DIRIN | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
 	      clear
 	      echo "Selected: $FILE"
 	   else
-	      file1=$(ls -1 $DIRIN/*$file_extension | awk '{print NR ".", $0}' | grep grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}' | sed "s/$file_extension//")
+	      file1=$(ls -1 $DIRIN/*$file_extension | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}' | sed "s/$file_extension//")
 	      file2=${file1%/}
 	      file3=${file2##*/}
 	      FILE=$file3
@@ -543,6 +543,31 @@ erofs_ext4_main() {
 		* ) erofs_ext4_main;;
 	    esac
 	done
+}
+
+sparsechunk_converter() {
+	clear
+	banner
+	echo ""
+	echo "Input sparsechunk name:"
+	echo 'example.. sparsechunk name is "super.img_sparsechunk.0-12", write "super.img_sparsechunk" here'
+	read
+	SPARSECHUNK=$REPLY
+	
+	if [[ -f $DIRIN/$SPARSECHUNK.0 ]]; then
+	   echo ""
+	   echo "Converting sparsechunk image into raw image"
+	   simg2img $DIRIN/$SPARSECHUNK.* $DIROUT/super.img
+	   rm -rf $DIRIN/$SPARSECHUNK.*
+	   if [[ -f $DIROUT/super.img ]]; then
+	       echo -e "${G}Done! Output : $DIROUT/super.img ${NC}"
+	   else
+	       echo -e "${R}Conversion Failed!"
+	       echo -e "${NC}"
+	   fi
+	else
+	  echo -e "${R}No sparsechunk with the name of $SPARSECHUNK in rom_input ${NC}"
+	fi
 }
 
 merge_main() {
@@ -1420,22 +1445,22 @@ super_main() {
 				echo ""
 				echo "Compiling super : $imgname.img (raw)..."
 				
-				echo "#!/bin/bash" > $DIRSCRIPTS/build_super.sh
-				echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot --device=super:$size_super:$first_sector --group=$group_table:$max_size_super '\'" >> $DIRSCRIPTS/build_super.sh
+				echo "#!/bin/bash" > $DIRSCRIPTS/build_super
+				echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot --device=super:$size_super:$first_sector --group=$group_table:$max_size_super '\'" >> $DIRSCRIPTS/build_super
 
 				for partition in $part_list; do
 				   partition_size=$(ls -nl $DIRSUPER/$partition.img | awk '{print $5}')
-				   echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$DIRSUPER/$partition.img '\'" >> $DIRSCRIPTS/build_super.sh
+				   echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$DIRSUPER/$partition.img '\'" >> $DIRSCRIPTS/build_super
 				done
 
-				echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super.sh
-				echo "exit" >> $DIRSCRIPTS/build_super.sh
+				echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super
+				echo "exit" >> $DIRSCRIPTS/build_super
 				
-				sed -i "s/[']//g" $DIRSCRIPTS/build_super.sh
-				chmod 755 $DIRSCRIPTS/build_super.sh
-				$DIRSCRIPTS/build_super.sh
+				sed -i "s/[']//g" $DIRSCRIPTS/build_super
+				chmod 755 $DIRSCRIPTS/build_super
+				$DIRSCRIPTS/build_super
 				
-				rm -rf $DIRSCRIPTS/build_super.sh
+				rm -rf $DIRSCRIPTS/build_super
 				rm -rf $DIRSUPER/*
 			fi
 		elif [[ $meta_slot == 3 ]]; then
@@ -1474,33 +1499,33 @@ super_main() {
 				echo ""
 				echo "Compiling super : $imgname.img (raw)..."
 				
-				echo "#!/bin/bash" > $DIRSCRIPTS/build_super.sh
+				echo "#!/bin/bash" > $DIRSCRIPTS/build_super
 				if [[ $group_table2 != "" ]]; then
-				    echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super --group=$group_table2:$max_size_super2 '\'" >> $DIRSCRIPTS/build_super.sh
+				    echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super --group=$group_table2:$max_size_super2 '\'" >> $DIRSCRIPTS/build_super
 				else
-				    echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super '\'" >> $DIRSCRIPTS/build_super.sh
+				    echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super '\'" >> $DIRSCRIPTS/build_super
 				fi
 				
 				for partition in $ab_part_list; do
 				   partition_size=$(ls -nl $DIRSUPER/$partition.img | awk '{print $5}')
-				   echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$DIRSUPER/$partition.img '\'" >> $DIRSCRIPTS/build_super.sh
+				   echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$DIRSUPER/$partition.img '\'" >> $DIRSCRIPTS/build_super
 				done
-				echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super.sh
+				echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super
 				
 				if [[ $group_table2 != "" ]]; then
-				    echo "touch $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super.sh
+				    echo "touch $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super
 				    for emptypartition in $ab_part_list_empty; do
-				       echo "lpadd $DIRIN/$imgname.img $emptypartition $group_table2 $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super.sh
+				       echo "lpadd $DIRIN/$imgname.img $emptypartition $group_table2 $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super
 				    done
-				    echo "rm -rf $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super.sh
+				    echo "rm -rf $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super
 				fi
-				echo "exit" >> $DIRSCRIPTS/build_super.sh
+				echo "exit" >> $DIRSCRIPTS/build_super
 				
-				sed -i "s/[']//g" $DIRSCRIPTS/build_super.sh
-				chmod 755 $DIRSCRIPTS/build_super.sh
-				$DIRSCRIPTS/build_super.sh
+				sed -i "s/[']//g" $DIRSCRIPTS/build_super
+				chmod 755 $DIRSCRIPTS/build_super
+				$DIRSCRIPTS/build_super
 				
-				rm -rf $DIRSCRIPTS/build_super.sh
+				rm -rf $DIRSCRIPTS/build_super
 				rm -rf $DIRSUPER/*
 			fi
 		else
@@ -1813,57 +1838,6 @@ zip_main() {
 	done
 }
 
-patch_oplus() {
-	DIRPATCH=$DIRTOOLS/scripts/patch
-	patch_device() {
-		clear
-		echo ""
-		echo "patching for device : $device"
-		
-		rm -rf $DIRROM/system/my_product/priv-app/*
-		cp $DIRPATCH/${device}/HotwordEnrollmentOKGoogleHEXAGON.apk $DIRROM/system/my_product/priv-app/
-		cp $DIRPATCH/${device}/HotwordEnrollmentXGoogleHEXAGON.apk $DIRROM/system/my_product/priv-app/
-		chmod 644 $DIRROM/system/my_product/priv-app/*
-		
-		rm -rf $DIRROM/system/my_product/etc/permissions/com.oplus.feature.enable.oemports10t.xml
-		
-		rm -rf $DIRROM/system/system/etc/init/hw/init.usb.configfs.rc
-		cp $DIRPATCH/${device}/init.usb.configfs.rc $DIRROM/system/system/etc/init/hw/
-		chmod 644 $DIRROM/system/system/etc/init/hw/init.usb.configfs.rc
-		
-		cp $DIRPATCH/${device}/uinput-fpc.kl $DIRROM/system/system/usr/keylayout/
-		cp $DIRPATCH/${device}/uinput-goodix.kl $DIRROM/system/system/usr/keylayout/
-		chmod 644 $DIRROM/system/system/usr/keylayout/uinput-fpc.kl
-		chmod 644 $DIRROM/system/system/usr/keylayout/uinput-goodix.kl
-		
-		echo -e "${G}patching done... ${NC}"
-		echo ""
-	}
-
-	while true; do
-	    banner
-	    echo " "
-	    echo "1. Patch build for alioth"
-	    echo "2. Patch build for munch"
-	    echo "3. Back to main menu"
-	    read -p "" choose
-	    case $choose in
-		1 ) 
-		device=alioth
-		patch_device
-		restart_tool;;
-		2 )
-		device=munch
-		patch_device
-		restart_tool;;
-		3 )
-		start_tools;;
-		* ) 
-		patch_oplus;;
-	    esac
-	done
-}
-
 install_req() {
 	while true; do
 	    banner
@@ -2055,9 +2029,9 @@ start_tools() {
 	    echo "9. Unpack payload.bin"
 	    echo "10. Custom Scripts"
 	    echo "11. Merge fs context and config to system"
-	    echo "12. Patch oplus rom for specific device"
-	    echo "13. Auto ZIP"
-	    echo "14. Zstd Tools"
+	    echo "12. Auto ZIP"
+	    echo "13. Zstd Tools"
+	    echo "14. Sparsechunk converter"
 	    echo "c. Clean up folders"
 	    echo "0. Install proprietary packages"
 	    echo "x. Exit tool"
@@ -2124,20 +2098,20 @@ start_tools() {
 		
 	merge_main
 	restart_tool;;
-	
-		12 ) 
-		
-	patch_oplus
-	restart_tool;;
 
-		13 ) 
+		12 ) 
 		
 	zip_main
 	restart_tool;;
 	
-		14 ) 
+		13 ) 
 		
 	zstd_main
+	restart_tool;;
+	
+		14 )
+		
+	sparsechunk_converter
 	restart_tool;;
 
 		c ) 

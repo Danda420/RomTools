@@ -8,8 +8,8 @@ clear
 
 ### write script here ###
 
-echo hello...
 echo $PWD
+echo Hello
 
 #################################################
 restart_tool
