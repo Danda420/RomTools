@@ -145,10 +145,20 @@ folder_selector() {
 	fi
 }
 
-resize_img_smallest(){
-	sudo e2fsck -yf $DIRIMG_RESIZE_SMALLEST > /dev/null 2>&1
-	sudo resize2fs -M $DIRIMG_RESIZE_SMALLEST > /dev/null 2>&1
-	sudo e2fsck -yf $DIRIMG_RESIZE_SMALLEST > /dev/null 2>&1
+resize_img(){
+	if [[ $1 == "smallest" ]]; then
+		sudo e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
+		sudo resize2fs -M $DIRIMG_RESIZE > /dev/null 2>&1
+		sudo e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
+	elif [[ $1 == "freespace" ]]; then
+		sudo e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
+		sudo resize2fs -M $DIRIMG_RESIZE > /dev/null 2>&1
+		sudo e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
+		vsizenow=$(ls -nl $DIRIMG_RESIZE | awk '{print $5}')
+		sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
+		sudo resize2fs $DIRIMG_RESIZE $sizeimg > /dev/null 2>&1
+		sudo e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
+	fi
 }
 
 convert_erofs_ext4(){
@@ -197,8 +207,8 @@ rebuild_ext4(){
 		else
 			sudo $DIRSCRIPTS/bin/make_ext4fs -J -T -1 -S "$DIRROM/rebuildimg/config/$partition/${partition}_file_contexts" -C "$DIRROM/rebuildimg/config/$partition/${partition}_fs_config" -l "$SIZE" -L "$partition" -a "/$partition" "$DIROUT/$partition.img" "$DIRROM/rebuildimg/$partition" > /dev/null 2>&1
 		fi
-		DIRIMG_RESIZE_SMALLEST=$DIROUT/$partition.img
-		resize_img_smallest
+		DIRIMG_RESIZE=$DIROUT/$partition.img
+		resize_img smallest
 		sudo rm -rf $DIRROM/rebuildimg
 		echo "- Done!"
 		echo ""
@@ -401,8 +411,44 @@ repack_ext4_img_foldersize() {
 		    SIZE=`sudo du -sk $DIRROM/EXT4/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
 		repack_ext4_cmd
-		DIRIMG_RESIZE_SMALLEST=$DIROUT/$image.new.img
-		resize_img_smallest
+		DIRIMG_RESIZE=$DIROUT/$image.new.img
+		resize_img smallest
+		echo ""
+		echo "- Done!"
+		echo ""
+		if [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
+		   echo -e "${G}Repack done..."
+		   echo -e "Output : $DIROUT/$image.new.img ${NC}"
+		else
+		   echo -e "${R}Repack Failed!"
+		   echo -e "${NC}"
+		fi
+	fi
+}
+
+repack_ext4_img_freespace() {
+	clear
+	banner
+	echo " "
+	echo "choose which partition you wanted to repack"
+	echo " "
+	folder_selector
+	image=$FOLDER
+	if [[ -d $DIRROM/EXT4/$image ]]; then
+		echo " "
+		echo "Input $image free space in mb (megabytes) :"
+		read
+		FREESPACE=$REPLY
+		echo ""
+		echo "- Repacking $image..."
+		foldersize=$(sudo du -s -B1 $DIRROM/EXT4/$image | awk '{print $1}')
+		SIZE=$(($foldersize + $foldersize * 1/10))
+		if (( $SIZE < 1474560 )); then
+		    SIZE=`sudo du -sk $DIRROM/EXT4/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+		fi
+		repack_ext4_cmd
+		DIRIMG_RESIZE=$DIROUT/$image.new.img
+		resize_img freespace
 		echo ""
 		echo "- Done!"
 		echo ""
@@ -1877,8 +1923,9 @@ repack_ext4() {
 	    echo " "
 	    echo "1. Repack EXT4 image with old image size"
 	    echo "2. Repack EXT4 image with folder size"
-	    echo "3. Repack EXT4 image and manually input size"
-	    echo "4. Back to main menu"
+	    echo "3. Repack EXT4 image with free space"
+	    echo "4. Repack EXT4 image and manually input size"
+	    echo "5. Back to main menu"
 	    
 	    read -p "" choose
 	    case $choose in
@@ -1893,12 +1940,16 @@ repack_ext4() {
 	repack_ext4_img_foldersize
 	restart_tool;;
 	
-		3 ) 
+		3 )
+	repack_ext4_img_freespace
+	restart_tool;;
+	
+		4 ) 
 	   
 	repack_ext4_img_inputsize
 	restart_tool;;
 	
-		4 ) 
+		5 ) 
 	   
 	start_tools;;
 
@@ -2008,7 +2059,7 @@ zstd_main() {
 	start_tools;;
 
 
-		* ) unpack_repack_main;;
+		* ) zstd_main;;
 	    esac
 	done
 }
