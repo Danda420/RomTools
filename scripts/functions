@@ -1934,15 +1934,20 @@ install_req() {
 	    read -p "" choose
 	    case $choose in
 		1 ) 
-		sudo pacman -Sy --noconfirm android-tools gawk erofs-utils brotli cpio
+		sudo pacman -Sy --noconfirm android-tools gawk erofs-utils brotli cpio zip zstd
 		restart_tool;;
 		
 		2 )
-		sudo dnf install android-tools erofs-utils gawk cpio
+		sudo dnf install android-tools erofs-utils gawk cpio zip zstd
 		restart_tool;;
 		
 		3 )
-		sudo apt install brotli android-sdk-libsparse-utils gawk wget android-tools cpio
+		sudo apt install brotli android-sdk-libsparse-utils gawk wget cpio zip zstd
+		git clone --depth=1 -b ubuntu-moment https://github.com/Danda420/RomTools $DIRTOOLS/UbuntuBinaries
+		rm -rf $DIRTOOLS/UbuntuBinaries/.git
+		chmod 755 $DIRTOOLS/UbuntuBinaries/*
+		sudo mv $DIRTOOLS/UbuntuBinaries/* /bin/
+		rm -rf $DIRTOOLS/UbuntuBinaries
 		restart_tool;;
 		
 		4 )
