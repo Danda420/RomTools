@@ -66,15 +66,22 @@ restore_perm() {
 setup() {
 	clear
 	if [[ ! -d $DIRTOOLS/ROM ]] && [[ ! -d $DIRTOOLS/rom_input ]] && [[ ! -d $DIRTOOLS/rom_output ]]; then
-		mkdir $DIRTOOLS/rom_input
-		mkdir $DIRTOOLS/rom_output
-		mkdir $DIRTOOLS/ROM
-		mkdir $DIRTOOLS/ROM/odm
-		mkdir $DIRTOOLS/ROM/product
-		mkdir $DIRTOOLS/ROM/system
-		mkdir $DIRTOOLS/ROM/system_ext
-		mkdir $DIRTOOLS/ROM/vendor
-		mkdir $DIRTOOLS/ROM/super
+		mkdir $DIRTOOLS/rom_input \
+		      $DIRTOOLS/rom_output \
+		      $DIRTOOLS/ROM \
+		      $DIRTOOLS/ROM/odm \
+		      $DIRTOOLS/ROM/product \
+		      $DIRTOOLS/ROM/system \
+		      $DIRTOOLS/ROM/system_ext \
+		      $DIRTOOLS/ROM/vendor \
+		      $DIRTOOLS/ROM/super
+		if [[ ! -f /bin/romtools ]]; then
+		    echo "#!/bin/bash" > $DIRSCRIPTS/romtools
+		    echo "cd $DIRTOOLS" >> $DIRSCRIPTS/romtools
+		    echo "$DIRTOOLS/start" >> $DIRSCRIPTS/romtools
+		    sudo mv $DIRSCRIPTS/romtools /bin/romtools
+		    sudo chmod 755 /bin/romtools
+		fi
 	fi
 }
 
@@ -82,11 +89,9 @@ clean() {
 	clear
 	echo "cleaning..."
 
-	rm -rf $DIRIN
-	rm -rf $DIROUT
-	sudo rm -rf $DIRROM/EXT4
-	rm -rf $DIRROM
-	sudo rm -rf $DIRSCRIPTS/log.txt
+	rm -rf $DIRIN \
+	       $DIROUT \
+	       $DIRROM
 	sudo rm -rf $DIRSCRIPTS/bin/__pycache__
 	sudo rm -rf $DIRSCRIPTS/bin/*.pyc
 
@@ -110,6 +115,11 @@ file_selector() {
 	CHOOSE=$REPLY
 	if [[ $CHOOSE == "x" ]]; then
 	   start_tools
+	elif [[ $CHOOSE == "" ]]; then
+	   clear
+	   banner
+	   echo ""
+	   file_selector
 	else
 	   if [[ $file_extension == "" ]]; then
 	      FILE=$(ls -1 $DIRIN | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
@@ -121,7 +131,7 @@ file_selector() {
 	      file3=${file2##*/}
 	      FILE=$file3
 	      clear
-	      echo "Selected: $FILE"
+	      echo "Selected: ${FILE}${file_extension}"
 	   fi
 	fi
 }
@@ -138,6 +148,11 @@ folder_selector() {
 	CHOOSE=$REPLY
 	if [[ $CHOOSE == "x" ]]; then
 	   start_tools
+	elif [[ $CHOOSE == "" ]]; then
+	   clear
+	   banner
+	   echo ""
+	   folder_selector
 	else
 	   FOLDER=$(ls -1 $DIRROM/EXT4 | grep -v "config" | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
 	   clear
@@ -163,15 +178,34 @@ resize_img(){
 
 convert_erofs_ext4(){
 	if [[ -f $DIRIN/$partition.img ]]; then
-		cd $DIRSCRIPTS
 		echo " "
 		echo "Starting conversion..."
 		echo ""
-		$DIRSCRIPTS/bin/erofs-ext4 $DIRIN/$partition.img $partition
-		rm -rf $DIRIN/$partition.img
-		mv $DIRSCRIPTS/$partition.img $DIROUT/
+		echo "- Unpacking $partition image (erofs)"
+	        $DIRSCRIPTS/bin/erofs.unpack $DIRIN/$partition.img $erofsdir > /dev/null 2>&1 
+		sed -i "s#/${partition}[(][/][\].*[)]?#/${partition}(/.*)?#g" $erofsdir/config/${partition}_file_contexts
+		if [[ $partition == "system" ]] || [[ $partition == "system_a" ]] || [[ $partition == "system_b" ]]; then
+	    	   cat $erofsdir/$partition/system/etc/selinux/plat_file_contexts > $erofsdir/config/${partition}_file_contexts
+	    	   cat $DIRSCRIPTS/patch/other_file_contexts >> $erofsdir/config/${partition}_file_contexts
+		elif [[ $partition == mi_ext ]]; then
+	    	   echo "/mi_ext(/.*)?                    u:object_r:rootfs:s0" > $erofsdir/config/${partition}_file_contexts
+		fi
+		echo "- Rebuilding $partition as ext4 image..."
+		foldersize=$(du -s -B1 $erofsdir/$partition | awk '{print $1}')
+		SIZE=$(($foldersize + $foldersize * 1/10))
+		if (( $SIZE < 1474560 )); then
+		    SIZE=`sudo du -sk $erofsdir/$partition | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+		fi
+		if [[ $partition == "system" ]] || [[ $partition == "system_a" ]] || [[ $partition == "system_b" ]]; then
+		    sudo $DIRSCRIPTS/bin/mkuserimg_mke2fs.py "$erofsdir/$partition/" "$DIROUT/$partition.img" ext4 "/" $SIZE $erofsdir/config/${partition}_file_contexts -j "0" -T "1230768000" -L "/" -I "256" -M "/" --reserved_percent "0" > /dev/null 2>&1 
+		else
+		    sudo $DIRSCRIPTS/bin/mkuserimg_mke2fs.py "$erofsdir/$partition/" "$DIROUT/$partition.img" ext4 "/$partition" $SIZE $erofsdir/config/${partition}_file_contexts -j "0" -T "1230768000" -L "$partition" -I "256" -M "/$partition" --reserved_percent "0" > /dev/null 2>&1 
+		fi
+		echo "- Done"
 		echo ""
 		if [[ -f $DIROUT/$partition.img ]]; then
+		   sudo chown $USER:$USER $DIROUT/$partition.img
+		   rm -rf $DIRIN/$partition.img
 		   echo -e "${G}Conversion done..."
 		   echo -e "Output : $DIROUT/$partition.img ${NC}"
 		else
@@ -195,7 +229,6 @@ rebuild_ext4(){
 		echo "- Extracting $partition"
 		mkdir $DIRROM/rebuildimg
 		sudo $DIRSCRIPTS/bin/imgextractor.py $DIRIN/$partition.img $DIRROM/rebuildimg > /dev/null 2>&1
-		rm -rf $DIRIN/$partition.img
 		foldersize=$(sudo du -s -B1 $DIRROM/rebuildimg/$partition | awk '{print $1}')
 		SIZE=$(($foldersize + $foldersize * 1/10))
 		if (( $SIZE < 1474560 )); then
@@ -212,7 +245,8 @@ rebuild_ext4(){
 		sudo rm -rf $DIRROM/rebuildimg
 		echo "- Done!"
 		echo ""
-		if [[ -f $DIROUT/$partition.img ]]; then
+		if [[ $(ls -l $DIROUT/$partition.img | awk '{print $5}') != "0" ]]; then
+		   rm -rf $DIRIN/$partition.img
 		   echo -e "${G}Rebuild done..."
 		   echo -e "Output : $DIROUT/$partition.img ${NC}"
 		else
@@ -535,6 +569,7 @@ erofs_ext4_main() {
 		partition=$FILE
 		if [[ $(blkid -o value -s TYPE $DIRIN/$partition.img) == erofs ]]; then
 		   convert_erofs_ext4
+		   rm -rf $erofsdir
 		else
 		   echo ""
 		   echo -e "${R}$partition.img fs type is $(blkid -o value -s TYPE $DIRIN/$partition.img), aborting..."
@@ -547,6 +582,7 @@ erofs_ext4_main() {
 		for partition in $oplus_partitions
 		do
 		  convert_erofs_ext4
+		  rm -rf $erofsdir
 		done
 		if [[ $(blkid -o value -s TYPE $DIRIN/product.img) == erofs ]]; then
 		    partition=product
@@ -555,10 +591,11 @@ erofs_ext4_main() {
 		    partition=product
 		    rebuild_ext4
 		fi
-		    partition=system_ext
-		    convert_erofs_ext4
-		    partition=system
-		    convert_erofs_ext4
+		partition=system_ext
+		convert_erofs_ext4
+		partition=system
+		convert_erofs_ext4
+		rm -rf $erofsdir
 	}
 
 	while true; do
@@ -829,6 +866,8 @@ custom_scripts() {
 	CHOOSE=$REPLY
 	if [[ $CHOOSE == "x" ]]; then
 	   start_tools
+	elif [[ $CHOOSE == "" ]]; then
+	   custom_scripts
 	else
 	   SCRIPT=$(ls -1 $DIRSCRIPTS/custom_scripts | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
 	   exec $DIRSCRIPTS/custom_scripts/$SCRIPT
@@ -1303,367 +1342,368 @@ sparse_raw() {
 	fi
 }
 
-super_main() {
-	super_u_raw() {
-		clear
-		banner
-		echo " "
-		echo "choose which super partition you wanted to extract"
-		echo " "
-		file_extension=".img"
-		file_selector
-		imgname=$FILE
+super_u_raw() {
+	clear
+	banner
+	echo " "
+	echo "choose which super partition you wanted to extract"
+	echo " "
+	file_extension=".img"
+	file_selector
+	imgname=$FILE
 
-		if [ -f $DIRIN/$imgname.img ]; then
-			echo " "
-			echo "Unpacking $imgname.img..."
-			mkdir $DIRSUPER/config
-			lpdump --slot=0 $DIRIN/$imgname.img > $DIRSUPER/config/super_config.txt
-			lpunpack $DIRIN/$imgname.img $DIRROM/super
-			rm -rf $DIRIN/$imgname.*
+	if [ -f $DIRIN/$imgname.img ]; then
+		echo " "
+		echo "Unpacking $imgname.img..."
+		mkdir $DIRSUPER/config
+		lpdump --slot=0 $DIRIN/$imgname.img > $DIRSUPER/config/super_config.txt
+		lpunpack $DIRIN/$imgname.img $DIRROM/super
+		rm -rf $DIRIN/$imgname.*
 
-			echo " "
-			echo -e "${G}Done! Output : $DIRROM/super ${NC}"
-		fi
-	}
+		echo " "
+		echo -e "${G}Done! Output : $DIRROM/super ${NC}"
+	fi
+}
 	
-	super_u_zstd() {
-		clear
-		banner
-		echo " "
-		echo "choose which super partition you wanted to extract"
-		echo " "
-		file_extension=""
-		file_selector
-		filename=$FILE
+super_u_zstd() {
+	clear
+	banner
+	echo " "
+	echo "choose which super partition you wanted to extract"
+	echo " "
+	file_extension=""
+	file_selector
+	filename=$FILE
+	
+	if [ -f $DIRIN/$filename ]; then
+		mv $DIRIN/$filename $DIRIN/$filename.zst
 		
-		if [ -f $DIRIN/$filename ]; then
-			mv $DIRIN/$filename $DIRIN/$filename.zst
-			
-			echo " "
-			echo "Decompressing $filename (zstd)"
-			zstd -d $DIRIN/$filename.zst -o $DIRIN/super.img
-			rm -rf $DIRIN/$filename.*
-
-			echo " "
-			echo "Unpacking super..."
-			mkdir $DIRSUPER/config
-			lpdump --slot=0 $DIRIN/super.img > $DIRSUPER/config/super_config.txt
-			lpunpack $DIRIN/super.img $DIRROM/super
-			rm -rf $DIRIN/super.img
-
-			echo " "
-			echo -e "${G}Done! Output : $DIRROM/super ${NC}"
-		fi
-	}
-
-	super_u_datbr() {
-		clear
-		banner
 		echo " "
-		echo "choose which super partition you wanted to extract"
+		echo "Decompressing $filename (zstd)"
+		zstd -d $DIRIN/$filename.zst -o $DIRIN/super.img
+		rm -rf $DIRIN/$filename.*
+
 		echo " "
-		file_extension=".new.dat.br"
-		file_selector
-		imgname=$FILE
+		echo "Unpacking super..."
+		mkdir $DIRSUPER/config
+		lpdump --slot=0 $DIRIN/super.img > $DIRSUPER/config/super_config.txt
+		lpunpack $DIRIN/super.img $DIRROM/super
+		rm -rf $DIRIN/super.img
 
-		if [ -f $DIRIN/$imgname.new.dat.br ]; then
-
-			echo "Decompressing brotli..."
-			brotli -d $DIRIN/$imgname.new.dat.br
-			rm -rf $DIRIN/$imgname.new.dat.br
-
-			echo " "
-			echo "Converting $imgname.new.dat to $imgname.img (raw)..."
-			python3 $DIRSCRIPTS/bin/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img >> /dev/null 2>&1
-			rm -rf $DIRIN/$imgname.*
-
-			echo " "
-			echo "Unpacking $imgname.img..."
-			mkdir $DIRSUPER/config
-			lpdump --slot=0 $DIROUT/$imgname.img > $DIRSUPER/config/super_config.txt
-			lpunpack $DIROUT/$imgname.img $DIRROM/super
-			rm -rf $DIROUT/$imgname.*
-
-			echo " "
-			echo -e "${G}Done! Output : $DIRROM/super ${NC}"
-		fi
-	}
-
-	super_r() {
-		meta_size=$(cat $DIRSUPER/config/super_config.txt | awk '/Metadata max size:/ { print $4 }')
-		meta_slot=$(cat $DIRSUPER/config/super_config.txt | awk '/Metadata slot count:/ { print $4 }')
-		first_sector=$(cat $DIRSUPER/config/super_config.txt | awk '/First sector:/ { print ($3 * 512)}')
-		group_table=$(cat $DIRSUPER/config/super_config.txt | grep -A10 "Group table:" | grep "Name:" | awk '{ print $2 }' | sed -n "2p")
-		group_table2=$(cat $DIRSUPER/config/super_config.txt | grep -A10 "Group table:" | grep "Name:" | awk '{ print $2 }' | sed -n "3p")
-		virtualAB=$(cat $DIRSUPER/config/super_config.txt | awk '/Header flags:/ { print $3 }')
-		size_super=$(cat $DIRSUPER/config/super_config.txt | awk '/Size:/ { print $2 }')
-		max_size_super=$(cat $DIRSUPER/config/super_config.txt | grep -A11 "Group table:" | grep "Maximum size:" | awk '{ print $3 }' | sed -n "2p")
-		max_size_super2=$max_size_super
-		
-		configsize=$(du -s -b $DIRSUPER/config | awk '{print $1}')
-		superdirsize=$(du -s -b $DIRSUPER | awk '{print $1}')
-		TOTALSIZE=$(( $superdirsize - $configsize ))
-		
-		if [[ $virtualAB = "virtual_ab_device" ]]; then
-		    virtualABOption="--virtual-ab "
-		else
-		    virtualABOption=""
-		fi
-		
-		clear
 		echo " "
-		echo "Input Raw Super image name :"
+		echo -e "${G}Done! Output : $DIRROM/super ${NC}"
+	fi
+}
+
+super_u_datbr() {
+	clear
+	banner
+	echo " "
+	echo "choose which super partition you wanted to extract"
+	echo " "
+	file_extension=".new.dat.br"
+	file_selector
+	imgname=$FILE
+
+	if [ -f $DIRIN/$imgname.new.dat.br ]; then
+
+		echo "Decompressing brotli..."
+		brotli -d $DIRIN/$imgname.new.dat.br
+		rm -rf $DIRIN/$imgname.new.dat.br
+
+		echo " "
+		echo "Converting $imgname.new.dat to $imgname.img (raw)..."
+		python3 $DIRSCRIPTS/bin/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img >> /dev/null 2>&1
+		rm -rf $DIRIN/$imgname.*
+
+		echo " "
+		echo "Unpacking $imgname.img..."
+		mkdir $DIRSUPER/config
+		lpdump --slot=0 $DIROUT/$imgname.img > $DIRSUPER/config/super_config.txt
+		lpunpack $DIROUT/$imgname.img $DIRROM/super
+		rm -rf $DIROUT/$imgname.*
+
+		echo " "
+		echo -e "${G}Done! Output : $DIRROM/super ${NC}"
+	fi
+}
+
+super_r() {
+	meta_size=$(cat $DIRSUPER/config/super_config.txt | awk '/Metadata max size:/ { print $4 }')
+	meta_slot=$(cat $DIRSUPER/config/super_config.txt | awk '/Metadata slot count:/ { print $4 }')
+	first_sector=$(cat $DIRSUPER/config/super_config.txt | awk '/First sector:/ { print ($3 * 512)}')
+	group_table=$(cat $DIRSUPER/config/super_config.txt | grep -A10 "Group table:" | grep "Name:" | awk '{ print $2 }' | sed -n "2p")
+	group_table2=$(cat $DIRSUPER/config/super_config.txt | grep -A10 "Group table:" | grep "Name:" | awk '{ print $2 }' | sed -n "3p")
+	virtualAB=$(cat $DIRSUPER/config/super_config.txt | awk '/Header flags:/ { print $3 }')
+	size_super=$(cat $DIRSUPER/config/super_config.txt | awk '/Size:/ { print $2 }')
+	max_size_super=$(cat $DIRSUPER/config/super_config.txt | grep -A11 "Group table:" | grep "Maximum size:" | awk '{ print $3 }' | sed -n "2p")
+	max_size_super2=$max_size_super
+	
+	configsize=$(du -s -b $DIRSUPER/config | awk '{print $1}')
+	superdirsize=$(du -s -b $DIRSUPER | awk '{print $1}')
+	TOTALSIZE=$(( $superdirsize - $configsize ))
+	
+	if [[ $virtualAB = "virtual_ab_device" ]]; then
+	    virtualABOption="--virtual-ab "
+	else
+	    virtualABOption=""
+	fi
+	
+	clear
+	echo " "
+	echo "Input Raw Super image name :"
+	read
+	imgname=$REPLY
+	echo " "
+	while true; do
+	    read -p "Your super raw img name is : $imgname is that correct? (Y/N)" yn
+	    case $yn in
+		[Yy]* ) break;;
+		[Nn]* ) restart_tool;;
+		* ) echo "Please answer yes or no.";;
+	    esac
+	done
+	
+	while true; do
+	   echo ""
+	   echo "Compress image to :"
+	   echo "1. raw"
+	   echo "2. sparse"
+	   echo "3. new.dat"
+	   echo "4. dat.br"
+	   echo "5. zstd"
+	   read -p "" choose
+	   case $choose in
+		[1]* ) 
+		COMPRESSION=raw
+		break;;
+		[2]* )
+		COMPRESSION=sparse
+		break;;
+		[3]* )
+		COMPRESSION=dat
+		break;;
+		[4]* )
+		COMPRESSION=br
+		echo " "
+		echo "Input Brotli compression level (0-11) :"
 		read
-		imgname=$REPLY
+		COMPLVL=$REPLY
+		break;;
+		[5]* )
+		COMPRESSION=zstd
+		echo " "
+		echo "Input zstd suffix (leave it empty if you want .zst) :"
+		read
+		ZSTDSUFFIX=.$REPLY
+		if [[ $ZSTDSUFFIX == "." ]]; then
+			ZSTDSUFFIX=.zst
+		elif [[ $ZSTDSUFFIX == ". " ]]; then
+			ZSTDSUFFIX=""
+		fi
+		echo " "
+		echo "Input zstd compression lvl (1-19) :"
+		read
+		ZSTDLVL=$REPLY
+		break;;
+			
+		* ) echo "Please answer with one of the above selections.";;
+	   esac
+	done
+
+	if [[ $meta_slot == 1 ]] || [[ $meta_slot == 2 ]]; then
+		echo " "
+		echo "A only detected..."
+		echo "Compiling super with A only format"
+		echo " "
+
+		part_list=$(cat $DIRSUPER/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }')
+		
+		if (( $TOTALSIZE > $max_size_super )); then
+		echo "Total size of all partitions exceeds max super size, aborting..."
+		echo "($TOTALSIZE/$max_size_super)"
+		echo ""
+		else
+		echo "Super total size :"
+		echo "($TOTALSIZE/$max_size_super)"
+		echo ""
+		echo "Compiling super : $imgname.img (raw)..."
+		
+		echo "#!/bin/bash" > $DIRSCRIPTS/build_super
+		echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot --device=super:$size_super:$first_sector --group=$group_table:$max_size_super '\'" >> $DIRSCRIPTS/build_super
+
+		for partition in $part_list; do
+		   partition_size=$(ls -nl $DIRSUPER/$partition.img | awk '{print $5}')
+		   echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$DIRSUPER/$partition.img '\'" >> $DIRSCRIPTS/build_super
+		done
+
+		echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super
+		echo "exit" >> $DIRSCRIPTS/build_super
+		
+		sed -i "s/[']//g" $DIRSCRIPTS/build_super
+		chmod 755 $DIRSCRIPTS/build_super
+		$DIRSCRIPTS/build_super
+		
+		rm -rf $DIRSCRIPTS/build_super
+		fi
+	elif [[ $meta_slot == 3 ]]; then
+		echo " "
+		echo "Virtual A/B detected..."
+		echo "Compiling super with Virtual A/B format"
 		echo " "
 		while true; do
-		    read -p "Your super raw img name is : $imgname is that correct? (Y/N)" yn
-		    case $yn in
-			[Yy]* ) break;;
-			[Nn]* ) restart_tool;;
-			* ) echo "Please answer yes or no.";;
+		    echo "Choose which slot is active"
+		    echo "1. A"
+		    echo "2. B"
+		    read -p "" choose
+		    case $choose in
+		[1]* ) 
+			slot=_a
+			emptyslot=_b
+			break;;
+		[2]* )
+			slot=_b
+			emptyslot=_a
+			break;;
+		* ) echo "Please answer 1 or 2.";;
 		    esac
 		done
 		
-		while true; do
-		   echo ""
-		   echo "Compress image to :"
-		   echo "1. raw"
-		   echo "2. sparse"
-		   echo "3. new.dat"
-		   echo "4. dat.br"
-		   echo "5. zstd"
-		   read -p "" choose
-		   case $choose in
-			[1]* ) 
-				COMPRESSION=raw
-				break;;
-			[2]* )
-				COMPRESSION=sparse
-				break;;
-			[3]* )
-				COMPRESSION=dat
-				break;;
-			[4]* )
-				COMPRESSION=br
-				echo " "
-				echo "Input Brotli compression level (0-11) :"
-				read
-				COMPLVL=$REPLY
-				break;;
-			[5]* )
-				COMPRESSION=zstd
-				echo " "
-				echo "Input zstd suffix (leave it empty if you want .zst) :"
-				read
-				ZSTDSUFFIX=.$REPLY
-				if [[ $ZSTDSUFFIX == "." ]]; then
-					ZSTDSUFFIX=.zst
-				elif [[ $ZSTDSUFFIX == ". " ]]; then
-					ZSTDSUFFIX=""
-				fi
-				echo " "
-				echo "Input zstd compression lvl (1-19) :"
-				read
-				ZSTDLVL=$REPLY
-				break;;
-					
-			* ) echo "Please answer with one of the above selections.";;
-		   esac
-		done
-
-		if [[ $meta_slot == 2 ]]; then
-			echo " "
-			echo "A only detected..."
-			echo "Compiling super with A only format"
-			echo " "
-
-			part_list=$(cat $DIRSUPER/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }')
-			
-			if (( $TOTALSIZE > $max_size_super )); then
-				echo "Total size of all partitions exceeds max super size, aborting..."
-				echo "($TOTALSIZE/$max_size_super)"
-				echo ""
-			else
-				echo "Super total size :"
-				echo "($TOTALSIZE/$max_size_super)"
-				echo ""
-				echo "Compiling super : $imgname.img (raw)..."
-				
-				echo "#!/bin/bash" > $DIRSCRIPTS/build_super
-				echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot --device=super:$size_super:$first_sector --group=$group_table:$max_size_super '\'" >> $DIRSCRIPTS/build_super
-
-				for partition in $part_list; do
-				   partition_size=$(ls -nl $DIRSUPER/$partition.img | awk '{print $5}')
-				   echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$DIRSUPER/$partition.img '\'" >> $DIRSCRIPTS/build_super
-				done
-
-				echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super
-				echo "exit" >> $DIRSCRIPTS/build_super
-				
-				sed -i "s/[']//g" $DIRSCRIPTS/build_super
-				chmod 755 $DIRSCRIPTS/build_super
-				$DIRSCRIPTS/build_super
-				
-				rm -rf $DIRSCRIPTS/build_super
-				rm -rf $DIRSUPER/*
-			fi
-		elif [[ $meta_slot == 3 ]]; then
-			echo " "
-			echo "Virtual A/B detected..."
-			echo "Compiling super with Virtual A/B format"
-			echo " "
-			while true; do
-			    echo "Choose which slot is active"
-			    echo "1. A"
-			    echo "2. B"
-			    read -p "" choose
-			    case $choose in
-				[1]* ) 
-					slot=_a
-					emptyslot=_b
-					break;;
-				[2]* )
-					slot=_b
-					emptyslot=_a
-					break;;
-				* ) echo "Please answer 1 or 2.";;
-			    esac
-			done
-			
-			ab_part_list=$(cat $DIRSUPER/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }' | grep ${slot})
-			ab_part_list_empty=$(cat $DIRSUPER/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }' | grep ${emptyslot})
-			
-			if (( $TOTALSIZE > $max_size_super )); then
-				echo "Total size of all partitions exceeds max super size, aborting..."
-				echo "($TOTALSIZE/$max_size_super)"
-				echo ""
-			else
-				echo "Super total size :"
-				echo "($TOTALSIZE/$max_size_super)"
-				echo ""
-				echo "Compiling super : $imgname.img (raw)..."
-				
-				echo "#!/bin/bash" > $DIRSCRIPTS/build_super
-				if [[ $group_table2 != "" ]]; then
-				    echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super --group=$group_table2:$max_size_super2 '\'" >> $DIRSCRIPTS/build_super
-				else
-				    echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super '\'" >> $DIRSCRIPTS/build_super
-				fi
-				
-				for partition in $ab_part_list; do
-				   partition_size=$(ls -nl $DIRSUPER/$partition.img | awk '{print $5}')
-				   echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$DIRSUPER/$partition.img '\'" >> $DIRSCRIPTS/build_super
-				done
-				echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super
-				
-				if [[ $group_table2 != "" ]]; then
-				    echo "touch $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super
-				    for emptypartition in $ab_part_list_empty; do
-				       echo "lpadd $DIRIN/$imgname.img $emptypartition $group_table2 $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super
-				    done
-				    echo "rm -rf $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super
-				fi
-				echo "exit" >> $DIRSCRIPTS/build_super
-				
-				sed -i "s/[']//g" $DIRSCRIPTS/build_super
-				chmod 755 $DIRSCRIPTS/build_super
-				$DIRSCRIPTS/build_super
-				
-				rm -rf $DIRSCRIPTS/build_super
-				rm -rf $DIRSUPER/*
-			fi
+		ab_part_list=$(cat $DIRSUPER/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }' | grep ${slot})
+		ab_part_list_empty=$(cat $DIRSUPER/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }' | grep ${emptyslot})
+		
+		if (( $TOTALSIZE > $max_size_super )); then
+		echo "Total size of all partitions exceeds max super size, aborting..."
+		echo "($TOTALSIZE/$max_size_super)"
+		echo ""
 		else
-			echo -e "${R}Meta slot $meta_slot is not supported!"
-			echo -e "${NC}"
+		echo "Super total size :"
+		echo "($TOTALSIZE/$max_size_super)"
+		echo ""
+		echo "Compiling super : $imgname.img (raw)..."
+		
+		echo "#!/bin/bash" > $DIRSCRIPTS/build_super
+		if [[ $group_table2 != "" ]]; then
+		    echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super --group=$group_table2:$max_size_super2 '\'" >> $DIRSCRIPTS/build_super
+		else
+		    echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super '\'" >> $DIRSCRIPTS/build_super
 		fi
-
-
-		if [[ $COMPRESSION == raw ]]; then
-			echo " "
-			mv $DIRIN/$imgname.img $DIROUT/$imgname.img
-			if [[ -f $DIROUT/$imgname.img ]]; then
-			   echo -e "${G}super build done! Output : $DIROUT/$imgname.img ${NC}"
-			else
-			   echo -e "${R}Build Failed!"
-			   echo -e "${NC}"
-			fi
-		elif [[ $COMPRESSION == sparse ]]; then
-			echo " "
-			echo "Converting raw $imgname.img to sparse..."
-			img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
-			rm -rf $DIRIN/$imgname.img
-			mv $DIRIN/$imgname.sparse.img $DIROUT/$imgname.sparse.img
-			if [[ -f $DIROUT/$imgname.sparse.img ]]; then
-			   echo -e "${G}super build done! Output : $DIROUT/$imgname.sparse.img ${NC}"
-			else
-			   echo -e "${R}Build Failed!"
-			   echo -e "${NC}"
-			fi
-		elif [[ $COMPRESSION == dat ]]; then	
-			echo " "
-			echo "Converting raw $imgname.img to sparse..."
-			img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
-			rm -rf $DIRIN/$imgname.img
-			
-			echo " "
-			echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
-			python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
-			rm -rf $DIRIN/$imgname.*
-			mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
-			mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
-			mv $DIRIN/system.transfer.list $DIROUT/$imgname.transfer.list
-			rm -rf $DIRIN/$imgname.*
-			if [[ -f $DIROUT/$imgname.new.dat ]]; then
-			   echo -e "${G}super build done! Output : $DIROUT/$imgname.new.dat ${NC}"
-			else
-			   echo -e "${R}Build Failed!"
-			   echo -e "${NC}"
-			fi
-		elif [[ $COMPRESSION == br ]]; then
-			echo " "
-			echo "Converting raw $imgname.img to sparse..."
-			img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
-			rm -rf $DIRIN/$imgname.img
-			
-			echo " "
-			echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
-			python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
-			rm -rf $DIRIN/$imgname.*
-			mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
-			mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
-			mv $DIRIN/system.transfer.list $DIROUT/$imgname.transfer.list
-			rm -rf $DIRIN/$imgname.*
-			
-			echo " "
-			echo "Compressing to $imgname.new.dat.br..."
-			brotli -q $COMPLVL $DIROUT/$imgname.new.dat
-			echo " "
-			echo "cleaning..."
-			echo " "
-			rm -rf $DIROUT/$imgname.new.dat
-			if [[ -f $DIROUT/$imgname.new.dat.br ]]; then
-			   echo -e "${G}super build done! Output : $DIROUT/$imgname.new.dat.br ${NC}"
-			else
-			   echo -e "${R}Build Failed!"
-			   echo -e "${NC}"
-			fi
-		elif [[ $COMPRESSION == zstd ]]; then
-			echo " "
-			echo "Compressing $imgname.img to ${imgname}$ZSTDSUFFIX (zstd)"
-			zstd -${ZSTDLVL} $DIRIN/$imgname.img -o $DIROUT/${imgname}$ZSTDSUFFIX
-			rm -rf $DIRIN/$imgname.img
-			echo " "
-			if [[ -f $DIROUT/${imgname}$ZSTDSUFFIX ]]; then
-			   echo -e "${G}super build done! Output : $DIROUT/${imgname}$ZSTDSUFFIX ${NC}"
-			else
-			   echo -e "${R}Build Failed!"
-			   echo -e "${NC}"
-			fi
+		
+		for partition in $ab_part_list; do
+		   partition_size=$(ls -nl $DIRSUPER/$partition.img | awk '{print $5}')
+		   echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$DIRSUPER/$partition.img '\'" >> $DIRSCRIPTS/build_super
+		done
+		echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super
+		
+		if [[ $group_table2 != "" ]]; then
+		    echo "touch $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super
+		    for emptypartition in $ab_part_list_empty; do
+		       echo "lpadd $DIRIN/$imgname.img $emptypartition $group_table2 $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super
+		    done
+		    echo "rm -rf $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super
 		fi
-	}
+		echo "exit" >> $DIRSCRIPTS/build_super
+		
+		sed -i "s/[']//g" $DIRSCRIPTS/build_super
+		chmod 755 $DIRSCRIPTS/build_super
+		$DIRSCRIPTS/build_super
+		
+		rm -rf $DIRSCRIPTS/build_super
+		fi
+	else
+		echo -e "${R}Meta slot $meta_slot is not supported!"
+		echo -e "${NC}"
+	fi
 	
+	if [[ -f $DIRIN/$imgname.img ]]; then
+		rm -rf $DIRSUPER/*
+	fi
+
+	if [[ $COMPRESSION == raw ]]; then
+		echo " "
+		mv $DIRIN/$imgname.img $DIROUT/$imgname.img
+		if [[ -f $DIROUT/$imgname.img ]]; then
+		   echo -e "${G}super build done! Output : $DIROUT/$imgname.img ${NC}"
+		else
+		   echo -e "${R}Build Failed!"
+		   echo -e "${NC}"
+		fi
+	elif [[ $COMPRESSION == sparse ]]; then
+		echo " "
+		echo "Converting raw $imgname.img to sparse..."
+		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
+		rm -rf $DIRIN/$imgname.img
+		mv $DIRIN/$imgname.sparse.img $DIROUT/$imgname.sparse.img
+		if [[ -f $DIROUT/$imgname.sparse.img ]]; then
+		   echo -e "${G}super build done! Output : $DIROUT/$imgname.sparse.img ${NC}"
+		else
+		   echo -e "${R}Build Failed!"
+		   echo -e "${NC}"
+		fi
+	elif [[ $COMPRESSION == dat ]]; then	
+		echo " "
+		echo "Converting raw $imgname.img to sparse..."
+		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
+		rm -rf $DIRIN/$imgname.img
+		
+		echo " "
+		echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
+		python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
+		rm -rf $DIRIN/$imgname.*
+		mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
+		mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
+		mv $DIRIN/system.transfer.list $DIROUT/$imgname.transfer.list
+		rm -rf $DIRIN/$imgname.*
+		if [[ -f $DIROUT/$imgname.new.dat ]]; then
+		   echo -e "${G}super build done! Output : $DIROUT/$imgname.new.dat ${NC}"
+		else
+		   echo -e "${R}Build Failed!"
+		   echo -e "${NC}"
+		fi
+	elif [[ $COMPRESSION == br ]]; then
+		echo " "
+		echo "Converting raw $imgname.img to sparse..."
+		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
+		rm -rf $DIRIN/$imgname.img
+		
+		echo " "
+		echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
+		python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
+		rm -rf $DIRIN/$imgname.*
+		mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
+		mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
+		mv $DIRIN/system.transfer.list $DIROUT/$imgname.transfer.list
+		rm -rf $DIRIN/$imgname.*
+		
+		echo " "
+		echo "Compressing to $imgname.new.dat.br..."
+		brotli -q $COMPLVL $DIROUT/$imgname.new.dat
+		echo " "
+		echo "cleaning..."
+		echo " "
+		rm -rf $DIROUT/$imgname.new.dat
+		if [[ -f $DIROUT/$imgname.new.dat.br ]]; then
+		   echo -e "${G}super build done! Output : $DIROUT/$imgname.new.dat.br ${NC}"
+		else
+		   echo -e "${R}Build Failed!"
+		   echo -e "${NC}"
+		fi
+	elif [[ $COMPRESSION == zstd ]]; then
+		echo " "
+		echo "Compressing $imgname.img to ${imgname}$ZSTDSUFFIX (zstd)"
+		zstd -${ZSTDLVL} $DIRIN/$imgname.img -o $DIROUT/${imgname}$ZSTDSUFFIX
+		rm -rf $DIRIN/$imgname.img
+		echo " "
+		if [[ -f $DIROUT/${imgname}$ZSTDSUFFIX ]]; then
+		   echo -e "${G}super build done! Output : $DIROUT/${imgname}$ZSTDSUFFIX ${NC}"
+		else
+		   echo -e "${R}Build Failed!"
+		   echo -e "${NC}"
+		fi
+	fi
+}
+
+super_main() {
 	while true; do
 	    banner
 	    echo " "
