@@ -99,8 +99,10 @@ clean() {
 }
 
 file_selector() {
-	if ls -1 $DIRIN/*$file_extension > /dev/null 2>&1 ; then
-	   ls -1 $DIRIN/*$file_extension | sed 's:.*/::' | awk '{print NR ".", $0}'
+	selected_dir=$1
+	file_extension=$2
+	if ls -1 $selected_dir/*$file_extension > /dev/null 2>&1 ; then
+	   ls -1 $selected_dir/*$file_extension | sed 's:.*/::' | awk '{print NR ".", $0}'
 	else
 	   if [[ $file_extension == "" ]]; then
 	      echo -e "${R}No file(s) found in rom_input folder ${NC}"
@@ -119,14 +121,14 @@ file_selector() {
 	   clear
 	   banner
 	   echo ""
-	   file_selector
+	   file_selector $selected_dir $file_extension
 	else
 	   if [[ $file_extension == "" ]]; then
-	      FILE=$(ls -1 $DIRIN | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
+	      FILE=$(ls -1 $selected_dir | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
 	      clear
 	      echo "Selected: $FILE"
 	   else
-	      file1=$(ls -1 $DIRIN/*$file_extension | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}' | sed "s/$file_extension//")
+	      file1=$(ls -1 $selected_dir/*$file_extension | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}' | sed "s/$file_extension//")
 	      file2=${file1%/}
 	      file3=${file2##*/}
 	      FILE=$file3
@@ -137,8 +139,9 @@ file_selector() {
 }
 
 folder_selector() {
-	if ls -1 $DIRROM/EXT4 > /dev/null 2>&1 ; then
-	   ls -1 $DIRROM/EXT4 | grep -v "config" | awk '{print NR ".", $0}'
+	selected_dir=$1
+	if ls -1 $selected_dir > /dev/null 2>&1 ; then
+	   ls -1 $selected_dir | grep -v "config" | awk '{print NR ".", $0}'
 	else
 	   echo -e "${R}No extracted partition(s) found! ${NC}"
 	   echo ""
@@ -152,9 +155,9 @@ folder_selector() {
 	   clear
 	   banner
 	   echo ""
-	   folder_selector
+	   folder_selector $selected_dir
 	else
-	   FOLDER=$(ls -1 $DIRROM/EXT4 | grep -v "config" | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
+	   FOLDER=$(ls -1 $selected_dir | grep -v "config" | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
 	   clear
 	   echo "Selected: $FOLDER"
 	fi
@@ -267,8 +270,7 @@ rebuild_ext4_single() {
 		echo " "
 		echo "choose which image you wanted to rebuild"
 		echo " "
-		file_extension=".img"
-		file_selector
+		file_selector $DIRIN ".img"
 		partition=$FILE
 		if [[ $(blkid -o value -s TYPE $DIRIN/$partition.img) == ext4 ]]; then
 		   rebuild_ext4
@@ -285,8 +287,7 @@ datbr_raw() {
 	echo " "
 	echo "choose which image you wanted to extract"
 	echo " "
-	file_extension=".new.dat.br"
-	file_selector
+	file_selector $DIRIN =".new.dat.br"
 	imgname=$FILE
 
 	if [ -f $DIRIN/$imgname.new.dat.br ]; then
@@ -319,8 +320,7 @@ compress_zstd() {
 	echo " "
 	echo "choose which file you wanted to compress"
 	echo " "
-	file_extension=""
-	file_selector
+	file_selector $DIRIN ""
 	filename=$FILE
 	
 	if [ -f $DIRIN/$filename ]; then
@@ -359,8 +359,7 @@ decompress_zstd() {
 	echo " "
 	echo "choose which file you wanted to decompress"
 	echo " "
-	file_extension=""
-	file_selector
+	file_selector $DIRIN ""
 	filename=$FILE
 	
 	if [ -f $DIRIN/$filename ]; then
@@ -422,8 +421,7 @@ unpack_ext4_img() {
 	echo " "
 	echo "choose which image you wanted to unpack"
 	echo " "
-	file_extension=".img"
-	file_selector
+	file_selector $DIRIN ".img"
 	image=$FILE
 	unpack_ext4
 }
@@ -434,7 +432,7 @@ repack_ext4_img_foldersize() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	folder_selector
+	folder_selector $DIRROM/EXT4
 	image=$FOLDER
 	if [[ -d $DIRROM/EXT4/$image ]]; then
 		echo ""
@@ -466,7 +464,7 @@ repack_ext4_img_freespace() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	folder_selector
+	folder_selector $DIRROM/EXT4
 	image=$FOLDER
 	if [[ -d $DIRROM/EXT4/$image ]]; then
 		echo " "
@@ -502,7 +500,7 @@ repack_ext4_img_samesize() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	folder_selector
+	folder_selector $DIRROM/EXT4
 	image=$FOLDER
 	if [[ -d $DIRROM/EXT4/$image ]]; then
 		echo ""
@@ -531,7 +529,7 @@ repack_ext4_img_inputsize() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	folder_selector
+	folder_selector $DIRROM/EXT4
 	image=$FOLDER
 	if [[ -d $DIRROM/EXT4/$image ]]; then
 		echo " "
@@ -564,8 +562,7 @@ erofs_ext4_main() {
 		echo " "
 		echo "choose which image you wanted to convert to ext4"
 		echo " "
-		file_extension=".img"
-		file_selector
+		file_selector $DIRIN ".img"
 		partition=$FILE
 		if [[ $(blkid -o value -s TYPE $DIRIN/$partition.img) == erofs ]]; then
 		   convert_erofs_ext4
@@ -881,8 +878,7 @@ raw_sparse() {
 	echo " "
 	echo "choose which image you wanted to convert to sparse img"
 	echo " "
-	file_extension=".img"
-	file_selector
+	file_selector $DIRIN ".img"
 	imgname=$FILE
 
 	if [ -f $DIRIN/$imgname.img ]; then
@@ -909,8 +905,7 @@ raw_datbr() {
 	echo " "
 	echo "choose which image you wanted to compress"
 	echo " "
-	file_extension=".img"
-	file_selector
+	file_selector $DIRIN ".img"
 	imgname=$FILE
 
 	if [ -f $DIRIN/$imgname.img ]; then
@@ -1323,8 +1318,7 @@ sparse_raw() {
 	echo " "
 	echo "choose which image you wanted to convert to raw img"
 	echo " "
-	file_extension=".img"
-	file_selector
+	file_selector $DIRIN ".img"
 	imgname=$FILE
 	
 	if [ -f $DIRIN/$imgname.img ]; then
@@ -1348,8 +1342,7 @@ super_u_raw() {
 	echo " "
 	echo "choose which super partition you wanted to extract"
 	echo " "
-	file_extension=".img"
-	file_selector
+	file_selector $DIRIN ".img"
 	imgname=$FILE
 
 	if [ -f $DIRIN/$imgname.img ]; then
@@ -1371,8 +1364,7 @@ super_u_zstd() {
 	echo " "
 	echo "choose which super partition you wanted to extract"
 	echo " "
-	file_extension=""
-	file_selector
+	file_selector $DIRIN ""
 	filename=$FILE
 	
 	if [ -f $DIRIN/$filename ]; then
@@ -1401,8 +1393,7 @@ super_u_datbr() {
 	echo " "
 	echo "choose which super partition you wanted to extract"
 	echo " "
-	file_extension=".new.dat.br"
-	file_selector
+	file_selector $DIRIN ".new.dat.br"
 	imgname=$FILE
 
 	if [ -f $DIRIN/$imgname.new.dat.br ]; then
