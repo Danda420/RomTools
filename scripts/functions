@@ -4,6 +4,7 @@ DIRIN=$DIRTOOLS/rom_input
 DIROUT=$DIRTOOLS/rom_output
 DIRROM=$DIRTOOLS/ROM
 DIRSCRIPTS=$DIRTOOLS/scripts
+BIN=$DIRSCRIPTS/bin
 MERGE=$DIRTOOLS/scripts/merge_non_dynamic
 OPLUSMERGE=$DIRTOOLS/scripts/oplus
 DIRSUPER=$DIRTOOLS/ROM/super
@@ -92,8 +93,8 @@ clean() {
 	rm -rf $DIRIN \
 	       $DIROUT \
 	       $DIRROM
-	sudo rm -rf $DIRSCRIPTS/bin/__pycache__
-	sudo rm -rf $DIRSCRIPTS/bin/*.pyc
+	sudo rm -rf $BIN/__pycache__
+	sudo rm -rf $BIN/*.pyc
 
 	echo -e "${G}Done!${NC}"
 }
@@ -185,7 +186,7 @@ convert_erofs_ext4(){
 		echo "Starting conversion..."
 		echo ""
 		echo "- Unpacking $partition image (erofs)"
-	        $DIRSCRIPTS/bin/erofs.unpack $DIRIN/$partition.img $erofsdir > /dev/null 2>&1 
+	        $BIN/erofs.unpack $DIRIN/$partition.img $erofsdir > /dev/null 2>&1 
 		sed -i "s#/${partition}[(][/][\].*[)]?#/${partition}(/.*)?#g" $erofsdir/config/${partition}_file_contexts
 		if [[ $partition == "system" ]] || [[ $partition == "system_a" ]] || [[ $partition == "system_b" ]]; then
 	    	   cat $erofsdir/$partition/system/etc/selinux/plat_file_contexts > $erofsdir/config/${partition}_file_contexts
@@ -200,9 +201,9 @@ convert_erofs_ext4(){
 		    SIZE=`sudo du -sk $erofsdir/$partition | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
 		if [[ $partition == "system" ]] || [[ $partition == "system_a" ]] || [[ $partition == "system_b" ]]; then
-		    sudo $DIRSCRIPTS/bin/mkuserimg_mke2fs.py "$erofsdir/$partition/" "$DIROUT/$partition.img" ext4 "/" $SIZE $erofsdir/config/${partition}_file_contexts -j "0" -T "1230768000" -L "/" -I "256" -M "/" --reserved_percent "0" > /dev/null 2>&1 
+		    sudo $BIN/mkuserimg_mke2fs.py "$erofsdir/$partition/" "$DIROUT/$partition.img" ext4 "/" $SIZE $erofsdir/config/${partition}_file_contexts -j "0" -T "1230768000" -L "/" -I "256" -M "/" --reserved_percent "0" > /dev/null 2>&1 
 		else
-		    sudo $DIRSCRIPTS/bin/mkuserimg_mke2fs.py "$erofsdir/$partition/" "$DIROUT/$partition.img" ext4 "/$partition" $SIZE $erofsdir/config/${partition}_file_contexts -j "0" -T "1230768000" -L "$partition" -I "256" -M "/$partition" --reserved_percent "0" > /dev/null 2>&1 
+		    sudo $BIN/mkuserimg_mke2fs.py "$erofsdir/$partition/" "$DIROUT/$partition.img" ext4 "/$partition" $SIZE $erofsdir/config/${partition}_file_contexts -j "0" -T "1230768000" -L "$partition" -I "256" -M "/$partition" --reserved_percent "0" > /dev/null 2>&1 
 		fi
 		echo "- Done"
 		echo ""
@@ -231,7 +232,7 @@ rebuild_ext4(){
 		echo ""
 		echo "- Extracting $partition"
 		mkdir $DIRROM/rebuildimg
-		sudo $DIRSCRIPTS/bin/imgextractor.py $DIRIN/$partition.img $DIRROM/rebuildimg > /dev/null 2>&1
+		sudo $BIN/imgextractor.py $DIRIN/$partition.img $DIRROM/rebuildimg > /dev/null 2>&1
 		foldersize=$(sudo du -s -B1 $DIRROM/rebuildimg/$partition | awk '{print $1}')
 		SIZE=$(($foldersize + $foldersize * 1/10))
 		if (( $SIZE < 1474560 )); then
@@ -239,9 +240,9 @@ rebuild_ext4(){
 		fi
 		echo "- Rebuilding $partition..."
 		if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
-			sudo $DIRSCRIPTS/bin/make_ext4fs -J -T -1 -S "$DIRROM/rebuildimg/config/$partition/${partition}_file_contexts" -C "$DIRROM/rebuildimg/config/$partition/${partition}_fs_config" -l "$SIZE" -L "/" -a "/$partition" "$DIROUT/$partition.img" "$DIRROM/rebuildimg/$partition" > /dev/null 2>&1
+			sudo $BIN/make_ext4fs -J -T -1 -S "$DIRROM/rebuildimg/config/$partition/${partition}_file_contexts" -C "$DIRROM/rebuildimg/config/$partition/${partition}_fs_config" -l "$SIZE" -L "/" -a "/$partition" "$DIROUT/$partition.img" "$DIRROM/rebuildimg/$partition" > /dev/null 2>&1
 		else
-			sudo $DIRSCRIPTS/bin/make_ext4fs -J -T -1 -S "$DIRROM/rebuildimg/config/$partition/${partition}_file_contexts" -C "$DIRROM/rebuildimg/config/$partition/${partition}_fs_config" -l "$SIZE" -L "$partition" -a "/$partition" "$DIROUT/$partition.img" "$DIRROM/rebuildimg/$partition" > /dev/null 2>&1
+			sudo $BIN/make_ext4fs -J -T -1 -S "$DIRROM/rebuildimg/config/$partition/${partition}_file_contexts" -C "$DIRROM/rebuildimg/config/$partition/${partition}_fs_config" -l "$SIZE" -L "$partition" -a "/$partition" "$DIROUT/$partition.img" "$DIRROM/rebuildimg/$partition" > /dev/null 2>&1
 		fi
 		DIRIMG_RESIZE=$DIROUT/$partition.img
 		resize_img smallest
@@ -298,7 +299,7 @@ datbr_raw() {
 
 		rm -rf $DIRIN/$imgname.new.dat.br
 
-		python3 $DIRSCRIPTS/bin/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img  >> /dev/null 2>&1
+		python3 $BIN/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img  >> /dev/null 2>&1
 		echo " "
 		echo "Cleaning input folder..."
 
@@ -391,7 +392,7 @@ unpack_ext4() {
 			mkdir $DIRROM/EXT4
 		fi
 		echo ""
-		sudo $DIRSCRIPTS/bin/imgextractor.py $DIRIN/$image.img $DIRROM/EXT4
+		sudo $BIN/imgextractor.py $DIRIN/$image.img $DIRROM/EXT4
 		sudo chown -R $USER:$USER $DIRROM/EXT4
 		echo ""
 		echo -e "${G}Output : $DIRROM/EXT4/$image ${NC}"
@@ -408,10 +409,11 @@ unpack_ext4() {
 }
 
 repack_ext4_cmd() {
+	$BIN/checkfsconfig $DIRROM/EXT4/$image $DIRROM/EXT4/config/$image/${image}_fs_config
 	if [[ $image == system ]] || [[ $image == system_a ]] || [[ $image == system_b ]]; then
-		sudo $DIRSCRIPTS/bin/make_ext4fs -J -T -1 -S "$DIRROM/EXT4/config/$image/${image}_file_contexts" -C "$DIRROM/EXT4/config/$image/${image}_fs_config" -l "$SIZE" -L "/" -a "/$image" "$DIROUT/$image.new.img" "$DIRROM/EXT4/$image"
+		sudo $BIN/make_ext4fs -J -T -1 -S "$DIRROM/EXT4/config/$image/${image}_file_contexts" -C "$DIRROM/EXT4/config/$image/${image}_fs_config" -l "$SIZE" -L "/" -a "/$image" "$DIROUT/$image.new.img" "$DIRROM/EXT4/$image"
 	else
-		sudo $DIRSCRIPTS/bin/make_ext4fs -J -T -1 -S "$DIRROM/EXT4/config/$image/${image}_file_contexts" -C "$DIRROM/EXT4/config/$image/${image}_fs_config" -l "$SIZE" -L "$image" -a "/$image" "$DIROUT/$image.new.img" "$DIRROM/EXT4/$image"
+		sudo $BIN/make_ext4fs -J -T -1 -S "$DIRROM/EXT4/config/$image/${image}_file_contexts" -C "$DIRROM/EXT4/config/$image/${image}_fs_config" -l "$SIZE" -L "$image" -a "/$image" "$DIROUT/$image.new.img" "$DIRROM/EXT4/$image"
 	fi
 }
 
@@ -437,6 +439,7 @@ repack_ext4_img_foldersize() {
 	if [[ -d $DIRROM/EXT4/$image ]]; then
 		echo ""
 		echo "- Repacking $image..."
+		echo ""
 		foldersize=$(sudo du -s -B1 $DIRROM/EXT4/$image | awk '{print $1}')
 		SIZE=$(($foldersize + $foldersize * 1/10))
 		if (( $SIZE < 1474560 )); then
@@ -473,6 +476,7 @@ repack_ext4_img_freespace() {
 		FREESPACE=$REPLY
 		echo ""
 		echo "- Repacking $image..."
+		echo ""
 		foldersize=$(sudo du -s -B1 $DIRROM/EXT4/$image | awk '{print $1}')
 		SIZE=$(($foldersize + $foldersize * 1/10))
 		if (( $SIZE < 1474560 )); then
@@ -505,6 +509,7 @@ repack_ext4_img_samesize() {
 	if [[ -d $DIRROM/EXT4/$image ]]; then
 		echo ""
 		echo "- Repacking $image..."
+		echo ""
 		SIZE=$(cat $DIRROM/EXT4/config/$image/${image}_size.txt)
 		if (( $SIZE < 1474560 )); then
 		    SIZE=`sudo du -sk $DIRROM/EXT4/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
@@ -541,6 +546,7 @@ repack_ext4_img_inputsize() {
 		fi
 		echo ""
 		echo "- Repacking $image..."
+		echo ""
 		repack_ext4_cmd
 		echo ""
 		echo "- Done!"
@@ -773,7 +779,7 @@ mount_main() {
 
 	mount_resize() {
 		clear
-		bash $DIRSCRIPTS/bin/resizeimg
+		bash $BIN/resizeimg
 		give_perm
 	}
 
@@ -834,7 +840,7 @@ payload() {
 	clear
 	if [ -f $DIRIN/payload.bin ]; then
 
-		$DIRSCRIPTS/bin/payload --output=$DIROUT $DIRIN/payload.bin
+		$BIN/payload --output=$DIROUT $DIRIN/payload.bin
 
 		echo " "
 		echo "cleaning..."
@@ -921,7 +927,7 @@ raw_datbr() {
 
 		echo " " 
 		echo "converting image : $imgname to new.dat"
-		python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
+		python3 $BIN/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.sparse.img
 		mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
 		mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
@@ -1070,7 +1076,7 @@ splits_main() {
 		    if [[ -f $DIRIN/$partition.sparse.img ]]; then
 			echo " "
 			echo "converting $partition into new.dat"
-			python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$partition.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
+			python3 $BIN/img2sdat.py $DIRIN/$partition.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
 			mv $DIRIN/system.new.dat $DIROUT/$partition.new.dat
 			mv $DIRIN/system.patch.dat $DIROUT/$partition.patch.dat
 			mv $DIRIN/system.transfer.list $DIROUT/$partition.transfer.list
@@ -1245,7 +1251,7 @@ splits_main() {
 		    if [[ -f $DIRIN/$partition.new.dat ]] && [[ -f $DIRIN/$partition.transfer.list ]]; then
 			echo " "
 			echo "Converting $partition.new.dat to $partition.img (raw)"
-			python3 $DIRSCRIPTS/bin/sdat2img.py $DIRIN/$partition.transfer.list $DIRIN/$partition.new.dat $DIROUT/$partition.img >> /dev/null 2>&1
+			python3 $BIN/sdat2img.py $DIRIN/$partition.transfer.list $DIRIN/$partition.new.dat $DIROUT/$partition.img >> /dev/null 2>&1
 			rm -rf $DIRIN/$partition.*
 		    else
 		    	echo " "
@@ -1404,7 +1410,7 @@ super_u_datbr() {
 
 		echo " "
 		echo "Converting $imgname.new.dat to $imgname.img (raw)..."
-		python3 $DIRSCRIPTS/bin/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img >> /dev/null 2>&1
+		python3 $BIN/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img >> /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.*
 
 		echo " "
@@ -1639,7 +1645,7 @@ super_r() {
 		
 		echo " "
 		echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
-		python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
+		python3 $BIN/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.*
 		mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
 		mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
@@ -1659,7 +1665,7 @@ super_r() {
 		
 		echo " "
 		echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
-		python3 $DIRSCRIPTS/bin/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
+		python3 $BIN/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.*
 		mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
 		mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
