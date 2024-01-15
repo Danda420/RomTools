@@ -12,7 +12,7 @@ echo ""
 cd $extracted_dir
 for i in $(find .); do
    j=${i:2}
-   if [[ ! $(grep -r $partition/$j $fs_config) ]]; then
+   if [[ ! $(grep -rF "$partition/$j" $fs_config) ]]; then
       test -f $extracted_dir/$j
       if [[ $? == 0 ]]; then
          if [[ $(echo /$j | grep "/bin/") ]]; then
