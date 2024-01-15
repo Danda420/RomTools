@@ -181,37 +181,28 @@ resize_img(){
 }
 
 convert_erofs_ext4(){
-	if [[ -f $DIRIN/$partition.img ]]; then
+	if [[ -f $DIRIN/$image.img ]]; then
 		echo " "
 		echo "Starting conversion..."
 		echo ""
-		echo "- Unpacking $partition image (erofs)"
-	        $BIN/erofs.unpack $DIRIN/$partition.img $erofsdir > /dev/null 2>&1 
-		sed -i "s#/${partition}[(][/][\].*[)]?#/${partition}(/.*)?#g" $erofsdir/config/${partition}_file_contexts
-		if [[ $partition == "system" ]] || [[ $partition == "system_a" ]] || [[ $partition == "system_b" ]]; then
-	    	   cat $erofsdir/$partition/system/etc/selinux/plat_file_contexts > $erofsdir/config/${partition}_file_contexts
-	    	   cat $DIRSCRIPTS/patch/other_file_contexts >> $erofsdir/config/${partition}_file_contexts
-		elif [[ $partition == mi_ext ]]; then
-	    	   echo "/mi_ext(/.*)?                    u:object_r:rootfs:s0" > $erofsdir/config/${partition}_file_contexts
-		fi
-		echo "- Rebuilding $partition as ext4 image..."
-		foldersize=$(du -s -B1 $erofsdir/$partition | awk '{print $1}')
+		echo "- Unpacking $image image (erofs)"
+	        $BIN/erofs.unpack $DIRIN/$image.img $erofsdir > /dev/null 2>&1
+	        
+		echo "- Rebuilding $image as ext4 image..."
+		foldersize=$(du -s -B1 $erofsdir/$image | awk '{print $1}')
 		SIZE=$(($foldersize + $foldersize * 1/10))
 		if (( $SIZE < 1474560 )); then
-		    SIZE=`sudo du -sk $erofsdir/$partition | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+		    SIZE=`sudo du -sk $erofsdir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
-		if [[ $partition == "system" ]] || [[ $partition == "system_a" ]] || [[ $partition == "system_b" ]]; then
-		    sudo $BIN/mkuserimg_mke2fs.py "$erofsdir/$partition/" "$DIROUT/$partition.img" ext4 "/" $SIZE $erofsdir/config/${partition}_file_contexts -j "0" -T "1230768000" -L "/" -I "256" -M "/" --reserved_percent "0" > /dev/null 2>&1 
-		else
-		    sudo $BIN/mkuserimg_mke2fs.py "$erofsdir/$partition/" "$DIROUT/$partition.img" ext4 "/$partition" $SIZE $erofsdir/config/${partition}_file_contexts -j "0" -T "1230768000" -L "$partition" -I "256" -M "/$partition" --reserved_percent "0" > /dev/null 2>&1 
-		fi
+		repack_erofs_as_ext4_cmd > /dev/null 2>&1
+		DIRIMG_RESIZE=$DIROUT/$image.img
+		resize_img smallest
 		echo "- Done"
 		echo ""
-		if [[ -f $DIROUT/$partition.img ]]; then
-		   sudo chown $USER:$USER $DIROUT/$partition.img
-		   rm -rf $DIRIN/$partition.img
+		if [[ -f $DIROUT/$image.img ]]; then
+		   rm -rf $DIRIN/$image.img
 		   echo -e "${G}Conversion done..."
-		   echo -e "Output : $DIROUT/$partition.img ${NC}"
+		   echo -e "Output : $DIROUT/$image.img ${NC}"
 		else
 		   echo -e "${R}Conversion Failed!"
 		   echo -e "${NC}"
@@ -220,7 +211,7 @@ convert_erofs_ext4(){
 		cd $DIRTOOLS
 	else
 		echo ""
-		echo -e "${R}there's no image named "$partition.img" in $DIRIN"
+		echo -e "${R}there's no image named "$image.img" in $DIRIN"
 		echo -e "${NC}"
 	 fi
 }
@@ -417,6 +408,15 @@ repack_ext4_cmd() {
 	fi
 }
 
+repack_erofs_as_ext4_cmd() {
+	$BIN/checkfsconfig $erofsdir/$image $erofsdir/config/${image}_fs_config
+	if [[ $image == system ]] || [[ $image == system_a ]] || [[ $image == system_b ]]; then
+		sudo $BIN/make_ext4fs -J -T -1 -S "$erofsdir/config/${image}_file_contexts" -C "$erofsdir/config/${image}_fs_config" -l "$SIZE" -L "/" -a "/$image" "$DIROUT/$image.img" "$erofsdir/$image"
+	else
+		sudo $BIN/make_ext4fs -J -T -1 -S "$erofsdir/config/${image}_file_contexts" -C "$erofsdir/config/${image}_fs_config" -l "$SIZE" -L "$image" -a "/$image" "$DIROUT/$image.img" "$erofsdir/$image"
+	fi
+}
+
 unpack_ext4_img() {
 	clear
 	banner
@@ -569,34 +569,34 @@ erofs_ext4_main() {
 		echo "choose which image you wanted to convert to ext4"
 		echo " "
 		file_selector $DIRIN ".img"
-		partition=$FILE
-		if [[ $(blkid -o value -s TYPE $DIRIN/$partition.img) == erofs ]]; then
+		image=$FILE
+		if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
 		   convert_erofs_ext4
 		   rm -rf $erofsdir
 		else
 		   echo ""
-		   echo -e "${R}$partition.img fs type is $(blkid -o value -s TYPE $DIRIN/$partition.img), aborting..."
+		   echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
 		   echo -e "${NC}"
 		fi
 	}
 
 	erofs_ext4_oplus() {
 		clear
-		for partition in $oplus_partitions
+		for image in $oplus_partitions
 		do
 		  convert_erofs_ext4
 		  rm -rf $erofsdir
 		done
 		if [[ $(blkid -o value -s TYPE $DIRIN/product.img) == erofs ]]; then
-		    partition=product
+		    image=product
 		    convert_erofs_ext4
 		else
-		    partition=product
+		    image=product
 		    rebuild_ext4
 		fi
-		partition=system_ext
+		image=system_ext
 		convert_erofs_ext4
-		partition=system
+		image=system
 		convert_erofs_ext4
 		rm -rf $erofsdir
 	}
