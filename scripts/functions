@@ -279,7 +279,7 @@ datbr_raw() {
 	echo " "
 	echo "choose which image you wanted to extract"
 	echo " "
-	file_selector $DIRIN =".new.dat.br"
+	file_selector $DIRIN ".new.dat.br"
 	imgname=$FILE
 
 	if [ -f $DIRIN/$imgname.new.dat.br ]; then
