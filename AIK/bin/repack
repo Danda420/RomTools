@@ -17,8 +17,7 @@ case $(uname -s) in
 esac;
 arch=$plat/`uname -m`;
 
-aik="${BASH_SOURCE:-$0}";
-aik="$(dirname "$(readlink -f "$aik")")";
+aik=$PWD;
 bin="$aik/bin";
 cur="$(readlink -f "$PWD")";
 
@@ -49,7 +48,7 @@ case $1 in
   --local) shift;;
   *) cd "$aik";;
 esac;
-chmod -R 755 "$bin" "$aik/"*.sh;
+chmod -R 755 "$bin" "$bin/unpack" "$bin/repack" "$bin/cleanup";
 chmod 644 "$bin/magic" "$bin/androidbootimg.magic" "$bin/boot_signer.jar" "$bin/avb/"* "$bin/chromeos/"*;
 
 if [ -z "$(ls split_img/* 2>/dev/null)" -o ! -e ramdisk ]; then

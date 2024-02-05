@@ -1,0 +1,126 @@
+#!/bin/bash
+
+DIRAIK=$PWD
+bin=$DIRAIK/bin
+G='\033[1;32m'
+R='\033[1;31m'
+NC='\033[0m'
+LC='\033[1;36m'
+
+banner() {
+	clear
+	echo -e "${LC}========================="
+	echo -e "${LC}        AIK LINUX        "
+	echo -e "${LC}=========================${NC}"
+}
+
+restart_aik() {
+	echo " "
+	while true; do
+	   echo "start AIK again? (y/n)"
+	   read -p "" yn
+	   case $yn in
+		[Yy]* ) start_aik;;
+		[Nn]* ) 
+		clear
+		exit;;   
+		* ) echo "please choose yes or no";;
+	    esac
+	done
+}
+
+file_selector() {
+	selected_dir=$1
+	file_extension=$2
+	if ls -1 $selected_dir/*$file_extension > /dev/null 2>&1 ; then
+	   ls -1 $selected_dir/*$file_extension | sed 's:.*/::' | awk '{print NR ".", $0}'
+	else
+	   if [[ $file_extension == "" ]]; then
+	      echo -e "${R}No file(s) found in $selected_dir ${NC}"
+	      echo ""
+	   else
+	      echo -e "${R}No file(s) found in $selected_dir with $file_extension file extension ${NC}"
+	      echo ""
+	   fi
+	fi
+	echo "x. Back to main menu"
+	read
+	CHOOSE=$REPLY
+	if [[ $CHOOSE == "x" ]]; then
+	   start_aik
+	elif [[ $CHOOSE == "" ]]; then
+	   clear
+	   banner
+	   echo ""
+	   file_selector $selected_dir $file_extension
+	else
+	   if [[ $file_extension == "" ]]; then
+	      FILE=$(ls -1 $selected_dir | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
+	      clear
+	      echo "Selected: $FILE"
+	   else
+	      file1=$(ls -1 $selected_dir/*$file_extension | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}' | sed "s/$file_extension//")
+	      file2=${file1%/}
+	      file3=${file2##*/}
+	      FILE=$file3
+	      clear
+	      echo "Selected: ${FILE}${file_extension}"
+	   fi
+	fi
+}
+
+repack_img() {
+	clear
+	$bin/repack
+}
+
+unpack_img() {
+	clear
+	banner
+	echo " "
+	echo "choose which image you wanted to unpack"
+	echo " "
+	file_selector $DIRAIK ".img"
+	img=$FILE.img
+	$bin/unpack $img
+}
+
+cleanup() {
+	clear
+	$bin/cleanup
+}
+
+start_aik() {
+	while true; do
+	    banner
+	    echo " "
+	    echo "1. Repack Image"
+	    echo "2. Unpack Image"
+	    echo "c. Clean up"
+	    echo "x. Exit tool"
+	    
+	    read -p "" choose
+	    case $choose in
+	    
+		1 ) 
+
+	repack_img
+	restart_aik;;
+
+		2 ) 
+	   
+	unpack_img
+	restart_aik;;
+
+		c ) 
+		
+	cleanup
+	restart_aik;;
+
+		x )  
+	clear	
+	exit;;
+		* ) start_aik;;
+	    esac
+	done
+}
