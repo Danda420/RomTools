@@ -399,6 +399,28 @@ unpack_ext4() {
 	fi
 }
 
+unpack_erofs() {
+	if [[ -f $DIRIN/$image.img ]]; then
+	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
+		if [[ ! -d $erofsdir ]]; then
+			mkdir $erofsdir
+		fi
+		echo ""
+		$BIN/erofs.unpack $DIRIN/$image.img $erofsdir
+		echo ""
+		echo -e "${G}Output : $erofsdir/$image ${NC}"
+		rm -rf $DIRIN/$image.img
+	   else
+	   	echo ""
+		echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
+		echo -e "${NC}"
+	   fi
+	else
+		echo -e "${R}Error: no image named $image.img in $DIRIN"
+		echo -e "${NC}"
+	fi
+}
+
 repack_ext4_cmd() {
 	$BIN/checkfsconfig $DIRROM/EXT4/$image $DIRROM/EXT4/config/$image/${image}_fs_config
 	if [[ $image == system ]] || [[ $image == system_a ]] || [[ $image == system_b ]]; then
@@ -417,6 +439,18 @@ repack_erofs_as_ext4_cmd() {
 	fi
 }
 
+repack_erofs_cmd() {
+	if [[ $legacy == true ]]; then
+		other="-E legacy-compress"
+	else
+		other=""
+	fi
+	
+	$BIN/checkfsconfig $erofsdir/$image $erofsdir/config/${image}_fs_config
+	
+	$BIN/mkfs.erofs $other -z $compression -T $(date +%s) --mount-point="/$image" --product-out="$erofsdir" --fs-config-file="$erofsdir/config/${image}_fs_config" --file-contexts="$erofsdir/config/${image}_file_contexts" "$DIROUT/$image.erofs.img" "$erofsdir/$image/"
+}
+
 unpack_ext4_img() {
 	clear
 	banner
@@ -426,6 +460,17 @@ unpack_ext4_img() {
 	file_selector $DIRIN ".img"
 	image=$FILE
 	unpack_ext4
+}
+
+unpack_erofs_img() {
+	clear
+	banner
+	echo " "
+	echo "choose which image you wanted to unpack"
+	echo " "
+	file_selector $DIRIN ".img"
+	image=$FILE
+	unpack_erofs
 }
 
 repack_ext4_img_foldersize() {
@@ -554,6 +599,93 @@ repack_ext4_img_inputsize() {
 		if [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}Repack done..."
 		   echo -e "Output : $DIROUT/$image.new.img ${NC}"
+		else
+		   echo -e "${R}Repack Failed!"
+		   echo -e "${NC}"
+		fi
+	fi
+}
+
+repack_erofs() {
+	clear
+	banner
+	echo " "
+	echo "choose which partition you wanted to repack"
+	echo " "
+	extracted_partition_selector $erofsdir
+	image=$FOLDER
+	if [[ -d $erofsdir/$image ]]; then
+		while true; do
+		    read -p "Compiling erofs image for kernel below 5.3.y? (Y/N)" yn
+		    case $yn in
+			[Yy]* ) 
+			legacy=true 
+			break;;
+			[Nn]* ) 
+			legacy=false 
+			break;;
+			* ) echo "Please answer yes or no.";;
+		    esac
+		done
+		
+		while true; do
+		   echo " "
+		   echo "Choose compressor : "
+		   echo " "
+		   echo "1. lz4"
+		   echo "2. lz4hc"
+		   echo "3. lzma"
+		   echo "4. deflate"
+			    
+		   read -p "" choose
+		   case $choose in
+			    
+			1 ) 
+			compressor=lz4
+			break;;
+
+			2 ) 
+			compressor=lz4hc
+			break;;
+			
+			3 )
+			compressor=lzma
+			break;;
+			
+			4 ) 
+			compressor=deflate
+			break;;
+
+			* ) choose_compressor;;
+		   esac
+		done
+		
+		echo ""
+		if [[ $compressor == "lz4" ]]; then
+		   compression=lz4
+		elif [[ $compressor == "lz4hc" ]]; then
+		   echo "Input erofs compression level (0-12, default is 9)"
+		elif [[ $compressor == "lzma" ]]; then
+		   echo "Input erofs compression level (0-9,100-109. 0-9=normal, 100-109=extreme, default is 6)"
+		elif [[ $compressor == "deflate" ]]; then
+		   echo "Input erofs compression level (0-9, default is 1)"
+		fi
+		if [[ $compressor != "lz4" ]]; then
+		   read
+		   erofscomplvl=$REPLY
+		   compression=${compressor},${erofscomplvl}
+		fi
+		
+		echo " "
+		echo "- Repacking $image..."
+		echo ""
+		repack_erofs_cmd
+		echo ""
+		echo "- Done!"
+		echo ""
+		if [[ $(ls -l $DIROUT/$image.erofs.img | awk '{print $5}') != "0" ]]; then
+		   echo -e "${G}Repack done..."
+		   echo -e "Output : $DIROUT/$image.erofs.img ${NC}"
 		else
 		   echo -e "${R}Repack Failed!"
 		   echo -e "${NC}"
@@ -2002,7 +2134,9 @@ unpack_repack_main() {
 	    echo " "
 	    echo "1. Repack EXT4 image"
 	    echo "2. Unpack EXT4 image"
-	    echo "3. Back to main menu"
+	    echo "3. Repack EROFS image"
+	    echo "4. Unpack EROFS image"
+	    echo "5. Back to main menu"
 	    
 	    read -p "" choose
 	    case $choose in
@@ -2018,6 +2152,16 @@ unpack_repack_main() {
 	restart_tool;;
 
 		3 ) 
+	   
+	repack_erofs
+	restart_tool;;
+	
+		4 ) 
+	   
+	unpack_erofs_img
+	restart_tool;;
+	
+		5 ) 
 	   
 	start_tools;;
 
