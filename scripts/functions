@@ -5,9 +5,9 @@ DIROUT=$DIRTOOLS/rom_output
 DIRROM=$DIRTOOLS/ROM
 DIRSCRIPTS=$DIRTOOLS/scripts
 BIN=$DIRSCRIPTS/bin
-MERGE=$DIRTOOLS/scripts/merge_non_dynamic
-OPLUSMERGE=$DIRTOOLS/scripts/oplus
-DIRSUPER=$DIRTOOLS/ROM/super
+MERGE=$BIN/merge_non_dynamic
+OPLUSMERGE=$BIN/oplus
+DIRSUPER=$DIRROM/super
 erofsdir=$DIRROM/erofs
 partitions="system vendor odm product system_ext"
 oplus_partitions="my_bigball my_carrier my_company my_engineering my_heytap my_manifest my_preload my_product my_region my_stock"
@@ -106,10 +106,10 @@ file_selector() {
 	   ls -1 $selected_dir/*$file_extension | sed 's:.*/::' | awk '{print NR ".", $0}'
 	else
 	   if [[ $file_extension == "" ]]; then
-	      echo -e "${R}No file(s) found in rom_input folder ${NC}"
+	      echo -e "${R}No file(s) found in $selected_dir ${NC}"
 	      echo ""
 	   else
-	      echo -e "${R}No file(s) found in rom_input folder with $file_extension file extension ${NC}"
+	      echo -e "${R}No file(s) found in $selected_dir with $file_extension file extension ${NC}"
 	      echo ""
 	   fi
 	fi
@@ -139,7 +139,7 @@ file_selector() {
 	fi
 }
 
-folder_selector() {
+extracted_partition_selector() {
 	selected_dir=$1
 	if ls -1 $selected_dir > /dev/null 2>&1 ; then
 	   ls -1 $selected_dir | grep -v "config" | awk '{print NR ".", $0}'
@@ -156,7 +156,7 @@ folder_selector() {
 	   clear
 	   banner
 	   echo ""
-	   folder_selector $selected_dir
+	   extracted_partition_selector $selected_dir
 	else
 	   FOLDER=$(ls -1 $selected_dir | grep -v "config" | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
 	   clear
@@ -441,17 +441,16 @@ repack_erofs_as_ext4_cmd() {
 
 repack_erofs_cmd() {
 	if [[ $legacy == true ]]; then
-		other="-E legacy-compress"
+		other=" -E legacy-compress"
 	else
 		other=""
 	fi
 	
 	$BIN/checkfsconfig $erofsdir/$image $erofsdir/config/${image}_fs_config
-	
-	$BIN/mkfs.erofs $other -z $compression -T $(date +%s) --mount-point="/$image" --product-out="$erofsdir" --fs-config-file="$erofsdir/config/${image}_fs_config" --file-contexts="$erofsdir/config/${image}_file_contexts" "$DIROUT/$image.erofs.img" "$erofsdir/$image/"
+	$BIN/mkfs.erofs${other} -z${compression} -T $(date +%s) --mount-point="/$image" --fs-config-file="$erofsdir/config/${image}_fs_config" --file-contexts="$erofsdir/config/${image}_file_contexts" "$DIROUT/$image.erofs.img" "$erofsdir/$image/"
 }
 
-unpack_ext4_img() {
+unpack_ext4_erofs_img() {
 	clear
 	banner
 	echo " "
@@ -459,18 +458,15 @@ unpack_ext4_img() {
 	echo " "
 	file_selector $DIRIN ".img"
 	image=$FILE
-	unpack_ext4
-}
-
-unpack_erofs_img() {
-	clear
-	banner
-	echo " "
-	echo "choose which image you wanted to unpack"
-	echo " "
-	file_selector $DIRIN ".img"
-	image=$FILE
-	unpack_erofs
+	if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
+	    unpack_ext4
+	elif [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
+	    unpack_erofs
+	else
+	    echo ""
+	    echo -e "${R}$image.img fs type is not ext4 or erofs!"
+	    echo -e "${NC}"
+	fi
 }
 
 repack_ext4_img_foldersize() {
@@ -479,7 +475,7 @@ repack_ext4_img_foldersize() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	folder_selector $DIRROM/EXT4
+	extracted_partition_selector $DIRROM/EXT4
 	image=$FOLDER
 	if [[ -d $DIRROM/EXT4/$image ]]; then
 		echo ""
@@ -512,7 +508,7 @@ repack_ext4_img_freespace() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	folder_selector $DIRROM/EXT4
+	extracted_partition_selector $DIRROM/EXT4
 	image=$FOLDER
 	if [[ -d $DIRROM/EXT4/$image ]]; then
 		echo " "
@@ -549,7 +545,7 @@ repack_ext4_img_samesize() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	folder_selector $DIRROM/EXT4
+	extracted_partition_selector $DIRROM/EXT4
 	image=$FOLDER
 	if [[ -d $DIRROM/EXT4/$image ]]; then
 		echo ""
@@ -579,7 +575,7 @@ repack_ext4_img_inputsize() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	folder_selector $DIRROM/EXT4
+	extracted_partition_selector $DIRROM/EXT4
 	image=$FOLDER
 	if [[ -d $DIRROM/EXT4/$image ]]; then
 		echo " "
@@ -616,7 +612,7 @@ repack_erofs() {
 	image=$FOLDER
 	if [[ -d $erofsdir/$image ]]; then
 		while true; do
-		    read -p "Compiling erofs image for kernel below 5.3.y? (Y/N)" yn
+		    read -p "Compiling erofs image for old kernel? (Y/N)" yn
 		    case $yn in
 			[Yy]* ) 
 			legacy=true 
@@ -660,20 +656,36 @@ repack_erofs() {
 		   esac
 		done
 		
-		echo ""
-		if [[ $compressor == "lz4" ]]; then
-		   compression=lz4
-		elif [[ $compressor == "lz4hc" ]]; then
-		   echo "Input erofs compression level (0-12, default is 9)"
-		elif [[ $compressor == "lzma" ]]; then
-		   echo "Input erofs compression level (0-9,100-109. 0-9=normal, 100-109=extreme, default is 6)"
-		elif [[ $compressor == "deflate" ]]; then
-		   echo "Input erofs compression level (0-9, default is 1)"
-		fi
+		case $compressor in
+		   "lz4" )
+		      compression=lz4
+		   ;;
+		   
+		   "lz4hc" )
+		      echo ""
+		      echo "Input erofs compression level (0-12, default is 9)"
+		   ;;
+		   
+		   "lzma" )
+		      echo ""
+		      echo "Input erofs compression level (0-9,100-109. 0-9=normal, 100-109=extreme, default is 6)"
+		   ;;
+		   
+		   "deflate" )
+		      echo ""
+		      echo "Input erofs compression level (0-9, default is 1)"
+		   ;;
+		esac
+		
 		if [[ $compressor != "lz4" ]]; then
+		   echo "Leave it empty if you want the default compression"
 		   read
 		   erofscomplvl=$REPLY
-		   compression=${compressor},${erofscomplvl}
+		   if [[ $erofscomplvl == "" ]]; then
+		      compression=${compressor}
+		   else
+		      compression=${compressor},${erofscomplvl}
+		   fi
 		fi
 		
 		echo " "
@@ -738,25 +750,21 @@ erofs_ext4_main() {
 	    echo " "
 	    echo "1. Convert erofs images to ext4"
 	    echo "2. Convert OPlus my_xxx,system,system_ext partitions to ext4"
-	    echo "3. Back to main menu"
+	    echo "x. Back to main menu"
 	    
 	    read -p "" choose
 	    case $choose in
 	    
 		1 ) 
-
 	erofs_ext4_normal
 	restart_tool;;
 
 		2 ) 
-	   
 	erofs_ext4_oplus
 	restart_tool;;
 
-		3 ) 
-
+		x ) 
 	start_tools;;
-
 
 		* ) erofs_ext4_main;;
 	    esac
@@ -866,25 +874,21 @@ merge_main() {
 	    echo " "
 	    echo "1. Merge OPLUS my_* partition to system"
 	    echo "2. Merge product and system_ext to system"
-	    echo "3. Back to main menu"
+	    echo "x. Back to main menu"
 	    
 	    read -p "" choose
 	    case $choose in
 	    
 		1 ) 
-
 	merge_oplus
 	restart_tool;;
 
 		2 ) 
-
 	merge_non_dynamic
 	restart_tool;;
 
-		3 ) 
-
+		x ) 
 	start_tools;;
-
 
 		* ) merge_main;;
 	    esac
@@ -938,30 +942,25 @@ mount_main() {
 	    echo "1. Mount raw image and resize"
 	    echo "2. Mount without resizing"
 	    echo "3. Mount read only"
-	    echo "4. Back to main menu"
+	    echo "x. Back to main menu"
 	    
 	    read -p "" choose
 	    case $choose in
 	    
 		1 ) 
-
 	mount_resize
 	restart_tool;;
 
 		2 ) 
-	   
 	mount_normal
 	restart_tool;;
 
 		3 ) 
-	   
 	mount_ro
 	restart_tool;;
 
-		4 ) 
-
+		x ) 
 	start_tools;;
-
 
 		* ) mount_main;;
 	    esac
@@ -1007,7 +1006,6 @@ custom_scripts() {
 	   SCRIPT=$(ls -1 $DIRSCRIPTS/custom_scripts | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
 	   exec $DIRSCRIPTS/custom_scripts/$SCRIPT
 	fi
-	
 }
 
 raw_sparse() {
@@ -1425,25 +1423,21 @@ splits_main() {
 	    echo " "
 	    echo "1. Repack Splits (raw to dat.br)"
 	    echo "2. Unpack Splits"
-	    echo "3. Back to main menu"
+	    echo "x. Back to main menu"
 	    
 	    read -p "" choose
 	    case $choose in
 	    
 		1 ) 
-
 	splits_compress
 	restart_tool;;
 
 		2 ) 
-	   
 	splits_decompress
 	restart_tool;;
 
-		3 ) 
-
+		x ) 
 	start_tools;;
-
 
 		* ) splits_main;;
 	    esac
@@ -1558,6 +1552,12 @@ super_u_datbr() {
 }
 
 super_r() {
+	if [[ $(ls $DIRSUPER ) == "" ]]; then
+	    banner
+	    echo ""
+	    echo -e "${R}No super extracted!${NC}"
+	    restart_tool
+	fi
 	meta_size=$(cat $DIRSUPER/config/super_config.txt | awk '/Metadata max size:/ { print $4 }')
 	meta_slot=$(cat $DIRSUPER/config/super_config.txt | awk '/Metadata slot count:/ { print $4 }')
 	first_sector=$(cat $DIRSUPER/config/super_config.txt | awk '/First sector:/ { print ($3 * 512)}')
@@ -1747,8 +1747,9 @@ super_r() {
 	if [[ -f $DIRIN/$imgname.img ]]; then
 		rm -rf $DIRSUPER/*
 	fi
-
-	if [[ $COMPRESSION == raw ]]; then
+	
+	case $COMPRESSION in
+	   "raw" )
 		echo " "
 		mv $DIRIN/$imgname.img $DIROUT/$imgname.img
 		if [[ -f $DIROUT/$imgname.img ]]; then
@@ -1757,7 +1758,9 @@ super_r() {
 		   echo -e "${R}Build Failed!"
 		   echo -e "${NC}"
 		fi
-	elif [[ $COMPRESSION == sparse ]]; then
+	   ;;
+		
+	   "sparse" )
 		echo " "
 		echo "Converting raw $imgname.img to sparse..."
 		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
@@ -1769,7 +1772,9 @@ super_r() {
 		   echo -e "${R}Build Failed!"
 		   echo -e "${NC}"
 		fi
-	elif [[ $COMPRESSION == dat ]]; then	
+	   ;;
+		
+	   "dat" )
 		echo " "
 		echo "Converting raw $imgname.img to sparse..."
 		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
@@ -1789,7 +1794,9 @@ super_r() {
 		   echo -e "${R}Build Failed!"
 		   echo -e "${NC}"
 		fi
-	elif [[ $COMPRESSION == br ]]; then
+	   ;;
+	   
+	   "br" )
 		echo " "
 		echo "Converting raw $imgname.img to sparse..."
 		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
@@ -1817,7 +1824,9 @@ super_r() {
 		   echo -e "${R}Build Failed!"
 		   echo -e "${NC}"
 		fi
-	elif [[ $COMPRESSION == zstd ]]; then
+	   ;;
+	   
+	   "zstd" )
 		echo " "
 		echo "Compressing $imgname.img to ${imgname}$ZSTDSUFFIX (zstd)"
 		zstd -${ZSTDLVL} $DIRIN/$imgname.img -o $DIROUT/${imgname}$ZSTDSUFFIX
@@ -1829,7 +1838,8 @@ super_r() {
 		   echo -e "${R}Build Failed!"
 		   echo -e "${NC}"
 		fi
-	fi
+	   ;;
+	esac
 }
 
 super_main() {
@@ -1840,35 +1850,29 @@ super_main() {
 	    echo "2. Unpack Super (dat.br)"
 	    echo "3. Unpack Super (zstd)"
 	    echo "4. Unpack Super (raw)"
-	    echo "5. Back to main menu"
+	    echo "x. Back to main menu"
 	    
 	    read -p "" choose
 	    case $choose in
 	    
 		1 ) 
-
 	super_r
 	restart_tool;;
 
 		2 ) 
-	   
 	super_u_datbr
 	restart_tool;;
 
 		3 ) 
-		
 	super_u_zstd
 	restart_tool;;
 	
 		4 ) 
-		
 	super_u_raw
 	restart_tool;;
 
-		5 ) 
-	   
+		x ) 
 	start_tools;;
-
 
 		* ) super_main;;
 	    esac
@@ -1976,30 +1980,25 @@ umount_main() {
 	    echo "1. Umount raw image and resize to smallest size"
 	    echo "2. Umount raw image and resize with free space "
 	    echo "3. Umount without resizing"
-	    echo "4. Back to main menu"
+	    echo "x. Back to main menu"
 	    
 	    read -p "" choose
 	    case $choose in
 	    
 		1 ) 
-
 	umount_resize
 	restart_tool;;
 
 		2 ) 
-
 	umount_resize_freespace
 	restart_tool;;
 
 		3 ) 
-	   
 	umount_normal
 	restart_tool;;
 
-		4 ) 
-
+		x ) 
 	start_tools;;
-
 
 		* ) umount_main;;
 	    esac
@@ -2029,23 +2028,20 @@ zip_main() {
 	    echo " "
 	    echo "1. Zip Oplus images"
 	    echo "2. Zip Compressed Split partitions"
-	    echo "3. Back to main menu"
+	    echo "x. Back to main menu"
 	    
 	    read -p "" choose
 	    case $choose in
 	    
 		1 ) 
-
 	oplus_zip
 	restart_tool;;
 
 		2 ) 
-	   
 	splits_zip
 	restart_tool;;
 
-		3 ) 
-	   
+		x ) 
 	start_tools;;
 
 		* ) zip_main;;
@@ -2061,7 +2057,7 @@ install_req() {
 	    echo "1. Arch"
 	    echo "2. Redhat"
 	    echo "3. Ubuntu"
-	    echo "4. Back to main menu"
+	    echo "x. Back to main menu"
 	    read -p "" choose
 	    case $choose in
 		1 ) 
@@ -2076,7 +2072,7 @@ install_req() {
 		sudo apt install brotli android-sdk-libsparse-utils gawk wget android-tools cpio
 		restart_tool;;
 		
-		4 )
+		x )
 		start_tools;;
 		
 		* ) 
@@ -2086,7 +2082,7 @@ install_req() {
 }
 
 
-repack_ext4() {
+repack_ext4_erofs() {
 	while true; do
 	    banner
 	    echo " "
@@ -2094,18 +2090,17 @@ repack_ext4() {
 	    echo "2. Repack EXT4 image with folder size"
 	    echo "3. Repack EXT4 image with free space"
 	    echo "4. Repack EXT4 image and manually input size"
-	    echo "5. Back to main menu"
+	    echo "5. Repack EROFS image"
+	    echo "x. Back to main menu"
 	    
 	    read -p "" choose
 	    case $choose in
 	    
 		1 ) 
-
 	repack_ext4_img_samesize
 	restart_tool;;
 
 		2 ) 
-	   
 	repack_ext4_img_foldersize
 	restart_tool;;
 	
@@ -2114,14 +2109,15 @@ repack_ext4() {
 	restart_tool;;
 	
 		4 ) 
-	   
 	repack_ext4_img_inputsize
 	restart_tool;;
 	
-		5 ) 
-	   
+		5 )
+	repack_erofs
+	restart_tool;;
+	
+		x ) 
 	start_tools;;
-
 
 		* ) repack_ext4;;
 	    esac
@@ -2132,39 +2128,23 @@ unpack_repack_main() {
 	while true; do
 	    banner
 	    echo " "
-	    echo "1. Repack EXT4 image"
-	    echo "2. Unpack EXT4 image"
-	    echo "3. Repack EROFS image"
-	    echo "4. Unpack EROFS image"
-	    echo "5. Back to main menu"
+	    echo "1. Repack EXT4/EROFS image"
+	    echo "2. Unpack EXT4/EROFS image"
+	    echo "x. Back to main menu"
 	    
 	    read -p "" choose
 	    case $choose in
 	    
 		1 ) 
-
-	repack_ext4
+	repack_ext4_erofs
 	restart_tool;;
 
 		2 ) 
-	   
-	unpack_ext4_img
-	restart_tool;;
-
-		3 ) 
-	   
-	repack_erofs
+	unpack_ext4_erofs_img
 	restart_tool;;
 	
-		4 ) 
-	   
-	unpack_erofs_img
-	restart_tool;;
-	
-		5 ) 
-	   
+		x ) 
 	start_tools;;
-
 
 		* ) unpack_repack_main;;
 	    esac
@@ -2179,35 +2159,29 @@ cd_cv_main() {
 	    echo "2. Convert raw .img to dat.br"
 	    echo "3. Convert raw to sparse"
 	    echo "4. Convert sparse to raw"
-	    echo "5. Back to main menu"
+	    echo "x. Back to main menu"
 	    
 	    read -p "" choose
 	    case $choose in
 	    
 		1 ) 
-
 	datbr_raw
 	restart_tool;;
 
 		2 ) 
-	   
 	raw_datbr
 	restart_tool;;
 
 		3 ) 
-	   
 	raw_sparse
 	restart_tool;;
 	
 		4 )
-		
 	sparse_raw
 	restart_tool;;
 
-		5 ) 
-	   
+		x ) 
 	start_tools;;
-
 
 		* ) cd_cv_main;;
 	    esac
@@ -2220,25 +2194,21 @@ zstd_main() {
 	    echo " "
 	    echo "1. Compress zstd"
 	    echo "2. Decompress zstd"
-	    echo "3. Back to main menu"
+	    echo "x. Back to main menu"
 	    
 	    read -p "" choose
 	    case $choose in
 	    
 		1 ) 
-
 	compress_zstd
 	restart_tool;;
 
 		2 ) 
-	   
 	decompress_zstd
 	restart_tool;;
 
-		3 ) 
-	   
+		x ) 
 	start_tools;;
-
 
 		* ) zstd_main;;
 	    esac
@@ -2272,82 +2242,66 @@ start_tools() {
 	    case $choose in
 	    
 		0 ) 
-
 	install_req
 	restart_tool;;
 
 		1 ) 
-
 	super_main
 	restart_tool;;
 
 		2 ) 
-	   
 	splits_main
 	restart_tool;;
 
 		3 ) 
-		
 	cd_cv_main
 	restart_tool;;
 
 		4 ) 
-		
 	unpack_repack_main
 	restart_tool;;
 
 		5 ) 
-		
 	erofs_ext4_main
 	restart_tool;;
 
 		6 ) 
-		
 	rebuild_ext4_single
 	restart_tool;;
 
 		7 ) 
-		
 	mount_main
 	restart_tool;;
 
 		8 ) 
-		
 	umount_main
 	restart_tool;;
 
 		9 ) 
-		
 	payload
 	restart_tool;;
 
 		10 ) 
-		
 	custom_scripts
 	restart_tool;;
 
 		11 ) 
-		
 	merge_main
 	restart_tool;;
 
 		12 ) 
-		
 	zip_main
 	restart_tool;;
 	
 		13 ) 
-		
 	zstd_main
 	restart_tool;;
 	
 		14 )
-		
 	sparsechunk_converter
 	restart_tool;;
 
 		c ) 
-		
 	clean
 	restart_tool;;
 
