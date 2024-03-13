@@ -186,7 +186,7 @@ convert_erofs_ext4(){
 		echo "Starting conversion..."
 		echo ""
 		echo "- Unpacking $image image (erofs)"
-	        $BIN/erofs.unpack $DIRIN/$image.img $erofsdir > /dev/null 2>&1
+	        $BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x > /dev/null 2>&1
 	        
 		echo "- Rebuilding $image as ext4 image..."
 		foldersize=$(du -s -B1 $erofsdir/$image | awk '{print $1}')
@@ -406,7 +406,7 @@ unpack_erofs() {
 			mkdir $erofsdir
 		fi
 		echo ""
-		$BIN/erofs.unpack $DIRIN/$image.img $erofsdir
+		$BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x
 		echo ""
 		echo -e "${G}Output : $erofsdir/$image ${NC}"
 		rm -rf $DIRIN/$image.img
