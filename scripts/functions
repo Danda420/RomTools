@@ -8,6 +8,7 @@ BIN=$DIRSCRIPTS/bin
 MERGE=$BIN/merge_non_dynamic
 OPLUSMERGE=$BIN/oplus
 DIRSUPER=$DIRROM/super
+ext4dir=$DIRROM/EXT4
 erofsdir=$DIRROM/erofs
 partitions="system vendor odm product system_ext"
 oplus_partitions="my_bigball my_carrier my_company my_engineering my_heytap my_manifest my_preload my_product my_region my_stock"
@@ -102,8 +103,10 @@ clean() {
 file_selector() {
 	selected_dir=$1
 	file_extension=$2
+	message=$3
 	if ls -1 $selected_dir/*$file_extension > /dev/null 2>&1 ; then
 	   ls -1 $selected_dir/*$file_extension | sed 's:.*/::' | awk '{print NR ".", $0}'
+	   nofilesfound=0
 	else
 	   if [[ $file_extension == "" ]]; then
 	      echo -e "${R}No file(s) found in $selected_dir ${NC}"
@@ -112,17 +115,24 @@ file_selector() {
 	      echo -e "${R}No file(s) found in $selected_dir with $file_extension file extension ${NC}"
 	      echo ""
 	   fi
+	   nofilesfound=1
+	fi
+	if [[ $message != "" ]] && [[ $nofilesfound == 0 ]]; then
+	   echo "0. $message"
 	fi
 	echo "x. Back to main menu"
 	read
 	CHOOSE=$REPLY
-	if [[ $CHOOSE == "x" ]]; then
+	if [[ $CHOOSE == "0" ]]; then
+	   clear
+	   FILE=$(ls -1 $selected_dir/*$file_extension | sed 's:.*/::' | sed "s/${file_extension}$//")
+	elif [[ $CHOOSE == "x" ]]; then
 	   start_tools
 	elif [[ $CHOOSE == "" ]]; then
 	   clear
 	   banner
 	   echo ""
-	   file_selector $selected_dir $file_extension
+	   file_selector $selected_dir $file_extension $message
 	else
 	   if [[ $file_extension == "" ]]; then
 	      FILE=$(ls -1 $selected_dir | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
@@ -141,22 +151,31 @@ file_selector() {
 
 extracted_partition_selector() {
 	selected_dir=$1
+	message=$2
 	if ls -1 $selected_dir > /dev/null 2>&1 ; then
 	   ls -1 $selected_dir | grep -v "config" | awk '{print NR ".", $0}'
+	   nofoldersfound=0
 	else
 	   echo -e "${R}No extracted partition(s) found! ${NC}"
 	   echo ""
+	   nofoldersfound=1
+	fi
+	if [[ $message != "" ]] && [[ $nofoldersfound == 0 ]]; then
+	   echo "0. $message"
 	fi
 	echo "x. Back to main menu"
 	read
 	CHOOSE=$REPLY
-	if [[ $CHOOSE == "x" ]]; then
+	if [[ $CHOOSE == "0" ]]; then
+	   clear
+	   FOLDER=$(ls -1 $selected_dir | grep -v "config")
+	elif [[ $CHOOSE == "x" ]]; then
 	   start_tools
 	elif [[ $CHOOSE == "" ]]; then
 	   clear
 	   banner
 	   echo ""
-	   extracted_partition_selector $selected_dir
+	   extracted_partition_selector $selected_dir $message
 	else
 	   FOLDER=$(ls -1 $selected_dir | grep -v "config" | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
 	   clear
@@ -262,15 +281,16 @@ rebuild_ext4_single() {
 		echo " "
 		echo "choose which image you wanted to rebuild"
 		echo " "
-		file_selector $DIRIN ".img"
-		partition=$FILE
-		if [[ $(blkid -o value -s TYPE $DIRIN/$partition.img) == ext4 ]]; then
-		   rebuild_ext4
-		else
-		   echo ""
-		   echo -e "${R}$partition.img fs type is $(blkid -o value -s TYPE $DIRIN/$partition.img), aborting..."
-		   echo -e "${NC}"
-		fi
+		file_selector $DIRIN ".img" "Rebuild all ext4 image shown above"
+		for partition in $FILE; do
+		   if [[ $(blkid -o value -s TYPE $DIRIN/$partition.img) == ext4 ]]; then
+		      rebuild_ext4
+		   else
+		      echo ""
+		      echo -e "${R}$partition.img fs type is $(blkid -o value -s TYPE $DIRIN/$partition.img), aborting..."
+		      echo -e "${NC}"
+		   fi
+		done
 }
 
 datbr_raw() {
@@ -386,7 +406,7 @@ unpack_ext4() {
 		sudo $BIN/imgextractor.py $DIRIN/$image.img $DIRROM/EXT4
 		sudo chown -R $USER:$USER $DIRROM/EXT4
 		echo ""
-		echo -e "${G}Output : $DIRROM/EXT4/$image ${NC}"
+		echo -e "${G}Output : $ext4dir/$image ${NC}"
 		rm -rf $DIRIN/$image.img
 	   else
 	   	echo ""
@@ -422,11 +442,11 @@ unpack_erofs() {
 }
 
 repack_ext4_cmd() {
-	$BIN/checkfsconfig $DIRROM/EXT4/$image $DIRROM/EXT4/config/$image/${image}_fs_config
+	$BIN/checkfsconfig $ext4dir/$image $ext4dir/config/$image/${image}_fs_config
 	if [[ $image == system ]] || [[ $image == system_a ]] || [[ $image == system_b ]]; then
-		sudo $BIN/make_ext4fs -J -T -1 -S "$DIRROM/EXT4/config/$image/${image}_file_contexts" -C "$DIRROM/EXT4/config/$image/${image}_fs_config" -l "$SIZE" -L "/" -a "/$image" "$DIROUT/$image.new.img" "$DIRROM/EXT4/$image"
+		sudo $BIN/make_ext4fs -J -T -1 -S "$ext4dir/config/$image/${image}_file_contexts" -C "$ext4dir/config/$image/${image}_fs_config" -l "$SIZE" -L "/" -a "/$image" "$DIROUT/$image.new.img" "$ext4dir/$image"
 	else
-		sudo $BIN/make_ext4fs -J -T -1 -S "$DIRROM/EXT4/config/$image/${image}_file_contexts" -C "$DIRROM/EXT4/config/$image/${image}_fs_config" -l "$SIZE" -L "$image" -a "/$image" "$DIROUT/$image.new.img" "$DIRROM/EXT4/$image"
+		sudo $BIN/make_ext4fs -J -T -1 -S "$ext4dir/config/$image/${image}_file_contexts" -C "$ext4dir/config/$image/${image}_fs_config" -l "$SIZE" -L "$image" -a "/$image" "$DIROUT/$image.new.img" "$ext4dir/$image"
 	fi
 }
 
@@ -456,17 +476,18 @@ unpack_ext4_erofs_img() {
 	echo " "
 	echo "choose which image you wanted to unpack"
 	echo " "
-	file_selector $DIRIN ".img"
-	image=$FILE
-	if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
-	    unpack_ext4
-	elif [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
-	    unpack_erofs
-	else
-	    echo ""
-	    echo -e "${R}$image.img fs type is not ext4 or erofs!"
-	    echo -e "${NC}"
-	fi
+	file_selector $DIRIN ".img" "Unpack all .img shown above"
+	for image in $FILE; do
+	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
+	       unpack_ext4
+	   elif [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
+	       unpack_erofs
+	   else
+	       echo ""
+	       echo -e "${R}$image.img fs type is not ext4 or erofs!"
+	       echo -e "${NC}"
+	   fi
+	done
 }
 
 repack_ext4_img_foldersize() {
@@ -475,16 +496,16 @@ repack_ext4_img_foldersize() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	extracted_partition_selector $DIRROM/EXT4
-	image=$FOLDER
-	if [[ -d $DIRROM/EXT4/$image ]]; then
+	extracted_partition_selector $DIRROM/EXT4 "Repack all images shown"
+	for image in $FOLDER; do
+	   if [[ -d $ext4dir/$image ]]; then
 		echo ""
 		echo "- Repacking $image..."
 		echo ""
-		foldersize=$(sudo du -s -B1 $DIRROM/EXT4/$image | awk '{print $1}')
+		foldersize=$(sudo du -s -B1 $ext4dir/$image | awk '{print $1}')
 		SIZE=$(($foldersize + $foldersize * 1/10))
 		if (( $SIZE < 1474560 )); then
-		    SIZE=`sudo du -sk $DIRROM/EXT4/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+		    SIZE=`sudo du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
 		repack_ext4_cmd
 		DIRIMG_RESIZE=$DIROUT/$image.new.img
@@ -499,7 +520,8 @@ repack_ext4_img_foldersize() {
 		   echo -e "${R}Repack Failed!"
 		   echo -e "${NC}"
 		fi
-	fi
+	   fi
+	done
 }
 
 repack_ext4_img_freespace() {
@@ -510,7 +532,7 @@ repack_ext4_img_freespace() {
 	echo " "
 	extracted_partition_selector $DIRROM/EXT4
 	image=$FOLDER
-	if [[ -d $DIRROM/EXT4/$image ]]; then
+	if [[ -d $ext4dir/$image ]]; then
 		echo " "
 		echo "Input $image free space in mb (megabytes) :"
 		read
@@ -518,10 +540,10 @@ repack_ext4_img_freespace() {
 		echo ""
 		echo "- Repacking $image..."
 		echo ""
-		foldersize=$(sudo du -s -B1 $DIRROM/EXT4/$image | awk '{print $1}')
+		foldersize=$(sudo du -s -B1 $ext4dir/$image | awk '{print $1}')
 		SIZE=$(($foldersize + $foldersize * 1/10))
 		if (( $SIZE < 1474560 )); then
-		    SIZE=`sudo du -sk $DIRROM/EXT4/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+		    SIZE=`sudo du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
 		repack_ext4_cmd
 		DIRIMG_RESIZE=$DIROUT/$image.new.img
@@ -545,15 +567,15 @@ repack_ext4_img_samesize() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	extracted_partition_selector $DIRROM/EXT4
-	image=$FOLDER
-	if [[ -d $DIRROM/EXT4/$image ]]; then
+	extracted_partition_selector $DIRROM/EXT4 "Repack all images shown"
+	for image in $FOLDER; do
+	   if [[ -d $ext4dir/$image ]]; then
 		echo ""
 		echo "- Repacking $image..."
 		echo ""
-		SIZE=$(cat $DIRROM/EXT4/config/$image/${image}_size.txt)
+		SIZE=$(cat $ext4dir/config/$image/${image}_size.txt)
 		if (( $SIZE < 1474560 )); then
-		    SIZE=`sudo du -sk $DIRROM/EXT4/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+		    SIZE=`sudo du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
 		repack_ext4_cmd
 		echo ""
@@ -566,7 +588,8 @@ repack_ext4_img_samesize() {
 		   echo -e "${R}Repack Failed!"
 		   echo -e "${NC}"
 		fi
-	fi
+	   fi
+	done
 }
 
 repack_ext4_img_inputsize() {
@@ -577,13 +600,13 @@ repack_ext4_img_inputsize() {
 	echo " "
 	extracted_partition_selector $DIRROM/EXT4
 	image=$FOLDER
-	if [[ -d $DIRROM/EXT4/$image ]]; then
+	if [[ -d $ext4dir/$image ]]; then
 		echo " "
 		echo "Input partition size in bytes :"
 		read
 		SIZE=$REPLY
 		if (( $SIZE < 1474560 )); then
-		    SIZE=`sudo du -sk $DIRROM/EXT4/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+		    SIZE=`sudo du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
 		echo ""
 		echo "- Repacking $image..."
@@ -706,69 +729,23 @@ repack_erofs() {
 }
 
 erofs_ext4_main() {
-	erofs_ext4_normal() {
-		clear
-		banner
-		echo " "
-		echo "choose which image you wanted to convert to ext4"
-		echo " "
-		file_selector $DIRIN ".img"
-		image=$FILE
-		if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
-		   convert_erofs_ext4
-		   rm -rf $erofsdir
-		else
-		   echo ""
-		   echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
-		   echo -e "${NC}"
-		fi
-	}
-
-	erofs_ext4_oplus() {
-		clear
-		for image in $oplus_partitions
-		do
-		  convert_erofs_ext4
-		  rm -rf $erofsdir
-		done
-		if [[ $(blkid -o value -s TYPE $DIRIN/product.img) == erofs ]]; then
-		    image=product
-		    convert_erofs_ext4
-		else
-		    image=product
-		    rebuild_ext4
-		fi
-		image=system_ext
-		convert_erofs_ext4
-		image=system
-		convert_erofs_ext4
-		rm -rf $erofsdir
-	}
-
-	while true; do
-	    banner
-	    echo " "
-	    echo "1. Convert erofs images to ext4"
-	    echo "2. Convert OPlus my_xxx,system,system_ext partitions to ext4"
-	    echo "x. Back to main menu"
-	    
-	    read -p "" choose
-	    case $choose in
-	    
-		1 ) 
-	erofs_ext4_normal
-	restart_tool;;
-
-		2 ) 
-	erofs_ext4_oplus
-	restart_tool;;
-
-		x ) 
-	start_tools;;
-
-		* ) erofs_ext4_main;;
-	    esac
+	clear
+	banner
+	echo " "
+	echo "choose which image you wanted to convert to ext4"
+	echo " "
+	file_selector $DIRIN ".img" "Convert all image shown above to ext4"
+	for image in $FILE; do
+	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
+	      convert_erofs_ext4
+	      rm -rf $erofsdir
+	   else
+	      echo ""
+	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
+	      echo -e "${NC}"
+	   fi
 	done
+	restart_tool
 }
 
 sparsechunk_converter() {
