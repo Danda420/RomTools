@@ -2038,15 +2038,15 @@ install_req() {
 	    read -p "" choose
 	    case $choose in
 		1 ) 
-		sudo pacman -Sy --noconfirm android-tools gawk erofs-utils brotli cpio
+		sudo pacman -Sy --noconfirm android-tools gawk erofs-utils brotli cpio zstd
 		restart_tool;;
 		
 		2 )
-		sudo dnf install android-tools erofs-utils gawk cpio
+		sudo dnf install android-tools erofs-utils gawk cpio zstd
 		restart_tool;;
 		
 		3 )
-		sudo apt install brotli android-sdk-libsparse-utils gawk wget android-tools cpio
+		sudo apt install brotli android-sdk-libsparse-utils gawk wget cpio zstd
 		restart_tool;;
 		
 		x )

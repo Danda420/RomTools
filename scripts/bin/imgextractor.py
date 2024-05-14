@@ -247,7 +247,7 @@ class Extractor(object):
                         continue
                     wdone = None
                     file_target = self.EXTRACT_DIR + entry_inode_path.replace('/', os.sep).replace(' ','_')
-                    if re.search('/'+self.__file_name(self.FileName)+'/system/build\.prop', file_target): #30.11.2020
+                    if re.search('/'+self.__file_name(self.FileName)+r'/system/build\.prop', file_target): #30.11.2020
                       self.isSAR = True #30.11.2020
                     if os.name == 'nt':
                         if entry_name.endswith('/'):
@@ -527,7 +527,7 @@ class Extractor(object):
             for file_name, inode_idx, file_type in root.open_dir():
                 dirlist.append(file_name)
             #dirr = self.__file_name(os.path.basename(self.FileName)) #11.05.18
-            dirr = re.sub('(\.)','\\.' , self.FileName)
+            dirr = re.sub(r'(\.)',r'\\.' , self.FileName)
             setattr(self, 'DIR', dirr)
             scan_dir(root)
             self.fsconfig.sort()
