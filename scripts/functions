@@ -216,9 +216,8 @@ convert_erofs_ext4(){
 		repack_erofs_as_ext4_cmd > /dev/null 2>&1
 		DIRIMG_RESIZE=$DIROUT/$image.img
 		resize_img smallest
-		echo "- Done"
 		echo ""
-		if [[ -f $DIROUT/$image.img ]]; then
+		if [[ -f $DIROUT/$image.img ]] && [[ $(ls -l $DIROUT/$image.img | awk '{print $5}') != "0" ]]; then
 		   rm -rf $DIRIN/$image.img
 		   echo -e "${G}Conversion done..."
 		   echo -e "Output : $DIROUT/$image.img ${NC}"
@@ -257,9 +256,8 @@ rebuild_ext4(){
 		DIRIMG_RESIZE=$DIROUT/$partition.img
 		resize_img smallest
 		sudo rm -rf $DIRROM/rebuildimg
-		echo "- Done!"
 		echo ""
-		if [[ $(ls -l $DIROUT/$partition.img | awk '{print $5}') != "0" ]]; then
+		if [[ -f $DIROUT/$partition.img ]] && [[ $(ls -l $DIROUT/$partition.img | awk '{print $5}') != "0" ]]; then
 		   rm -rf $DIRIN/$partition.img
 		   echo -e "${G}Rebuild done..."
 		   echo -e "Output : $DIROUT/$partition.img ${NC}"
@@ -314,10 +312,9 @@ datbr_raw() {
 		echo " "
 		echo "Cleaning input folder..."
 
-		rm -rf $DIRIN/$imgname.*
-
 		echo " "
-		if [[ -f $DIROUT/$imgname.img ]]; then
+		if [[ -f $DIROUT/$imgname.img ]] && [[ $(ls -l $DIROUT/$imgname.img | awk '{print $5}') != "0" ]]; then
+		   rm -rf $DIRIN/$imgname.*
 		   echo -e "${G}Done! Output : $DIROUT/$imgname.img ${NC}"
 		else
 		   echo -e "${R}Decompression Failed!"
@@ -356,7 +353,7 @@ compress_zstd() {
 		zstd -${ZSTDLVL} $DIRIN/$filename -o $DIROUT/${filename}$ZSTDSUFFIX
 		rm -rf $DIRIN/$filename
 		echo " "
-		if [[ -f $DIROUT/${filename}$ZSTDSUFFIX ]]; then
+		if [[ -f $DIROUT/${filename}$ZSTDSUFFIX ]] && [[ $(ls -l $DIROUT/${filename}$ZSTDSUFFIX | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}Done! Output : $DIROUT/${filename}$ZSTDSUFFIX ${NC}"
 		else
 		   echo -e "${R}Compression Failed!"
@@ -387,7 +384,7 @@ decompress_zstd() {
 		zstd -d $DIRIN/$filename.zst -o $DIROUT/$outputname
 		rm -rf $DIRIN/$filename.*
 		echo " "
-		if [[ -f $DIROUT/$outputname ]]; then
+		if [[ -f $DIROUT/$outputname ]] && [[ $(ls -l $DIROUT/$outputname | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}Done! Output : $DIROUT/$outputname ${NC}"
 		else
 		   echo -e "${R}Decompression Failed!"
@@ -511,9 +508,7 @@ repack_ext4_img_foldersize() {
 		DIRIMG_RESIZE=$DIROUT/$image.new.img
 		resize_img smallest
 		echo ""
-		echo "- Done!"
-		echo ""
-		if [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
+		if [[ -f $DIROUT/$image.new.img ]] && [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}Repack done..."
 		   echo -e "Output : $DIROUT/$image.new.img ${NC}"
 		else
@@ -549,9 +544,7 @@ repack_ext4_img_freespace() {
 		DIRIMG_RESIZE=$DIROUT/$image.new.img
 		resize_img freespace
 		echo ""
-		echo "- Done!"
-		echo ""
-		if [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
+		if [[ -f $DIROUT/$image.new.img ]] && [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}Repack done..."
 		   echo -e "Output : $DIROUT/$image.new.img ${NC}"
 		else
@@ -579,9 +572,7 @@ repack_ext4_img_samesize() {
 		fi
 		repack_ext4_cmd
 		echo ""
-		echo "- Done!"
-		echo ""
-		if [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
+		if [[ -f $DIROUT/$image.new.img ]] && [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}Repack done..."
 		   echo -e "Output : $DIROUT/$image.new.img ${NC}"
 		else
@@ -613,9 +604,7 @@ repack_ext4_img_inputsize() {
 		echo ""
 		repack_ext4_cmd
 		echo ""
-		echo "- Done!"
-		echo ""
-		if [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
+		if [[ -f $DIROUT/$image.new.img ]] && [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}Repack done..."
 		   echo -e "Output : $DIROUT/$image.new.img ${NC}"
 		else
@@ -716,9 +705,7 @@ repack_erofs() {
 		echo ""
 		repack_erofs_cmd
 		echo ""
-		echo "- Done!"
-		echo ""
-		if [[ $(ls -l $DIROUT/$image.erofs.img | awk '{print $5}') != "0" ]]; then
+		if [[ -f $DIROUT/$image.erofs.img ]] && [[ $(ls -l $DIROUT/$image.erofs.img | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}Repack done..."
 		   echo -e "Output : $DIROUT/$image.erofs.img ${NC}"
 		else
@@ -1000,10 +987,9 @@ raw_sparse() {
 		echo "Converting raw image to sparse..."
 
 		img2simg $DIRIN/$imgname.img $DIROUT/$imgname.sparse.img >> /dev/null 2>&1
-		rm -rf $DIRIN/$imgname.img
-
 		echo " "
-		if [[ -f $DIROUT/$imgname.sparse.img ]]; then
+		if [[ -f $DIROUT/$imgname.sparse.img  ]] && [[ $(ls -l $DIROUT/$imgname.sparse.img | awk '{print $5}') != "0" ]]; then
+		   rm -rf $DIRIN/$imgname.img
 		   echo -e "${G}Done! Output : $DIROUT/$imgname.sparse.img ${NC}"
 		else
 		   echo -e "${R}Conversion Failed!"
@@ -1434,9 +1420,9 @@ sparse_raw() {
 		echo " "
 		echo "Converting sparse to raw image..."
 		simg2img $DIRIN/$imgname.img $DIROUT/$imgname.img >> /dev/null 2>&1
-		rm -rf $DIRIN/$imgname.img
 		echo " "
-		if [[ $(ls -l $DIROUT/$imgname.img | awk '{print $5}') != "0" ]]; then
+		if [[ -f $DIROUT/$imgname.img ]] && [[ $(ls -l $DIROUT/$imgname.img | awk '{print $5}') != "0" ]]; then
+		   rm -rf $DIRIN/$imgname.img
 		   echo -e "${G}Done! Output : $DIROUT/$imgname.img ${NC}"
 		else
 		   echo -e "${R}Decompression Failed!"
@@ -1729,7 +1715,7 @@ super_r() {
 	   "raw" )
 		echo " "
 		mv $DIRIN/$imgname.img $DIROUT/$imgname.img
-		if [[ -f $DIROUT/$imgname.img ]]; then
+		if [[ -f $DIROUT/$imgname.img ]] && [[ $(ls -l $DIROUT/$imgname.img | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}super build done! Output : $DIROUT/$imgname.img ${NC}"
 		else
 		   echo -e "${R}Build Failed!"
@@ -1741,9 +1727,9 @@ super_r() {
 		echo " "
 		echo "Converting raw $imgname.img to sparse..."
 		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
-		rm -rf $DIRIN/$imgname.img
-		mv $DIRIN/$imgname.sparse.img $DIROUT/$imgname.sparse.img
-		if [[ -f $DIROUT/$imgname.sparse.img ]]; then
+		if [[ -f $DIRIN/$imgname.sparse.img ]] && [[ $(ls -l $DIRIN/$imgname.sparse.img | awk '{print $5}') != "0" ]]; then
+		   rm -rf $DIRIN/$imgname.img
+		   mv $DIRIN/$imgname.sparse.img $DIROUT/$imgname.sparse.img
 		   echo -e "${G}super build done! Output : $DIROUT/$imgname.sparse.img ${NC}"
 		else
 		   echo -e "${R}Build Failed!"
@@ -1764,8 +1750,8 @@ super_r() {
 		mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
 		mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
 		mv $DIRIN/system.transfer.list $DIROUT/$imgname.transfer.list
-		rm -rf $DIRIN/$imgname.*
-		if [[ -f $DIROUT/$imgname.new.dat ]]; then
+		if [[ -f $DIROUT/$imgname.new.dat ]] && [[ $(ls -l $DIROUT/$imgname.new.dat | awk '{print $5}') != "0" ]]; then
+		   rm -rf $DIRIN/$imgname.*
 		   echo -e "${G}super build done! Output : $DIROUT/$imgname.new.dat ${NC}"
 		else
 		   echo -e "${R}Build Failed!"
@@ -1792,10 +1778,8 @@ super_r() {
 		echo "Compressing to $imgname.new.dat.br..."
 		brotli -q $COMPLVL $DIROUT/$imgname.new.dat
 		echo " "
-		echo "cleaning..."
-		echo " "
-		rm -rf $DIROUT/$imgname.new.dat
-		if [[ -f $DIROUT/$imgname.new.dat.br ]]; then
+		if [[ -f $DIROUT/$imgname.new.dat.br ]] && [[ $(ls -l $DIROUT/$imgname.new.dat.br | awk '{print $5}') != "0" ]]; then
+		   rm -rf $DIROUT/$imgname.new.dat
 		   echo -e "${G}super build done! Output : $DIROUT/$imgname.new.dat.br ${NC}"
 		else
 		   echo -e "${R}Build Failed!"
@@ -1807,9 +1791,9 @@ super_r() {
 		echo " "
 		echo "Compressing $imgname.img to ${imgname}$ZSTDSUFFIX (zstd)"
 		zstd -${ZSTDLVL} $DIRIN/$imgname.img -o $DIROUT/${imgname}$ZSTDSUFFIX
-		rm -rf $DIRIN/$imgname.img
 		echo " "
-		if [[ -f $DIROUT/${imgname}$ZSTDSUFFIX ]]; then
+		if [[ -f $DIROUT/${imgname}$ZSTDSUFFIX ]] && [[ $(ls -l $DIROUT/${imgname}$ZSTDSUFFIX | awk '{print $5}') != "0" ]]; then
+		   rm -rf $DIRIN/$imgname.img
 		   echo -e "${G}super build done! Output : $DIROUT/${imgname}$ZSTDSUFFIX ${NC}"
 		else
 		   echo -e "${R}Build Failed!"
