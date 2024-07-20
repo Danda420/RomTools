@@ -134,6 +134,12 @@ file_selector() {
 	   echo ""
 	   file_selector $selected_dir $file_extension $message
 	else
+	   if [[ $(ls -1 $selected_dir | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)") == "" ]]; then
+	      clear
+	      banner
+	      echo ""
+	      file_selector $selected_dir $file_extension $message
+	   fi
 	   if [[ $file_extension == "" ]]; then
 	      FILE=$(ls -1 $selected_dir | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
 	      clear
@@ -178,8 +184,15 @@ extracted_partition_selector() {
 	   extracted_partition_selector $selected_dir $message
 	else
 	   FOLDER=$(ls -1 $selected_dir | grep -v "config" | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
-	   clear
-	   echo "Selected: $FOLDER"
+	   if [[ $FOLDER != "" ]]; then
+	      clear
+	      echo "Selected: $FOLDER"
+	   else
+	      clear
+	      banner
+	      echo ""
+	      extracted_partition_selector $selected_dir $message
+	   fi
 	fi
 }
 
@@ -417,25 +430,14 @@ unpack_ext4() {
 }
 
 unpack_erofs() {
-	if [[ -f $DIRIN/$image.img ]]; then
-	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
-		if [[ ! -d $erofsdir ]]; then
-			mkdir $erofsdir
-		fi
-		echo ""
-		$BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x
-		echo ""
-		echo -e "${G}Output : $erofsdir/$image ${NC}"
-		rm -rf $DIRIN/$image.img
-	   else
-	   	echo ""
-		echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
-		echo -e "${NC}"
-	   fi
-	else
-		echo -e "${R}Error: no image named $image.img in $DIRIN"
-		echo -e "${NC}"
+	if [[ ! -d $erofsdir ]]; then
+	   mkdir $erofsdir
 	fi
+	echo ""
+	$BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x
+	echo ""
+	echo -e "${G}Output : $erofsdir/$image ${NC}"
+	rm -rf $DIRIN/$image.img
 }
 
 repack_ext4_cmd() {
