@@ -212,6 +212,12 @@ resize_img(){
 	fi
 }
 
+patch_merge_fsconf_contexts() {
+	image=$1
+	sed -i "s#${image}/#system/${image}/#g" $2
+	sed -i "s#/${image}/#/system/${image}/#g" $3
+}
+
 convert_erofs_ext4(){
 	if [[ -f $DIRIN/$image.img ]]; then
 		echo " "
@@ -773,8 +779,7 @@ merge_main() {
 		     	echo ""
 			gawk -i inplace 'NR>1' $DIRIN/${partition}_file_contexts
 
-			python3 $OPLUSMERGE/$partition.py $DIRIN/${partition}_file_contexts
-			python3 $OPLUSMERGE/$partition.py $DIRIN/${partition}_fs_config
+			patch_merge_fsconf_contexts $partition $DIRIN/${partition}_fs_config $DIRIN/${partition}_file_contexts
 
 			cat $DIRIN/${partition}_file_contexts >> $DIRIN/system_file_contexts
 			cat $DIRIN/${partition}_fs_config >> $DIRIN/system_fs_config
@@ -808,13 +813,9 @@ merge_main() {
 		if [[ -f $DIRIN/system_file_contexts ]] && [[ -f $DIRIN/system_fs_config ]] && [[ -f $DIRIN/system_ext_file_contexts ]] && [[ -f $DIRIN/system_ext_fs_config ]] && [[ -f $DIRIN/product_file_contexts ]] && [[ -f $DIRIN/product_fs_config ]]; then
 			gawk -i inplace 'NR>1' $DIRIN/system_ext_file_contexts
 			gawk -i inplace 'NR>1' $DIRIN/product_file_contexts
-
-			python3 $MERGE/system_ext.py $DIRIN/system_ext_file_contexts
-			python3 $MERGE/system_ext.py $DIRIN/system_ext_fs_config
-
-			python3 $MERGE/product.py $DIRIN/product_file_contexts
-			python3 $MERGE/product.py $DIRIN/product_fs_config
-
+			
+			patch_merge_fsconf_contexts system_ext $DIRIN/system_ext_fs_config $DIRIN/system_ext_file_contexts
+			patch_merge_fsconf_contexts product $DIRIN/product_fs_config $DIRIN/product_file_contexts
 
 			cat $DIRIN/system_ext_file_contexts >> $DIRIN/system_file_contexts
 			cat $DIRIN/system_ext_fs_config >> $DIRIN/system_fs_config
