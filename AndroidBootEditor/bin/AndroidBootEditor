@@ -168,6 +168,13 @@ cleanup() {
 }
 
 start_abie() {
+	if [[ ! -f /bin/booteditor ]]; then
+	   echo "#!/bin/bash" > $bin/booteditor
+	   echo "cd $DIRABIE" >> $bin/booteditor
+	   echo "$DIRABIE/start" >> $bin/booteditor
+	   sudo mv $bin/booteditor /bin/booteditor
+	   sudo chmod 755 /bin/booteditor
+	fi
 	while true; do
 	    banner
 	    echo " "
