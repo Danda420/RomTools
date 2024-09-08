@@ -126,9 +126,9 @@ repack_img() {
 		mv $bin/build $DIRABIE/$imgname
 		mv $bin/$img $DIRABIE/
 		if [[ -f $bin/$img.signed ]]; then
-			mv $bin/$img.signed $DIRABIE/
+			mv $bin/$img.signed $DIRABIE/$imgname.signed.img
 		elif [[ -f $bin/$img.clear ]]; then
-		   mv $bin/$img.clear $DIRABIE/
+		   mv $bin/$img.clear $DIRABIE/$imgname.unsigned.img
 		fi
 		if [[ $img != "vbmeta.img" ]] && [[ -f $bin/vbmeta.img ]]; then
 		   mv $bin/vbmeta.img $DIRABIE/
