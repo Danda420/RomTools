@@ -2014,26 +2014,45 @@ zip_main() {
 }
 
 install_req() {
+	install_dtc() {
+		curl https://android.googlesource.com/platform/prebuilts/misc/+archive/refs/heads/android11-release/linux-x86/dtc.tar.gz -o $DIRTOOLS/dtc.tar.gz
+		tar -xf $DIRTOOLS/dtc.tar.gz
+		rm -rf $DIRTOOLS/PREBUILT
+		chmod 777 $DIRTOOLS/dtc
+		if [[ -f /usr/bin/dtc ]]; then
+		   sudo rm -rf /usr/bin/dtc
+		fi
+		sudo mv $DIRTOOLS/dtc /usr/bin/dtc
+		rm -rf $DIRTOOLS/dtc.tar.gz
+	}
 	while true; do
 	    banner
 	    echo ""
 	    echo "Choose your linux distribution base"
 	    echo "1. Arch"
 	    echo "2. Redhat"
-	    echo "3. Ubuntu"
+	    echo "3. Debian"
 	    echo "x. Back to main menu"
 	    read -p "" choose
 	    case $choose in
 		1 ) 
-		sudo pacman -Sy --noconfirm android-tools gawk erofs-utils brotli cpio zstd
+		sudo pacman -Sy --noconfirm android-tools erofs-utils gawk brotli cpio zstd
+		install_dtc
 		restart_tool;;
 		
 		2 )
-		sudo dnf install android-tools erofs-utils gawk cpio zstd
+		sudo dnf install android-tools erofs-utils gawk brotli cpio zstd
+		install_dtc
 		restart_tool;;
 		
 		3 )
-		sudo apt install brotli android-sdk-libsparse-utils gawk wget cpio zstd
+		sudo apt install android-sdk-libsparse-utils erofs-utils gawk brotli cpio zstd
+		install_dtc
+		git clone https://github.com/Danda420/RomTools -b ubuntu-moment $DIRSCRIPTS/ubuntu-bins
+		rm -rf $DIRSCRIPTS/ubuntu-bins/.git
+		chmod 755 $DIRSCRIPTS/ubuntu-bins/*
+		sudo mv $DIRSCRIPTS/ubuntu-bins/* /usr/bin/
+		rm -rf $DIRSCRIPTS/ubuntu-bins
 		restart_tool;;
 		
 		x )

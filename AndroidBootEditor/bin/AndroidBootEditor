@@ -1,0 +1,155 @@
+#!/bin/bash
+
+DIRABIE=$PWD
+bin=$DIRABIE/bin
+G='\033[1;32m'
+R='\033[1;31m'
+NC='\033[0m'
+LC='\033[1;36m'
+
+banner() {
+	clear
+	echo -e "${LC}========================================="
+	echo -e "${LC}        Android Boot Image Editor        "
+	echo -e "${LC}=========================================${NC}"
+}
+
+restart_abie() {
+	echo " "
+	while true; do
+	   echo "start Android Boot Image Editor again? (y/n)"
+	   read -p "" yn
+	   case $yn in
+		[Yy]* ) start_abie;;
+		[Nn]* ) 
+		clear
+		exit;;   
+		* ) echo "please choose yes or no";;
+	    esac
+	done
+}
+
+file_selector() {
+	selected_dir=$1
+	file_extension=$2
+	if ls -1 $selected_dir/*$file_extension > /dev/null 2>&1 ; then
+	   ls -1 $selected_dir/*$file_extension | sed 's:.*/::' | awk '{print NR ".", $0}'
+	else
+	   if [[ $file_extension == "" ]]; then
+	      echo -e "${R}No file(s) found in $selected_dir ${NC}"
+	      echo ""
+	   else
+	      echo -e "${R}No file(s) found in $selected_dir with $file_extension file extension ${NC}"
+	      echo ""
+	   fi
+	fi
+	echo "x. Back to main menu"
+	read
+	CHOOSE=$REPLY
+	if [[ $CHOOSE == "x" ]]; then
+	   start_abie
+	elif [[ $CHOOSE == "" ]]; then
+	   clear
+	   banner
+	   echo ""
+	   file_selector $selected_dir $file_extension
+	else
+	   if [[ $file_extension == "" ]]; then
+	      FILE=$(ls -1 $selected_dir | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
+	      clear
+	      echo "Selected: $FILE"
+	   else
+	      file1=$(ls -1 $selected_dir/*$file_extension | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}' | sed "s/$file_extension//")
+	      file2=${file1%/}
+	      file3=${file2##*/}
+	      FILE=$file3
+	      clear
+	      echo "Selected: ${FILE}${file_extension}"
+	   fi
+	fi
+}
+
+repack_img() {
+	clear
+	img=$(cat $bin/unpacked-img.txt)
+	mv $DIRABIE/$img $bin/
+	mv $DIRABIE/build $bin/
+	cd $bin
+	java -jar bbootimg/bbootimg.jar pack
+	cd $DIRABIE
+	mv $bin/build $DIRABIE/
+	mv $bin/$img $DIRABIE/
+	if [[ -f $bin/$img.signed ]]; then
+	    mv $bin/$img.signed $DIRABIE/
+	elif [[ -f $bin/$img.clear ]]; then
+	   mv $bin/$img.clear $DIRABIE/
+	fi
+	if [[ $img != "vbmeta.img" ]] && [[ -f $bin/vbmeta.img ]]; then
+	   mv $bin/vbmeta.img $DIRABIE/
+	fi
+}
+
+unpack_img() {
+	clear
+	banner
+	echo " "
+	echo "choose which image you wanted to unpack"
+	echo " "
+	file_selector $DIRABIE ".img"
+	img=$FILE.img
+	if [[ $img != "vbmeta.img" ]] && [[ -f $DIRABIE/vbmeta.img ]]; then
+	   mv $DIRABIE/vbmeta.img $bin/
+	fi
+	echo "$img" > $bin/unpacked-img.txt
+	cd $bin/
+	mv $DIRABIE/$img $bin/
+	java -jar $bin/bbootimg/bbootimg.jar unpack
+	mv $bin/$img $DIRABIE/
+	mv $bin/build $DIRABIE/
+	cd $DIRABIE
+}
+
+cleanup() {
+	clear
+	img=$(cat $bin/unpacked-img.txt)
+	rm -rf $DIRABIE/build
+	rm -rf $bin/unpacked-img.txt
+	rm -rf $bin/uiderrors
+	rm -rf $bin/*.img*
+	find . -name "__pycache__" -type d -exec rm -rf {} +
+}
+
+start_abie() {
+	while true; do
+	    banner
+	    echo " "
+	    echo "1. Repack Image"
+	    echo "2. Unpack Image"
+	    echo "c. Clean up"
+	    echo "x. Exit tool"
+	    
+	    read -p "" choose
+	    case $choose in
+	    
+		1 ) 
+
+	repack_img
+	restart_abie;;
+
+		2 ) 
+	   
+	unpack_img
+	restart_abie;;
+
+		c ) 
+		
+	cleanup
+	restart_abie;;
+
+		x )  
+	clear	
+	exit;;
+		* ) start_abie;;
+	    esac
+	done
+}
