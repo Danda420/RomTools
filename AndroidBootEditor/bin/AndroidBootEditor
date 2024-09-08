@@ -1,6 +1,5 @@
 #!/bin/bash
-
-DIRABIE=$PWD
+DIRABIE=$(dirname $(dirname $(realpath ${BASH_SOURCE[0]})))
 bin=$DIRABIE/bin
 G='\033[1;32m'
 R='\033[1;31m'
@@ -69,24 +68,72 @@ file_selector() {
 	fi
 }
 
+extracted_boot_selector() {
+	selected_dir=$1
+	message=$2
+	if ls -l $selected_dir > /dev/null 2>&1 ; then
+	   ls -l $selected_dir | grep '^d' | grep -v "bin" | awk '{print $9}' | awk '{print NR ".", $0}'
+	   nofoldersfound=0
+	else
+	   echo -e "${R}No extracted partition(s) found! ${NC}"
+	   echo ""
+	   nofoldersfound=1
+	fi
+	if [[ $message != "" ]] && [[ $nofoldersfound == 0 ]]; then
+	   echo "0. $message"
+	fi
+	echo "x. Back to main menu"
+	read
+	CHOOSE=$REPLY
+	if [[ $CHOOSE == "0" ]]; then
+	   clear
+	   FOLDER=$(ls -l $selected_dir | grep '^d' | grep -v "bin" | awk '{print $9}')
+	elif [[ $CHOOSE == "x" ]]; then
+	   start_abie
+	elif [[ $CHOOSE == "" ]]; then
+	   clear
+	   banner
+	   echo ""
+	   extracted_boot_selector $selected_dir $message
+	else
+	   FOLDER=$(ls -l $selected_dir | grep '^d' | grep -v "bin" | awk '{print $9}' | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
+	   if [[ $FOLDER != "" ]]; then
+	      clear
+	      echo "Selected: $FOLDER"
+	   else
+	      clear
+	      banner
+	      echo ""
+	      extracted_boot_selector $selected_dir $message
+	   fi
+	fi
+}
+
 repack_img() {
 	clear
-	img=$(cat $bin/unpacked-img.txt)
-	mv $DIRABIE/$img $bin/
-	mv $DIRABIE/build $bin/
-	cd $bin
-	java -jar bbootimg/bbootimg.jar pack
-	cd $DIRABIE
-	mv $bin/build $DIRABIE/
-	mv $bin/$img $DIRABIE/
-	if [[ -f $bin/$img.signed ]]; then
-	    mv $bin/$img.signed $DIRABIE/
-	elif [[ -f $bin/$img.clear ]]; then
-	   mv $bin/$img.clear $DIRABIE/
-	fi
-	if [[ $img != "vbmeta.img" ]] && [[ -f $bin/vbmeta.img ]]; then
-	   mv $bin/vbmeta.img $DIRABIE/
-	fi
+	banner
+	echo " "
+	echo "choose which image you wanted to repack"
+	echo " "
+	extracted_boot_selector $DIRABIE "Repack all images shown"
+	for imgname in $FOLDER; do
+		img=$imgname.img
+		mv $DIRABIE/$img $bin/
+		mv $DIRABIE/$imgname $bin/build
+		cd $bin
+		java -jar $bin/bbootimg/bbootimg.jar pack
+		cd $DIRABIE
+		mv $bin/build $DIRABIE/$imgname
+		mv $bin/$img $DIRABIE/
+		if [[ -f $bin/$img.signed ]]; then
+			mv $bin/$img.signed $DIRABIE/
+		elif [[ -f $bin/$img.clear ]]; then
+		   mv $bin/$img.clear $DIRABIE/
+		fi
+		if [[ $img != "vbmeta.img" ]] && [[ -f $bin/vbmeta.img ]]; then
+		   mv $bin/vbmeta.img $DIRABIE/
+		fi
+	done
 }
 
 unpack_img() {
@@ -97,23 +144,24 @@ unpack_img() {
 	echo " "
 	file_selector $DIRABIE ".img"
 	img=$FILE.img
+	extracted_folder=$FILE
 	if [[ $img != "vbmeta.img" ]] && [[ -f $DIRABIE/vbmeta.img ]]; then
 	   mv $DIRABIE/vbmeta.img $bin/
 	fi
-	echo "$img" > $bin/unpacked-img.txt
 	cd $bin/
 	mv $DIRABIE/$img $bin/
 	java -jar $bin/bbootimg/bbootimg.jar unpack
 	mv $bin/$img $DIRABIE/
-	mv $bin/build $DIRABIE/
+	mv $bin/build $DIRABIE/$extracted_folder
 	cd $DIRABIE
 }
 
 cleanup() {
 	clear
-	img=$(cat $bin/unpacked-img.txt)
-	rm -rf $DIRABIE/build
-	rm -rf $bin/unpacked-img.txt
+	unpacked_boots=$(ls -l | grep '^d' | grep -v 'bin' | awk '{print $9}' | sed 's/\/$//')
+	for dir in $unpacked_boots; do
+	   rm -rf $dir
+	done
 	rm -rf $bin/uiderrors
 	rm -rf $bin/*.img*
 	find . -name "__pycache__" -type d -exec rm -rf {} +
