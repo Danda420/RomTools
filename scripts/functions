@@ -41,42 +41,31 @@ banner() {
 }
 
 give_perm() {
-	for partition in $partitions
-	do
-	  sudo chown -R $USER:$USER $DIRROM/$partition >> /dev/null 2>&1
-	done
+	partiton=$1
+	sudo chown -R $USER:$USER $DIRROM/$partition >> /dev/null 2>&1
 }
 
 restore_perm() {
-	for partition in $partitions
-	do
-		if [[ $partition == vendor ]]; then
-			sudo chown -R 0:0 $DIRROM/vendor/
-			sudo chown 0:2000 $(sudo find $DIRROM/vendor -type d)
-			sudo chown -R 0:2000 $DIRROM/vendor/bin
-			sudo chown 0:2000 $DIRROM/vendor/addon/*
-		elif [[ $partition == system ]]; then
-			sudo chown -R 0:0 $DIRROM/system
-			sudo chown -R 0:2000 $DIRROM/system/system/bin
-		else
-			sudo chown -R 0:0 $DIRROM/$partition
-			sudo chown -R 0:2000 $DIRROM/$partition/bin
-		fi
-	done
+	partition=$1
+	if [[ $(echo $partition | grep "vendor") != "" ]]; then
+		sudo chown -R 0:0 $DIRROM/$partition/
+		sudo chown -R 0:2000 $DIRROM/$partition/bin
+		sudo chown 0:2000 $(sudo find $DIRROM/$partition -type d)
+	elif [[ $(echo $partition | grep "system") != "" ]]; then
+		sudo chown -R 0:0 $DIRROM/$partition
+		sudo chown -R 0:2000 $DIRROM/$partition/system/bin
+	else
+		sudo chown -R 0:0 $DIRROM/$partition
+		sudo chown -R 0:2000 $DIRROM/$partition/bin
+	fi
 }
 
 setup() {
 	clear
 	if [[ ! -d $DIRTOOLS/ROM ]] && [[ ! -d $DIRTOOLS/rom_input ]] && [[ ! -d $DIRTOOLS/rom_output ]]; then
-		mkdir $DIRTOOLS/rom_input \
-		      $DIRTOOLS/rom_output \
-		      $DIRTOOLS/ROM \
-		      $DIRTOOLS/ROM/odm \
-		      $DIRTOOLS/ROM/product \
-		      $DIRTOOLS/ROM/system \
-		      $DIRTOOLS/ROM/system_ext \
-		      $DIRTOOLS/ROM/vendor \
-		      $DIRTOOLS/ROM/super
+		mkdir -p $DIRTOOLS/rom_input \
+		         $DIRTOOLS/rom_output \
+		         $DIRTOOLS/ROM 
 		if [[ ! -f /bin/romtools ]]; then
 		    echo "#!/bin/bash" > $DIRSCRIPTS/romtools
 		    echo "cd $DIRTOOLS" >> $DIRSCRIPTS/romtools
@@ -259,7 +248,7 @@ rebuild_ext4(){
 		echo "Starting rebuilding..."
 		echo ""
 		echo "- Extracting $partition"
-		mkdir $DIRROM/rebuildimg
+		mkdir -p $DIRROM/rebuildimg
 		sudo $BIN/imgextractor.py $DIRIN/$partition.img $DIRROM/rebuildimg > /dev/null 2>&1
 		foldersize=$(sudo du -s -B1 $DIRROM/rebuildimg/$partition | awk '{print $1}')
 		SIZE=$(($foldersize + $foldersize * 1/10))
@@ -415,9 +404,7 @@ decompress_zstd() {
 unpack_ext4() {
 	if [[ -f $DIRIN/$image.img ]]; then
 	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
-		if [[ ! -d $DIRROM/EXT4 ]]; then
-			mkdir $DIRROM/EXT4
-		fi
+		mkdir -p $ext4dir
 		echo ""
 		sudo $BIN/imgextractor.py $DIRIN/$image.img $DIRROM/EXT4
 		sudo chown -R $USER:$USER $DIRROM/EXT4
@@ -436,9 +423,7 @@ unpack_ext4() {
 }
 
 unpack_erofs() {
-	if [[ ! -d $erofsdir ]]; then
-	   mkdir $erofsdir
-	fi
+	mkdir -p $erofsdir
 	echo ""
 	$BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x
 	echo ""
@@ -863,49 +848,60 @@ merge_main() {
 }
 
 mount_main() {
-	mount_normal() {
-		OPTIONS=loop
+	mount_imgs() {
+		OPTIONS=$1
 		clear
-		if [[ -f $DIRROM/system_a.img ]] || [[ -f $DIRROM/vendor_a.img ]] || [[ -f $DIRROM/odm_a.img ]] || [[ -f $DIRROM/product_a.img ]] || [[ -f $DIRROM/system_ext_a.img ]]; then
-			for partition in $partitions
-			do
-			  sudo mount -t ext4 -o $OPTIONS $DIRROM/${partition}_a.img $DIRROM/$partition >> /dev/null 2>&1
-			done
-		else
-			for partition in $partitions
-			do
-			  sudo mount -t ext4 -o $OPTIONS $DIRROM/$partition.img $DIRROM/$partition >> /dev/null 2>&1
-			done
-		fi
-		give_perm
+		images=$(ls -l $DIRROM | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
+		for partition in $images
+		do
+		   mkdir -p $DIRROM/$partition
+		   sudo mount -t ext4 -o $OPTIONS $DIRROM/${partition}.img $DIRROM/$partition >> /dev/null 2>&1
+		   give_perm $partition
+		done
 	}
 
 	mount_resize() {
 		clear
-		bash $BIN/resizeimg
-		give_perm
-	}
+		images=$(ls -l $DIRROM | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
+		resize_img_to_edit(){
+			getsize=$(ls -nl $DIRROM/${valset}.img | awk '{print $5}')
+			readmb=$(($getsize / 100000000))
+			readgiga=$(($getsize / 1000000000))
+			cval=$(($readmb - $readgiga))
+			if [[ $cval -gt 5 ]]; then
+				vplus=2;
+			else
+				vplus=1;
+			fi
+			sizeimg=$(($readgiga + $vplus))G
+			sudo fallocate -l $sizeimg $DIRROM/${valset}.img
+			sudo e2fsck -yf $DIRROM/${valset}.img
+			sudo resize2fs $DIRROM/${valset}.img $sizeimg
+			sudo e2fsck -yf $DIRROM/${valset}.img
+		}
 
-	mount_ro() {
-		OPTIONS=ro,nosuid,nodev,relatime,uhelper=udisks2,loop
-		clear
-		if [[ -f $DIRROM/system_a.img ]] || [[ -f $DIRROM/vendor_a.img ]] || [[ -f $DIRROM/odm_a.img ]] || [[ -f $DIRROM/product_a.img ]] || [[ -f $DIRROM/system_ext_a.img ]]; then
-			for partition in $partitions
-			do
-			  sudo mount -t ext4 -o $OPTIONS $DIRROM/${partition}_a.img $DIRROM/$partition >> /dev/null 2>&1
-			done
-		else
-			for partition in $partitions
-			do
-			  sudo mount -t ext4 -o $OPTIONS $DIRROM/$partition.img $DIRROM/$partition >> /dev/null 2>&1
-			done
-		fi
-		give_perm
+		echo " "
+		echo "Resizing partitions..."
+
+		for valset in $images; do
+			resize_img_to_edit
+		done
+
+		echo " "
+		echo "Mounting partitions..."
+		for partition in $images
+		do
+		   mkdir -p $DIRROM/$partition
+		   sudo mount -t ext4 -o loop $DIRROM/${partition}.img $DIRROM/$partition >> /dev/null 2>&1
+		   give_perm $partition
+		done
 	}
 	
 	while true; do
 	    banner
 	    echo " "
+		echo "put your images on $DIRROM"
+		echo " "
 	    echo "1. Mount raw image and resize"
 	    echo "2. Mount without resizing"
 	    echo "3. Mount read only"
@@ -919,17 +915,152 @@ mount_main() {
 	restart_tool;;
 
 		2 ) 
-	mount_normal
+	mount_imgs "loop"
 	restart_tool;;
 
 		3 ) 
-	mount_ro
+	mount_imgs "ro,nosuid,nodev,relatime,uhelper=udisks2,loop"
 	restart_tool;;
 
 		x ) 
 	start_tools;;
 
 		* ) mount_main;;
+	    esac
+	done
+}
+
+umount_main() {
+	umount_resize_freespace() {
+		clear
+		images=$(ls -l $DIRROM | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
+		resize_to_build(){
+			sudo e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
+			sudo resize2fs -M $DIRROM/${valset}.img > /dev/null 2>&1
+			sudo e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
+				
+			vsizenow=$(ls -nl $DIRROM/${valset}.img | awk '{print $5}')
+			sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
+			sudo resize2fs $DIRROM/${valset}.img $sizeimg > /dev/null 2>&1
+			sudo e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
+		}
+
+		echo " "
+		echo "Input partition that you want to unmount :"
+		file_selector $DIRROM ".img"
+		PARTITION=$(echo $FILE | sed 's/\.img$//')
+		
+		echo " "
+		echo "Input partiton free space in mb (megabytes) :"
+		read
+		FREESPACE=$REPLY
+			
+		echo " "
+		echo "Unmounting $PARTITION..."
+		echo " "
+		restore_perm $PARTITION > /dev/null 2>&1
+		sudo umount $DIRROM/$PARTITION >> /dev/null 2>&1
+		rm -rf $DIRROM/$PARTITION
+
+		echo "Resizing $PARTITION..."
+		echo " "
+		valset=$PARTITION
+		resize_to_build
+	}
+	umount_resize() {
+		clear
+		images=$(ls -l $DIRROM | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
+		resize_to_build(){
+			sudo e2fsck -yf $DIRROM/${valset}.img
+			sudo resize2fs -M $DIRROM/${valset}.img
+			sudo e2fsck -yf $DIRROM/${valset}.img
+		}
+		echo " "
+		echo "Unmounting partitions..."
+		echo " "
+		for partition in $images
+		do
+		   restore_perm $partition > /dev/null 2>&1
+	 	   sudo umount $DIRROM/$partition >> /dev/null 2>&1
+	 	   rm -rf $DIRROM/$partition
+		done
+
+		echo "Resizing partitions..."
+		echo " "
+		# Resize image to minimum
+		for valset in $images
+		do
+		  resize_to_build > /dev/null 2>&1
+		done
+	}
+	umount_normal() {
+		clear
+		echo " "
+		echo "Unmounting partitions..."
+		echo " "
+		images=$(ls -l $DIRROM | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
+		for partition in $images
+		do
+		   restore_perm $partition > /dev/null 2>&1
+	 	   sudo umount $DIRROM/$partition >> /dev/null 2>&1
+	 	   rm -rf $DIRROM/$partition
+		done
+	}
+	
+	while true; do
+	    banner
+	    echo " "
+	    echo "1. Umount raw image and resize to smallest size"
+	    echo "2. Umount raw image and resize with free space "
+	    echo "3. Umount without resizing"
+	    echo "x. Back to main menu"
+	    
+	    read -p "" choose
+	    case $choose in
+	    
+		1 ) 
+	umount_resize
+	restart_tool;;
+
+		2 ) 
+	umount_resize_freespace
+	restart_tool;;
+
+		3 ) 
+	umount_normal
+	restart_tool;;
+
+		x ) 
+	start_tools;;
+
+		* ) umount_main;;
+	    esac
+	done
+}
+
+mount_umount_main() {
+	while true; do
+	    banner
+	    echo " "
+	    echo "1. Mount images"
+	    echo "2. Umount Images"
+	    echo "x. Back to main menu"
+	    
+	    read -p "" choose
+	    case $choose in
+	    
+		1 ) 
+	mount_main
+	restart_tool;;
+
+		2 ) 
+	umount_main
+	restart_tool;;
+	
+		x ) 
+	start_tools;;
+
+		* ) mount_umount_main;;
 	    esac
 	done
 }
@@ -1446,7 +1577,7 @@ super_u_raw() {
 	if [ -f $DIRIN/$imgname.img ]; then
 		echo " "
 		echo "Unpacking $imgname.img..."
-		mkdir $DIRSUPER/config
+		mkdir -p $DIRSUPER/config
 		lpdump --slot=0 $DIRIN/$imgname.img > $DIRSUPER/config/super_config.txt
 		lpunpack $DIRIN/$imgname.img $DIRROM/super
 		rm -rf $DIRIN/$imgname.*
@@ -1475,7 +1606,7 @@ super_u_zstd() {
 
 		echo " "
 		echo "Unpacking super..."
-		mkdir $DIRSUPER/config
+		mkdir -p $DIRSUPER/config
 		lpdump --slot=0 $DIRIN/super.img > $DIRSUPER/config/super_config.txt
 		lpunpack $DIRIN/super.img $DIRROM/super
 		rm -rf $DIRIN/super.img
@@ -1507,7 +1638,7 @@ super_u_datbr() {
 
 		echo " "
 		echo "Unpacking $imgname.img..."
-		mkdir $DIRSUPER/config
+		mkdir -p $DIRSUPER/config
 		lpdump --slot=0 $DIROUT/$imgname.img > $DIRSUPER/config/super_config.txt
 		lpunpack $DIROUT/$imgname.img $DIRROM/super
 		rm -rf $DIROUT/$imgname.*
@@ -1711,7 +1842,7 @@ super_r() {
 	fi
 	
 	if [[ -f $DIRIN/$imgname.img ]]; then
-		rm -rf $DIRSUPER/*
+		rm -rf $DIRSUPER
 	fi
 	
 	case $COMPRESSION in
@@ -1842,228 +1973,6 @@ super_main() {
 	    esac
 	done
 }
-
-umount_main() {
-	umount_resize_freespace() {
-		clear
-		resize_to_build(){
-			if [ -f $DIRROM/${valset}_a.img ]; then
-				sudo e2fsck -yf $DIRROM/${valset}_a.img > /dev/null 2>&1
-				sudo resize2fs -M $DIRROM/${valset}_a.img > /dev/null 2>&1
-				sudo e2fsck -yf $DIRROM/${valset}_a.img > /dev/null 2>&1
-				
-				vsizenow=$(ls -nl $DIRROM/${valset}_a.img | awk '{print $5}')
-				sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
-				sudo resize2fs $DIRROM/${valset}_a.img $sizeimg
-				sudo e2fsck -yf $DIRROM/${valset}_a.img
-			else
-				sudo e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
-				sudo resize2fs -M $DIRROM/${valset}.img > /dev/null 2>&1
-				sudo e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
-				
-				vsizenow=$(ls -nl $DIRROM/${valset}.img | awk '{print $5}')
-				sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
-				sudo resize2fs $DIRROM/${valset}.img $sizeimg > /dev/null 2>&1
-				sudo e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
-			fi;
-		}
-
-		echo " "
-		echo "Input partition that you want to unmount :"
-		read
-		PARTITION=$REPLY
-
-		if [[ $PARTITION == "system" ]] || [[ $PARTITION == "system_ext" ]] || [[ $PARTITION == "product" ]] || [[ $PARTITION == "odm" ]] || [[ $PARTITION == "vendor" ]]; then
-
-			echo " "
-			echo "Input partiton free space in mb (megabytes) :"
-			read
-			FREESPACE=$REPLY
-			
-			echo " "
-			echo "Unmounting $PARTITION..."
-			echo " "
-			restore_perm > /dev/null 2>&1
-			sudo umount $DIRROM/$PARTITION >> /dev/null 2>&1
-
-			echo "Resizing $PARTITION..."
-			echo " "
-			# Resize image to minimum
-			valset=$PARTITION
-			resize_to_build
-		else
-			echo -e "${R}there's no partition named : $PARTITION"
-			echo -e "${NC}"
-		fi
-	}
-	umount_resize() {
-		clear
-		resize_to_build(){
-			if [ -f $DIRROM/${valset}_a.img ]; then
-				sudo e2fsck -yf $DIRROM/${valset}_a.img > /dev/null 2>&1
-				sudo resize2fs -M $DIRROM/${valset}_a.img > /dev/null 2>&1
-				sudo e2fsck -yf $DIRROM/${valset}_a.img > /dev/null 2>&1
-			else
-				sudo e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
-				sudo resize2fs -M $DIRROM/${valset}.img > /dev/null 2>&1
-				sudo e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
-			fi;
-		}
-		echo " "
-		echo "Unmounting partitions..."
-		echo " "
-		restore_perm > /dev/null 2>&1
-		for partition in $partitions
-		do
-	 	 sudo umount $DIRROM/$partition >> /dev/null 2>&1
-		done
-
-		echo "Resizing partitions..."
-		echo " "
-		# Resize image to minimum
-		for valset in $partitions
-		do
-		  resize_to_build
-		done
-	}
-	umount_normal() {
-		clear
-		echo " "
-		echo "Unmounting partitions..."
-		echo " "
-		restore_perm > /dev/null 2>&1
-		for partition in $partitions
-		do
-	 	 sudo umount $DIRROM/$partition >> /dev/null 2>&1
-		done
-	}
-	
-	while true; do
-	    banner
-	    echo " "
-	    echo "1. Umount raw image and resize to smallest size"
-	    echo "2. Umount raw image and resize with free space "
-	    echo "3. Umount without resizing"
-	    echo "x. Back to main menu"
-	    
-	    read -p "" choose
-	    case $choose in
-	    
-		1 ) 
-	umount_resize
-	restart_tool;;
-
-		2 ) 
-	umount_resize_freespace
-	restart_tool;;
-
-		3 ) 
-	umount_normal
-	restart_tool;;
-
-		x ) 
-	start_tools;;
-
-		* ) umount_main;;
-	    esac
-	done
-}
-
-zip_main() {
-	oplus_zip() {
-		ZIPNAME=$DIRTOOLS/oplus.zip
-		clear
-		cd $DIROUT
-		zip $ZIPNAME my_* system.img vendor.img odm.img product.img system_ext.img
-		cd $DIRTOOLS
-	}
-	splits_zip() {
-		ZIPNAME=$DIRTOOLS/split-partition.zip
-		clear
-		cd $DIROUT
-		zip $ZIPNAME dynamic_partitions_op_list system.* vendor.* odm.* product.* system_ext.*
-		cd $DIRTOOLS
-	}
-	
-	while true; do
-	    banner
-	    echo " "
-	    echo "*this will zip files in rom_output folder*"
-	    echo " "
-	    echo "1. Zip Oplus images"
-	    echo "2. Zip Compressed Split partitions"
-	    echo "x. Back to main menu"
-	    
-	    read -p "" choose
-	    case $choose in
-	    
-		1 ) 
-	oplus_zip
-	restart_tool;;
-
-		2 ) 
-	splits_zip
-	restart_tool;;
-
-		x ) 
-	start_tools;;
-
-		* ) zip_main;;
-	    esac
-	done
-}
-
-install_req() {
-	install_dtc() {
-		curl https://android.googlesource.com/platform/prebuilts/misc/+archive/refs/heads/android11-release/linux-x86/dtc.tar.gz -o $DIRTOOLS/dtc.tar.gz
-		tar -xf $DIRTOOLS/dtc.tar.gz
-		rm -rf $DIRTOOLS/PREBUILT
-		chmod 777 $DIRTOOLS/dtc
-		if [[ -f /usr/bin/dtc ]]; then
-		   sudo rm -rf /usr/bin/dtc
-		fi
-		sudo mv $DIRTOOLS/dtc /usr/bin/dtc
-		rm -rf $DIRTOOLS/dtc.tar.gz
-	}
-	while true; do
-	    banner
-	    echo ""
-	    echo "Choose your linux distribution base"
-	    echo "1. Arch"
-	    echo "2. Redhat"
-	    echo "3. Debian"
-	    echo "x. Back to main menu"
-	    read -p "" choose
-	    case $choose in
-		1 ) 
-		sudo pacman -Sy --noconfirm android-tools erofs-utils gawk brotli cpio zstd
-		install_dtc
-		restart_tool;;
-		
-		2 )
-		sudo dnf install android-tools erofs-utils gawk brotli cpio zstd
-		install_dtc
-		restart_tool;;
-		
-		3 )
-		sudo apt install android-sdk-libsparse-utils erofs-utils gawk brotli cpio zstd
-		install_dtc
-		git clone https://github.com/Danda420/RomTools -b ubuntu-moment $DIRSCRIPTS/ubuntu-bins
-		rm -rf $DIRSCRIPTS/ubuntu-bins/.git
-		chmod 755 $DIRSCRIPTS/ubuntu-bins/*
-		sudo mv $DIRSCRIPTS/ubuntu-bins/* /usr/bin/
-		rm -rf $DIRSCRIPTS/ubuntu-bins
-		restart_tool;;
-		
-		x )
-		start_tools;;
-		
-		* ) 
-		install_req;;
-	    esac
-	done
-}
-
 
 repack_ext4_erofs() {
 	while true; do
@@ -2198,6 +2107,57 @@ zstd_main() {
 	done
 }
 
+install_req() {
+	install_dtc() {
+		curl https://android.googlesource.com/platform/prebuilts/misc/+archive/refs/heads/android11-release/linux-x86/dtc.tar.gz -o $DIRTOOLS/dtc.tar.gz
+		tar -xf $DIRTOOLS/dtc.tar.gz
+		rm -rf $DIRTOOLS/PREBUILT
+		chmod 777 $DIRTOOLS/dtc
+		if [[ -f /usr/bin/dtc ]]; then
+		   sudo rm -rf /usr/bin/dtc
+		fi
+		sudo mv $DIRTOOLS/dtc /usr/bin/dtc
+		rm -rf $DIRTOOLS/dtc.tar.gz
+	}
+	while true; do
+	    banner
+	    echo ""
+	    echo "Choose your linux distribution base"
+	    echo "1. Arch"
+	    echo "2. Redhat"
+	    echo "3. Debian"
+	    echo "x. Back to main menu"
+	    read -p "" choose
+	    case $choose in
+		1 ) 
+		sudo pacman -Sy --noconfirm android-tools erofs-utils gawk brotli cpio zstd
+		install_dtc
+		restart_tool;;
+		
+		2 )
+		sudo dnf install android-tools erofs-utils gawk brotli cpio zstd
+		install_dtc
+		restart_tool;;
+		
+		3 )
+		sudo apt install android-sdk-libsparse-utils erofs-utils gawk brotli cpio zstd
+		install_dtc
+		git clone https://github.com/Danda420/RomTools -b ubuntu-moment $DIRSCRIPTS/ubuntu-bins
+		rm -rf $DIRSCRIPTS/ubuntu-bins/.git
+		chmod 755 $DIRSCRIPTS/ubuntu-bins/*
+		sudo mv $DIRSCRIPTS/ubuntu-bins/* /usr/bin/
+		rm -rf $DIRSCRIPTS/ubuntu-bins
+		restart_tool;;
+		
+		x )
+		start_tools;;
+		
+		* ) 
+		install_req;;
+	    esac
+	done
+}
+
 start_tools() {
 	setup
 	while true; do
@@ -2209,14 +2169,12 @@ start_tools() {
 	    echo "4. Unpack or repack images"
 	    echo "5. Convert erofs to ext4"
 	    echo "6. Rebuild EXT4 Images (removes avb)"
-	    echo "7. Mount raw .img"
-	    echo "8. Unmount images"
+	    echo "7. Mount or Umount raw imgs"
+	    echo "8. Decompress Sparsechunk"
 	    echo "9. Unpack payload.bin"
 	    echo "10. Custom Scripts"
 	    echo "11. Merge fs context and config to system"
-	    echo "12. Auto ZIP"
-	    echo "13. Zstd Tools"
-	    echo "14. Sparsechunk converter"
+	    echo "12. Zstd Tools"
 	    echo "c. Clean up folders"
 	    echo "0. Install proprietary packages"
 	    echo "x. Exit tool"
@@ -2253,11 +2211,11 @@ start_tools() {
 	restart_tool;;
 
 		7 ) 
-	mount_main
+	mount_umount_main
 	restart_tool;;
-
-		8 ) 
-	umount_main
+	
+		8 )
+	sparsechunk_converter
 	restart_tool;;
 
 		9 ) 
@@ -2271,17 +2229,9 @@ start_tools() {
 		11 ) 
 	merge_main
 	restart_tool;;
-
+	
 		12 ) 
-	zip_main
-	restart_tool;;
-	
-		13 ) 
 	zstd_main
-	restart_tool;;
-	
-		14 )
-	sparsechunk_converter
 	restart_tool;;
 
 		c ) 

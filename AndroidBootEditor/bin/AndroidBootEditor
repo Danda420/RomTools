@@ -130,10 +130,10 @@ repack_img() {
 		elif [[ -f $bin/$img.clear ]]; then
 		   mv $bin/$img.clear $DIRABIE/$imgname.unsigned.img
 		fi
-		if [[ $img != "vbmeta.img" ]] && [[ -f $bin/vbmeta.img ]]; then
-		   mv $bin/vbmeta.img $DIRABIE/
-		fi
 	done
+	if [[ $img != "vbmeta.img" ]] && [[ -f $bin/vbmeta.img ]]; then
+	   mv $bin/vbmeta.img $DIRABIE/
+	fi
 }
 
 unpack_img() {
