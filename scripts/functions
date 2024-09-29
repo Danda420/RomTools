@@ -379,7 +379,7 @@ decompress_zstd() {
 	file_selector $DIRIN ""
 	filename=$FILE
 	
-	if [ -f $DIRIN/$filename ]; then
+	if [[ $(file $DIRIN/$filename | grep "Zstandard") != "" ]]; then
 		mv $DIRIN/$filename $DIRIN/$filename.zst
 		
 		echo " "
@@ -398,6 +398,9 @@ decompress_zstd() {
 		   echo -e "${R}Decompression Failed!"
 		   echo -e "${NC}"
 		fi
+	else
+		echo " "
+		echo -e "${R}File type is not Zstandard! aborting...${NC}"
 	fi	
 }
 
@@ -1596,7 +1599,7 @@ super_u_zstd() {
 	file_selector $DIRIN ""
 	filename=$FILE
 	
-	if [ -f $DIRIN/$filename ]; then
+	if [[ $(file $DIRIN/$filename | grep "Zstandard") != "" ]]; then
 		mv $DIRIN/$filename $DIRIN/$filename.zst
 		
 		echo " "
@@ -1613,6 +1616,9 @@ super_u_zstd() {
 
 		echo " "
 		echo -e "${G}Done! Output : $DIRROM/super ${NC}"
+	else
+		echo " "
+		echo -e "${R}File type is not Zstandard! aborting...${NC}"
 	fi
 }
 
