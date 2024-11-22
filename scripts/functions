@@ -1072,7 +1072,7 @@ payload() {
 	clear
 	if [ -f $DIRIN/payload.bin ]; then
 
-		$BIN/payload --output=$DIROUT $DIRIN/payload.bin
+		$BIN/payload $DIRIN/payload.bin -c 8 -o $DIROUT
 
 		echo " "
 		echo "cleaning..."
