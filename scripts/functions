@@ -358,7 +358,7 @@ compress_zstd() {
 		
 		echo " "
 		echo "Compressing $filename to ${filename}$ZSTDSUFFIX (zstd)"
-		zstd -${ZSTDLVL} $DIRIN/$filename -o $DIROUT/${filename}$ZSTDSUFFIX
+		zstd -${ZSTDLVL} -T$(nproc --all) $DIRIN/$filename -o $DIROUT/${filename}$ZSTDSUFFIX
 		rm -rf $DIRIN/$filename
 		echo " "
 		if [[ -f $DIROUT/${filename}$ZSTDSUFFIX ]] && [[ $(ls -l $DIROUT/${filename}$ZSTDSUFFIX | awk '{print $5}') != "0" ]]; then
@@ -1809,7 +1809,7 @@ super_r() {
 	   "zstd" )
 		echo " "
 		echo "Compressing $imgname.img to ${imgname}$ZSTDSUFFIX (zstd)"
-		zstd -${ZSTDLVL} $DIRIN/$imgname.img -o $DIROUT/${imgname}$ZSTDSUFFIX
+		zstd -${ZSTDLVL} -T$(nproc --all) $DIRIN/$imgname.img -o $DIROUT/${imgname}$ZSTDSUFFIX
 		echo " "
 		if [[ -f $DIROUT/${imgname}$ZSTDSUFFIX ]] && [[ $(ls -l $DIROUT/${imgname}$ZSTDSUFFIX | awk '{print $5}') != "0" ]]; then
 		   rm -rf $DIRIN/$imgname.img
