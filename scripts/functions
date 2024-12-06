@@ -1072,7 +1072,7 @@ payload() {
 	clear
 	if [ -f $DIRIN/payload.bin ]; then
 
-		$BIN/payload $DIRIN/payload.bin -c 8 -o $DIROUT
+		$BIN/payload $DIRIN/payload.bin -c $(nproc --all) -o $DIROUT
 
 		echo " "
 		echo "cleaning..."
