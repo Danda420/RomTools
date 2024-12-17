@@ -34,10 +34,10 @@ restart_tool() {
 
 banner() {
 	clear
-	echo -e "${LC}========================="
-	echo -e "${LC}   ROM TOOLS FOR LINUX   "
-	echo -e "${LC}        by  Danda        "
-	echo -e "${LC}=========================${NC}"
+	echo -e "${LC}+-------------------------+"
+	echo -e "${LC}|   ROM TOOLS FOR LINUX   |"
+	echo -e "${LC}|        by  Danda        |"
+	echo -e "${LC}+-------------------------+${NC}"
 }
 
 give_perm() {
@@ -83,8 +83,8 @@ clean() {
 	rm -rf $DIRIN \
 	       $DIROUT \
 	       $DIRROM
-	sudo rm -rf $BIN/__pycache__
-	sudo rm -rf $BIN/*.pyc
+	sudo rm -rf $BIN/py/__pycache__
+	sudo rm -rf $BIN/py/*.pyc
 
 	echo -e "${G}Done!${NC}"
 }
@@ -186,11 +186,12 @@ extracted_partition_selector() {
 }
 
 resize_img(){
-	if [[ $1 == "smallest" ]]; then
+	DIRIMG_RESIZE=$1
+	if [[ $2 == "smallest" ]]; then
 		sudo e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
 		sudo resize2fs -M $DIRIMG_RESIZE > /dev/null 2>&1
 		sudo e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
-	elif [[ $1 == "freespace" ]]; then
+	elif [[ $2 == "freespace" ]]; then
 		sudo e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
 		sudo resize2fs -M $DIRIMG_RESIZE > /dev/null 2>&1
 		sudo e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
@@ -221,9 +222,8 @@ convert_erofs_ext4(){
 		if (( $SIZE < 1474560 )); then
 		    SIZE=`sudo du -sk $erofsdir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
-		repack_erofs_as_ext4_cmd > /dev/null 2>&1
-		DIRIMG_RESIZE=$DIROUT/$image.img
-		resize_img smallest
+		repack_erofs_as_ext4_cmd $image $SIZE > /dev/null 2>&1
+		resize_img $DIROUT/$image.img smallest
 		echo ""
 		if [[ -f $DIROUT/$image.img ]] && [[ $(ls -l $DIROUT/$image.img | awk '{print $5}') != "0" ]]; then
 		   rm -rf $DIRIN/$image.img
@@ -249,7 +249,7 @@ rebuild_ext4(){
 		echo ""
 		echo "- Extracting $partition"
 		mkdir -p $DIRROM/rebuildimg
-		sudo $BIN/imgextractor.py $DIRIN/$partition.img $DIRROM/rebuildimg > /dev/null 2>&1
+		sudo $BIN/py/imgextractor.py $DIRIN/$partition.img $DIRROM/rebuildimg > /dev/null 2>&1
 		foldersize=$(sudo du -s -B1 $DIRROM/rebuildimg/$partition | awk '{print $1}')
 		SIZE=$(($foldersize + $foldersize * 1/10))
 		if (( $SIZE < 1474560 )); then
@@ -257,12 +257,23 @@ rebuild_ext4(){
 		fi
 		echo "- Rebuilding $partition..."
 		if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
-			sudo $BIN/make_ext4fs -J -T -1 -S "$DIRROM/rebuildimg/config/$partition/${partition}_file_contexts" -C "$DIRROM/rebuildimg/config/$partition/${partition}_fs_config" -l "$SIZE" -L "/" -a "/$partition" "$DIROUT/$partition.img" "$DIRROM/rebuildimg/$partition" > /dev/null 2>&1
+			sudo $BIN/make_ext4fs -J -T -1 \
+			   -S "$DIRROM/rebuildimg/config/$partition/${partition}_file_contexts" \
+			   -C "$DIRROM/rebuildimg/config/$partition/${partition}_fs_config" \
+			   -l "$SIZE" \
+			   -L "/" \
+			   -a "/$partition" \
+			   "$DIROUT/$partition.img" "$DIRROM/rebuildimg/$partition" > /dev/null 2>&1
 		else
-			sudo $BIN/make_ext4fs -J -T -1 -S "$DIRROM/rebuildimg/config/$partition/${partition}_file_contexts" -C "$DIRROM/rebuildimg/config/$partition/${partition}_fs_config" -l "$SIZE" -L "$partition" -a "/$partition" "$DIROUT/$partition.img" "$DIRROM/rebuildimg/$partition" > /dev/null 2>&1
+			sudo $BIN/make_ext4fs -J -T -1 \
+			   -S "$DIRROM/rebuildimg/config/$partition/${partition}_file_contexts" \
+			   -C "$DIRROM/rebuildimg/config/$partition/${partition}_fs_config" \
+			   -l "$SIZE" \
+			   -L "$partition" \
+			   -a "/$partition" \
+			   "$DIROUT/$partition.img" "$DIRROM/rebuildimg/$partition" > /dev/null 2>&1
 		fi
-		DIRIMG_RESIZE=$DIROUT/$partition.img
-		resize_img smallest
+		resize_img $DIROUT/$partition.img smallest
 		sudo rm -rf $DIRROM/rebuildimg
 		echo ""
 		if [[ -f $DIROUT/$partition.img ]] && [[ $(ls -l $DIROUT/$partition.img | awk '{print $5}') != "0" ]]; then
@@ -316,7 +327,7 @@ datbr_raw() {
 
 		rm -rf $DIRIN/$imgname.new.dat.br
 
-		python3 $BIN/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img  >> /dev/null 2>&1
+		python3 $BIN/py/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img  >> /dev/null 2>&1
 		echo " "
 		echo "Cleaning input folder..."
 
@@ -409,7 +420,7 @@ unpack_ext4() {
 	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
 		mkdir -p $ext4dir
 		echo ""
-		sudo $BIN/imgextractor.py $DIRIN/$image.img $DIRROM/EXT4
+		sudo $BIN/py/imgextractor.py $DIRIN/$image.img $DIRROM/EXT4
 		sudo chown -R $USER:$USER $DIRROM/EXT4
 		echo ""
 		echo -e "${G}Output : $ext4dir/$image ${NC}"
@@ -435,20 +446,48 @@ unpack_erofs() {
 }
 
 repack_ext4_cmd() {
-	$BIN/checkfsconfig $ext4dir/$image $ext4dir/config/$image/${image}_fs_config
-	if [[ $image == system ]] || [[ $image == system_a ]] || [[ $image == system_b ]]; then
-		sudo $BIN/make_ext4fs -J -T -1 -S "$ext4dir/config/$image/${image}_file_contexts" -C "$ext4dir/config/$image/${image}_fs_config" -l "$SIZE" -L "/" -a "/$image" "$DIROUT/$image.new.img" "$ext4dir/$image"
+	partition=$1
+	SIZE=$2
+	$BIN/checkfsconfig $ext4dir/$partition $ext4dir/config/$partition/${partition}_fs_config
+	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
+		sudo $BIN/make_ext4fs -J -T -1 \
+		   -S "$ext4dir/config/$partition/${partition}_file_contexts" \
+		   -C "$ext4dir/config/$partition/${partition}_fs_config" \
+		   -l "$SIZE" \
+		   -L "/" \
+		   -a "/$partition" \
+		   "$DIROUT/$partition.new.img" "$ext4dir/$partition"
 	else
-		sudo $BIN/make_ext4fs -J -T -1 -S "$ext4dir/config/$image/${image}_file_contexts" -C "$ext4dir/config/$image/${image}_fs_config" -l "$SIZE" -L "$image" -a "/$image" "$DIROUT/$image.new.img" "$ext4dir/$image"
+		sudo $BIN/make_ext4fs -J -T -1 \
+		   -S "$ext4dir/config/$partition/${partition}_file_contexts" \
+		   -C "$ext4dir/config/$partition/${partition}_fs_config" \
+		   -l "$SIZE" \
+		   -L "$partition" \
+		   -a "/$partition" \
+		   "$DIROUT/$partition.new.img" "$ext4dir/$partition"
 	fi
 }
 
 repack_erofs_as_ext4_cmd() {
-	$BIN/checkfsconfig $erofsdir/$image $erofsdir/config/${image}_fs_config
-	if [[ $image == system ]] || [[ $image == system_a ]] || [[ $image == system_b ]]; then
-		sudo $BIN/make_ext4fs -J -T -1 -S "$erofsdir/config/${image}_file_contexts" -C "$erofsdir/config/${image}_fs_config" -l "$SIZE" -L "/" -a "/$image" "$DIROUT/$image.img" "$erofsdir/$image"
+	partition=$1
+	SIZE=$2
+	$BIN/checkfsconfig $erofsdir/$partition $erofsdir/config/${partition}_fs_config
+	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
+		sudo $BIN/make_ext4fs -J -T -1 \
+		   -S "$erofsdir/config/${partition}_file_contexts" \
+		   -C "$erofsdir/config/${partition}_fs_config" \
+		   -l "$SIZE" \
+		   -L "/" \
+		   -a "/$partition" \
+		   "$DIROUT/$partition.img" "$erofsdir/$partition"
 	else
-		sudo $BIN/make_ext4fs -J -T -1 -S "$erofsdir/config/${image}_file_contexts" -C "$erofsdir/config/${image}_fs_config" -l "$SIZE" -L "$image" -a "/$image" "$DIROUT/$image.img" "$erofsdir/$image"
+		sudo $BIN/make_ext4fs -J -T -1 \
+		   -S "$erofsdir/config/${partition}_file_contexts" \
+		   -C "$erofsdir/config/${impartitionage}_fs_config" \
+		   -l "$SIZE" \
+		   -L "$partition" \
+		   -a "/$partition" \
+		   "$DIROUT/$partition.img" "$erofsdir/$partition"
 	fi
 }
 
@@ -460,7 +499,14 @@ repack_erofs_cmd() {
 	fi
 	
 	$BIN/checkfsconfig $erofsdir/$image $erofsdir/config/${image}_fs_config
-	$BIN/mkfs.erofs${other} -z${compression} -T $(date +%s) --mount-point="/$image" --fs-config-file="$erofsdir/config/${image}_fs_config" --file-contexts="$erofsdir/config/${image}_file_contexts" "$DIROUT/$image.erofs.img" "$erofsdir/$image/"
+	$BIN/mkfs.erofs${other} \
+	   -z${compression} \
+	   -workers=$(nproc --all) \
+	   -T $(date +%s) \
+	   --mount-point="/$image" \
+	   --fs-config-file="$erofsdir/config/${image}_fs_config" \
+	   --file-contexts="$erofsdir/config/${image}_file_contexts" \
+	   "$DIROUT/$image.erofs.img" "$erofsdir/$image/"
 }
 
 unpack_ext4_erofs_img() {
@@ -500,9 +546,8 @@ repack_ext4_img_foldersize() {
 		if (( $SIZE < 1474560 )); then
 		    SIZE=`sudo du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
-		repack_ext4_cmd
-		DIRIMG_RESIZE=$DIROUT/$image.new.img
-		resize_img smallest
+		repack_ext4_cmd $image $SIZE
+		resize_img $DIROUT/$image.new.img smallest
 		echo ""
 		if [[ -f $DIROUT/$image.new.img ]] && [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}Repack done..."
@@ -536,9 +581,8 @@ repack_ext4_img_freespace() {
 		if (( $SIZE < 1474560 )); then
 		    SIZE=`sudo du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
-		repack_ext4_cmd
-		DIRIMG_RESIZE=$DIROUT/$image.new.img
-		resize_img freespace
+		repack_ext4_cmd $image $SIZE
+		resize_img $DIROUT/$image.new.img freespace
 		echo ""
 		if [[ -f $DIROUT/$image.new.img ]] && [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}Repack done..."
@@ -566,7 +610,7 @@ repack_ext4_img_samesize() {
 		if (( $SIZE < 1474560 )); then
 		    SIZE=`sudo du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
-		repack_ext4_cmd
+		repack_ext4_cmd $image $SIZE
 		echo ""
 		if [[ -f $DIROUT/$image.new.img ]] && [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}Repack done..."
@@ -598,7 +642,7 @@ repack_ext4_img_inputsize() {
 		echo ""
 		echo "- Repacking $image..."
 		echo ""
-		repack_ext4_cmd
+		repack_ext4_cmd $image $SIZE
 		echo ""
 		if [[ -f $DIROUT/$image.new.img ]] && [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}Repack done..."
@@ -1157,7 +1201,7 @@ raw_datbr() {
 
 		echo " " 
 		echo "converting image : $imgname to new.dat"
-		python3 $BIN/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
+		python3 $BIN/py/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.sparse.img
 		mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
 		mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
@@ -1259,7 +1303,7 @@ splits_main() {
 		    if [[ -f $DIRIN/$partition.sparse.img ]]; then
 			echo " "
 			echo "converting $partition into new.dat"
-			python3 $BIN/img2sdat.py $DIRIN/$partition.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
+			python3 $BIN/py/img2sdat.py $DIRIN/$partition.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
 			mv $DIRIN/system.new.dat $DIROUT/$partition.new.dat
 			mv $DIRIN/system.patch.dat $DIROUT/$partition.patch.dat
 			mv $DIRIN/system.transfer.list $DIROUT/$partition.transfer.list
@@ -1370,7 +1414,7 @@ splits_main() {
 		    if [[ -f $DIRIN/$partition.new.dat ]] && [[ -f $DIRIN/$partition.transfer.list ]]; then
 			echo " "
 			echo "Converting $partition.new.dat to $partition.img (raw)"
-			python3 $BIN/sdat2img.py $DIRIN/$partition.transfer.list $DIRIN/$partition.new.dat $DIROUT/$partition.img >> /dev/null 2>&1
+			python3 $BIN/py/sdat2img.py $DIRIN/$partition.transfer.list $DIRIN/$partition.new.dat $DIROUT/$partition.img >> /dev/null 2>&1
 			rm -rf $DIRIN/$partition.*
 		    else
 		    	echo " "
@@ -1518,7 +1562,7 @@ super_u_datbr() {
 
 		echo " "
 		echo "Converting $imgname.new.dat to $imgname.img (raw)..."
-		python3 $BIN/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img >> /dev/null 2>&1
+		python3 $BIN/py/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img >> /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.*
 
 		echo " "
@@ -1764,7 +1808,7 @@ super_r() {
 		
 		echo " "
 		echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
-		python3 $BIN/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
+		python3 $BIN/py/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.*
 		mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
 		mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
@@ -1786,7 +1830,7 @@ super_r() {
 		
 		echo " "
 		echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
-		python3 $BIN/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
+		python3 $BIN/py/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIRIN/ -v 4 >> /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.*
 		mv $DIRIN/system.new.dat $DIROUT/$imgname.new.dat
 		mv $DIRIN/system.patch.dat $DIROUT/$imgname.patch.dat
@@ -1992,7 +2036,7 @@ zstd_main() {
 	done
 }
 
-install_req() {
+install_proprietary() {
 	install_dtc() {
 		curl https://android.googlesource.com/platform/prebuilts/misc/+archive/refs/heads/android11-release/linux-x86/dtc.tar.gz -o $DIRTOOLS/dtc.tar.gz
 		tar -xf $DIRTOOLS/dtc.tar.gz
@@ -2006,40 +2050,53 @@ install_req() {
 	}
 	while true; do
 	    banner
+		if command -v dnf >/dev/null 2>&1; then
+			PKGMAN=dnf
+		elif command -v yum >/dev/null 2>&1; then
+			PKGMAN=yum
+		elif command -v apt >/dev/null 2>&1; then
+			PKGMAN=apt
+		elif command -v pacman >/dev/null 2>&1; then
+			PKGMAN=pacman
+		else
+			PKGMAN="Error! Unknown Package Manager!"
+		fi
+		echo "Distro Base: $(grep -E "^ID_LIKE|^ID" /etc/os-release | cut -d'=' -f2 | tr -d '"')"
+		echo "Package Manager: $PKGMAN"
+
 	    echo ""
-	    echo "Choose your linux distribution base"
-	    echo "1. Arch"
-	    echo "2. Redhat"
-	    echo "3. Debian"
-	    echo "x. Back to main menu"
-	    read -p "" choose
-	    case $choose in
-		1 ) 
-		sudo pacman -Sy --noconfirm android-tools erofs-utils gawk brotli cpio zstd
-		install_dtc
-		restart_tool;;
-		
-		2 )
-		sudo dnf install android-tools erofs-utils gawk brotli cpio zstd
-		install_dtc
-		restart_tool;;
-		
-		3 )
-		sudo apt install android-sdk-libsparse-utils erofs-utils gawk brotli cpio zstd
-		install_dtc
-		git clone https://github.com/Danda420/RomTools -b ubuntu-moment $DIRSCRIPTS/ubuntu-bins
-		rm -rf $DIRSCRIPTS/ubuntu-bins/.git
-		chmod 755 $DIRSCRIPTS/ubuntu-bins/*
-		sudo mv $DIRSCRIPTS/ubuntu-bins/* /usr/bin/
-		rm -rf $DIRSCRIPTS/ubuntu-bins
-		restart_tool;;
-		
-		x )
-		start_tools;;
-		
-		* ) 
-		install_req;;
-	    esac
+	    echo "Install proprietary packages? (Y/N)"
+	    read -p "" yn
+		if [[ "$yn" =~ ^[Yy] ]]; then
+			case $PKGMAN in
+			"pacman" ) 
+				sudo pacman -Sy --noconfirm android-tools erofs-utils gawk brotli cpio zstd
+				install_dtc
+				restart_tool;;
+			
+			"dnf" )
+				sudo dnf install -y android-tools erofs-utils gawk brotli cpio zstd
+				install_dtc
+				restart_tool;;
+
+			"yum" )
+				sudo yum install -y android-tools erofs-utils gawk brotli cpio zstd
+				install_dtc
+				restart_tool;;
+
+			"apt" )
+				sudo apt install -y android-sdk-libsparse-utils erofs-utils gawk brotli cpio zstd
+				install_dtc
+				git clone https://github.com/Danda420/RomTools -b ubuntu-moment $DIRSCRIPTS/ubuntu-bins
+				rm -rf $DIRSCRIPTS/ubuntu-bins/.git
+				chmod 755 $DIRSCRIPTS/ubuntu-bins/*
+				sudo mv $DIRSCRIPTS/ubuntu-bins/* /usr/bin/
+				rm -rf $DIRSCRIPTS/ubuntu-bins
+				restart_tool;;
+			esac
+		elif [[ "$yn" =~ ^[Nn] ]]; then
+			start_tools
+		fi
 	done
 }
 
@@ -2068,7 +2125,7 @@ start_tools() {
 	    case $choose in
 	    
 		0 ) 
-	install_req
+	install_proprietary
 	restart_tool;;
 
 		1 ) 
