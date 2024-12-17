@@ -483,7 +483,7 @@ repack_erofs_as_ext4_cmd() {
 	else
 		sudo $BIN/make_ext4fs -J -T -1 \
 		   -S "$erofsdir/config/${partition}_file_contexts" \
-		   -C "$erofsdir/config/${impartitionage}_fs_config" \
+		   -C "$erofsdir/config/${partition}_fs_config" \
 		   -l "$SIZE" \
 		   -L "$partition" \
 		   -a "/$partition" \
@@ -492,21 +492,22 @@ repack_erofs_as_ext4_cmd() {
 }
 
 repack_erofs_cmd() {
+	partition=$1
 	if [[ $legacy == true ]]; then
 		other=" -E legacy-compress"
 	else
 		other=""
 	fi
 	
-	$BIN/checkfsconfig $erofsdir/$image $erofsdir/config/${image}_fs_config
+	$BIN/checkfsconfig $erofsdir/$partition $erofsdir/config/${partition}_fs_config
 	$BIN/mkfs.erofs${other} \
 	   -z${compression} \
-	   -workers=$(nproc --all) \
 	   -T $(date +%s) \
-	   --mount-point="/$image" \
-	   --fs-config-file="$erofsdir/config/${image}_fs_config" \
-	   --file-contexts="$erofsdir/config/${image}_file_contexts" \
-	   "$DIROUT/$image.erofs.img" "$erofsdir/$image/"
+	   --workers=$(nproc --all) \
+	   --mount-point="/$partition" \
+	   --fs-config-file="$erofsdir/config/${partition}_fs_config" \
+	   --file-contexts="$erofsdir/config/${partition}_file_contexts" \
+	   "$DIROUT/$partition.erofs.img" "$erofsdir/$partition/"
 }
 
 unpack_ext4_erofs_img() {
@@ -743,7 +744,7 @@ repack_erofs() {
 		echo " "
 		echo "- Repacking $image..."
 		echo ""
-		repack_erofs_cmd
+		repack_erofs_cmd $image
 		echo ""
 		if [[ -f $DIROUT/$image.erofs.img ]] && [[ $(ls -l $DIROUT/$image.erofs.img | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}Repack done..."
@@ -2063,6 +2064,11 @@ install_proprietary() {
 		fi
 		echo "Distro Base: $(grep -E "^ID_LIKE|^ID" /etc/os-release | cut -d'=' -f2 | tr -d '"')"
 		echo "Package Manager: $PKGMAN"
+
+		if [[ $PKGMAN == "Error! Unknown Package Manager!" ]]; then
+		   echo "Unknown package manager! exiting tool!"
+		   exit 0
+		fi
 
 	    echo ""
 	    echo "Install proprietary packages? (Y/N)"
