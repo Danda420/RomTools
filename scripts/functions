@@ -493,7 +493,9 @@ repack_erofs_as_ext4_cmd() {
 
 repack_erofs_cmd() {
 	partition=$1
-	if [[ $legacy == true ]]; then
+	compression=$2
+	legacy=$3
+	if [[ $legacy == "1" ]]; then
 		other=" -E legacy-compress"
 	else
 		other=""
@@ -668,10 +670,10 @@ repack_erofs() {
 		    read -p "Compiling erofs image for old kernel? (Y/N)" yn
 		    case $yn in
 			[Yy]* ) 
-			legacy=true 
+			legacy=1 
 			break;;
 			[Nn]* ) 
-			legacy=false 
+			legacy=0 
 			break;;
 			* ) echo "Please answer yes or no.";;
 		    esac
@@ -744,7 +746,7 @@ repack_erofs() {
 		echo " "
 		echo "- Repacking $image..."
 		echo ""
-		repack_erofs_cmd $image
+		repack_erofs_cmd $image $compression $legacy
 		echo ""
 		if [[ -f $DIROUT/$image.erofs.img ]] && [[ $(ls -l $DIROUT/$image.erofs.img | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}Repack done..."
