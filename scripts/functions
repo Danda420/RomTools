@@ -1596,10 +1596,8 @@ super_r() {
 	size_super=$(cat $DIRSUPER/config/super_config.txt | awk '/Size:/ { print $2 }')
 	max_size_super=$(cat $DIRSUPER/config/super_config.txt | grep -A11 "Group table:" | grep "Maximum size:" | awk '{ print $3 }' | sed -n "2p")
 	max_size_super2=$max_size_super
-	
-	configsize=$(du -s -b $DIRSUPER/config | awk '{print $1}')
-	superdirsize=$(du -s -b $DIRSUPER | awk '{print $1}')
-	TOTALSIZE=$(( $superdirsize - $configsize ))
+
+	TOTALSIZE=$(ls -l $DIRSUPER/*.img | awk '{sum += $5} END {print sum}')
 	
 	if [[ $virtualAB = "virtual_ab_device" ]]; then
 	    virtualABOption="--virtual-ab "
