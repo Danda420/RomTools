@@ -1,15 +1,15 @@
 #!/bin/bash
 DIRTOOLS=$PWD
-DIRIN=$DIRTOOLS/rom_input
-DIROUT=$DIRTOOLS/rom_output
-DIRROM=$DIRTOOLS/ROM
 DIRSCRIPTS=$DIRTOOLS/scripts
 BIN=$DIRSCRIPTS/bin
-MERGE=$BIN/merge_non_dynamic
 OPLUSMERGE=$BIN/oplus
-DIRSUPER=$DIRROM/super
-ext4dir=$DIRROM/EXT4
-erofsdir=$DIRROM/erofs
+MERGE=$BIN/merge_non_dynamic
+DIRIN=$DIRTOOLS/input
+DIROUT=$DIRTOOLS/output
+WORKDIR=$DIRTOOLS/ROM_WORKDIR
+DIRSUPER=$WORKDIR/super
+ext4dir=$WORKDIR/EXT4
+erofsdir=$WORKDIR/erofs
 partitions="system vendor odm product system_ext"
 oplus_partitions="my_bigball my_carrier my_company my_engineering my_heytap my_manifest my_preload my_product my_region my_stock"
 G='\033[1;32m'
@@ -42,30 +42,30 @@ banner() {
 
 give_perm() {
 	partiton=$1
-	sudo chown -R $USER:$USER $DIRROM/$partition >> /dev/null 2>&1
+	sudo chown -R $USER:$USER $WORKDIR/$partition >> /dev/null 2>&1
 }
 
 restore_perm() {
 	partition=$1
 	if [[ $(echo $partition | grep "vendor") != "" ]]; then
-		sudo chown -R 0:0 $DIRROM/$partition/
-		sudo chown -R 0:2000 $DIRROM/$partition/bin
-		sudo chown 0:2000 $(sudo find $DIRROM/$partition -type d)
+		sudo chown -R 0:0 $WORKDIR/$partition/
+		sudo chown -R 0:2000 $WORKDIR/$partition/bin
+		sudo chown 0:2000 $(sudo find $WORKDIR/$partition -type d)
 	elif [[ $(echo $partition | grep "system") != "" ]]; then
-		sudo chown -R 0:0 $DIRROM/$partition
-		sudo chown -R 0:2000 $DIRROM/$partition/system/bin
+		sudo chown -R 0:0 $WORKDIR/$partition
+		sudo chown -R 0:2000 $WORKDIR/$partition/system/bin
 	else
-		sudo chown -R 0:0 $DIRROM/$partition
-		sudo chown -R 0:2000 $DIRROM/$partition/bin
+		sudo chown -R 0:0 $WORKDIR/$partition
+		sudo chown -R 0:2000 $WORKDIR/$partition/bin
 	fi
 }
 
 setup() {
 	clear
-	if [[ ! -d $DIRTOOLS/ROM ]] && [[ ! -d $DIRTOOLS/rom_input ]] && [[ ! -d $DIRTOOLS/rom_output ]]; then
-		mkdir -p $DIRTOOLS/rom_input \
-		         $DIRTOOLS/rom_output \
-		         $DIRTOOLS/ROM 
+	if [[ ! -d $WORKDIR ]] && [[ ! -d $DIRIN ]] && [[ ! -d $DIROUT ]]; then
+		mkdir -p $DIRIN \
+		         $DIROUT \
+		         $WORKDIR
 		if [[ ! -f /bin/romtools ]]; then
 		    echo "#!/bin/bash" > $DIRSCRIPTS/romtools
 		    echo "cd $DIRTOOLS" >> $DIRSCRIPTS/romtools
@@ -82,7 +82,7 @@ clean() {
 
 	rm -rf $DIRIN \
 	       $DIROUT \
-	       $DIRROM
+	       $WORKDIR
 	sudo rm -rf $BIN/py/__pycache__
 	sudo rm -rf $BIN/py/*.pyc
 
@@ -248,33 +248,33 @@ rebuild_ext4(){
 		echo "Starting rebuilding..."
 		echo ""
 		echo "- Extracting $partition"
-		mkdir -p $DIRROM/rebuildimg
-		sudo $BIN/py/imgextractor.py $DIRIN/$partition.img $DIRROM/rebuildimg > /dev/null 2>&1
-		foldersize=$(sudo du -s -B1 $DIRROM/rebuildimg/$partition | awk '{print $1}')
+		mkdir -p $WORKDIR/rebuildimg
+		sudo $BIN/py/imgextractor.py $DIRIN/$partition.img $WORKDIR/rebuildimg > /dev/null 2>&1
+		foldersize=$(sudo du -s -B1 $WORKDIR/rebuildimg/$partition | awk '{print $1}')
 		SIZE=$(($foldersize + $foldersize * 1/10))
 		if (( $SIZE < 1474560 )); then
-			SIZE=`sudo du -sk $DIRROM/rebuildimg/$partition | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+			SIZE=`sudo du -sk $WORKDIR/rebuildimg/$partition | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
 		echo "- Rebuilding $partition..."
 		if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
 			sudo $BIN/make_ext4fs -J -T -1 \
-			   -S "$DIRROM/rebuildimg/config/$partition/${partition}_file_contexts" \
-			   -C "$DIRROM/rebuildimg/config/$partition/${partition}_fs_config" \
+			   -S "$WORKDIR/rebuildimg/config/$partition/${partition}_file_contexts" \
+			   -C "$WORKDIR/rebuildimg/config/$partition/${partition}_fs_config" \
 			   -l "$SIZE" \
 			   -L "/" \
 			   -a "/$partition" \
-			   "$DIROUT/$partition.img" "$DIRROM/rebuildimg/$partition" > /dev/null 2>&1
+			   "$DIROUT/$partition.img" "$WORKDIR/rebuildimg/$partition" > /dev/null 2>&1
 		else
 			sudo $BIN/make_ext4fs -J -T -1 \
-			   -S "$DIRROM/rebuildimg/config/$partition/${partition}_file_contexts" \
-			   -C "$DIRROM/rebuildimg/config/$partition/${partition}_fs_config" \
+			   -S "$WORKDIR/rebuildimg/config/$partition/${partition}_file_contexts" \
+			   -C "$WORKDIR/rebuildimg/config/$partition/${partition}_fs_config" \
 			   -l "$SIZE" \
 			   -L "$partition" \
 			   -a "/$partition" \
-			   "$DIROUT/$partition.img" "$DIRROM/rebuildimg/$partition" > /dev/null 2>&1
+			   "$DIROUT/$partition.img" "$WORKDIR/rebuildimg/$partition" > /dev/null 2>&1
 		fi
 		resize_img $DIROUT/$partition.img smallest
-		sudo rm -rf $DIRROM/rebuildimg
+		sudo rm -rf $WORKDIR/rebuildimg
 		echo ""
 		if [[ -f $DIROUT/$partition.img ]] && [[ $(ls -l $DIROUT/$partition.img | awk '{print $5}') != "0" ]]; then
 		   rm -rf $DIRIN/$partition.img
@@ -420,8 +420,8 @@ unpack_ext4() {
 	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
 		mkdir -p $ext4dir
 		echo ""
-		sudo $BIN/py/imgextractor.py $DIRIN/$image.img $DIRROM/EXT4
-		sudo chown -R $USER:$USER $DIRROM/EXT4
+		sudo $BIN/py/imgextractor.py $DIRIN/$image.img $WORKDIR/EXT4
+		sudo chown -R $USER:$USER $WORKDIR/EXT4
 		echo ""
 		echo -e "${G}Output : $ext4dir/$image ${NC}"
 		rm -rf $DIRIN/$image.img
@@ -538,7 +538,7 @@ repack_ext4_img_foldersize() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	extracted_partition_selector $DIRROM/EXT4 "Repack all images shown"
+	extracted_partition_selector $WORKDIR/EXT4 "Repack all images shown"
 	for image in $FOLDER; do
 	   if [[ -d $ext4dir/$image ]]; then
 		echo ""
@@ -569,7 +569,7 @@ repack_ext4_img_freespace() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	extracted_partition_selector $DIRROM/EXT4
+	extracted_partition_selector $WORKDIR/EXT4
 	image=$FOLDER
 	if [[ -d $ext4dir/$image ]]; then
 		echo " "
@@ -603,7 +603,7 @@ repack_ext4_img_samesize() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	extracted_partition_selector $DIRROM/EXT4 "Repack all images shown"
+	extracted_partition_selector $WORKDIR/EXT4 "Repack all images shown"
 	for image in $FOLDER; do
 	   if [[ -d $ext4dir/$image ]]; then
 		echo ""
@@ -632,7 +632,7 @@ repack_ext4_img_inputsize() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	extracted_partition_selector $DIRROM/EXT4
+	extracted_partition_selector $WORKDIR/EXT4
 	image=$FOLDER
 	if [[ -d $ext4dir/$image ]]; then
 		echo " "
@@ -799,7 +799,7 @@ sparsechunk_converter() {
 	       echo -e "${NC}"
 	   fi
 	else
-	  echo -e "${R}No sparsechunk with the name of $SPARSECHUNK in rom_input ${NC}"
+	  echo -e "${R}No sparsechunk with the name of $SPARSECHUNK in input ${NC}"
 	fi
 }
 
@@ -901,20 +901,20 @@ mount_main() {
 	mount_imgs() {
 		OPTIONS=$1
 		clear
-		images=$(ls -l $DIRROM | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
+		images=$(ls -l $WORKDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
 		for partition in $images
 		do
-		   mkdir -p $DIRROM/$partition
-		   sudo mount -t ext4 -o $OPTIONS $DIRROM/${partition}.img $DIRROM/$partition >> /dev/null 2>&1
+		   mkdir -p $WORKDIR/$partition
+		   sudo mount -t ext4 -o $OPTIONS $WORKDIR/${partition}.img $WORKDIR/$partition >> /dev/null 2>&1
 		   give_perm $partition
 		done
 	}
 
 	mount_resize() {
 		clear
-		images=$(ls -l $DIRROM | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
+		images=$(ls -l $WORKDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
 		resize_img_to_edit(){
-			getsize=$(ls -nl $DIRROM/${valset}.img | awk '{print $5}')
+			getsize=$(ls -nl $WORKDIR/${valset}.img | awk '{print $5}')
 			readmb=$(($getsize / 100000000))
 			readgiga=$(($getsize / 1000000000))
 			cval=$(($readmb - $readgiga))
@@ -924,10 +924,10 @@ mount_main() {
 				vplus=1;
 			fi
 			sizeimg=$(($readgiga + $vplus))G
-			sudo fallocate -l $sizeimg $DIRROM/${valset}.img
-			sudo e2fsck -yf $DIRROM/${valset}.img
-			sudo resize2fs $DIRROM/${valset}.img $sizeimg
-			sudo e2fsck -yf $DIRROM/${valset}.img
+			sudo fallocate -l $sizeimg $WORKDIR/${valset}.img
+			sudo e2fsck -yf $WORKDIR/${valset}.img
+			sudo resize2fs $WORKDIR/${valset}.img $sizeimg
+			sudo e2fsck -yf $WORKDIR/${valset}.img
 		}
 
 		echo " "
@@ -941,8 +941,8 @@ mount_main() {
 		echo "Mounting partitions..."
 		for partition in $images
 		do
-		   mkdir -p $DIRROM/$partition
-		   sudo mount -t ext4 -o loop $DIRROM/${partition}.img $DIRROM/$partition >> /dev/null 2>&1
+		   mkdir -p $WORKDIR/$partition
+		   sudo mount -t ext4 -o loop $WORKDIR/${partition}.img $WORKDIR/$partition >> /dev/null 2>&1
 		   give_perm $partition
 		done
 	}
@@ -950,7 +950,7 @@ mount_main() {
 	while true; do
 	    banner
 	    echo " "
-		echo "put your images on $DIRROM"
+		echo "put your images on $WORKDIR"
 		echo " "
 	    echo "1. Mount raw image and resize"
 	    echo "2. Mount without resizing"
@@ -983,21 +983,21 @@ mount_main() {
 umount_main() {
 	umount_resize_freespace() {
 		clear
-		images=$(ls -l $DIRROM | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
+		images=$(ls -l $WORKDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
 		resize_to_build(){
-			sudo e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
-			sudo resize2fs -M $DIRROM/${valset}.img > /dev/null 2>&1
-			sudo e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
+			sudo e2fsck -yf $WORKDIR/${valset}.img > /dev/null 2>&1
+			sudo resize2fs -M $WORKDIR/${valset}.img > /dev/null 2>&1
+			sudo e2fsck -yf $WORKDIR/${valset}.img > /dev/null 2>&1
 				
-			vsizenow=$(ls -nl $DIRROM/${valset}.img | awk '{print $5}')
+			vsizenow=$(ls -nl $WORKDIR/${valset}.img | awk '{print $5}')
 			sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
-			sudo resize2fs $DIRROM/${valset}.img $sizeimg > /dev/null 2>&1
-			sudo e2fsck -yf $DIRROM/${valset}.img > /dev/null 2>&1
+			sudo resize2fs $WORKDIR/${valset}.img $sizeimg > /dev/null 2>&1
+			sudo e2fsck -yf $WORKDIR/${valset}.img > /dev/null 2>&1
 		}
 
 		echo " "
 		echo "Input partition that you want to unmount :"
-		file_selector $DIRROM ".img"
+		file_selector $WORKDIR ".img"
 		PARTITION=$(echo $FILE | sed 's/\.img$//')
 		
 		echo " "
@@ -1009,8 +1009,8 @@ umount_main() {
 		echo "Unmounting $PARTITION..."
 		echo " "
 		restore_perm $PARTITION > /dev/null 2>&1
-		sudo umount $DIRROM/$PARTITION >> /dev/null 2>&1
-		rm -rf $DIRROM/$PARTITION
+		sudo umount $WORKDIR/$PARTITION >> /dev/null 2>&1
+		rm -rf $WORKDIR/$PARTITION
 
 		echo "Resizing $PARTITION..."
 		echo " "
@@ -1019,11 +1019,11 @@ umount_main() {
 	}
 	umount_resize() {
 		clear
-		images=$(ls -l $DIRROM | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
+		images=$(ls -l $WORKDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
 		resize_to_build(){
-			sudo e2fsck -yf $DIRROM/${valset}.img
-			sudo resize2fs -M $DIRROM/${valset}.img
-			sudo e2fsck -yf $DIRROM/${valset}.img
+			sudo e2fsck -yf $WORKDIR/${valset}.img
+			sudo resize2fs -M $WORKDIR/${valset}.img
+			sudo e2fsck -yf $WORKDIR/${valset}.img
 		}
 		echo " "
 		echo "Unmounting partitions..."
@@ -1031,8 +1031,8 @@ umount_main() {
 		for partition in $images
 		do
 		   restore_perm $partition > /dev/null 2>&1
-	 	   sudo umount $DIRROM/$partition >> /dev/null 2>&1
-	 	   rm -rf $DIRROM/$partition
+	 	   sudo umount $WORKDIR/$partition >> /dev/null 2>&1
+	 	   rm -rf $WORKDIR/$partition
 		done
 
 		echo "Resizing partitions..."
@@ -1048,12 +1048,12 @@ umount_main() {
 		echo " "
 		echo "Unmounting partitions..."
 		echo " "
-		images=$(ls -l $DIRROM | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
+		images=$(ls -l $WORKDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
 		for partition in $images
 		do
 		   restore_perm $partition > /dev/null 2>&1
-	 	   sudo umount $DIRROM/$partition >> /dev/null 2>&1
-	 	   rm -rf $DIRROM/$partition
+	 	   sudo umount $WORKDIR/$partition >> /dev/null 2>&1
+	 	   rm -rf $WORKDIR/$partition
 		done
 	}
 	
@@ -1373,7 +1373,7 @@ splits_main() {
 			    read -p "choose 1 or 2 : " choose
 			    case $choose in
 				[1]* ) 
-				echo "Make sure to input your raw .img's to rom_input folder"
+				echo "Make sure to input your raw .img's to input folder"
 				echo " "
 				echo "Compiling splits with A only format"
 				echo " "
@@ -1381,7 +1381,7 @@ splits_main() {
 				break;;
 
 				[2]* ) 
-				echo "Make sure to input your raw .img's to rom_input folder"
+				echo "Make sure to input your raw .img's to input folder"
 				echo " "
 				echo "Compiling splits with Virtual A/B format"
 				echo " "
@@ -1508,11 +1508,11 @@ super_u_raw() {
 		echo "Unpacking $imgname.img..."
 		mkdir -p $DIRSUPER/config
 		lpdump --slot=0 $DIRIN/$imgname.img > $DIRSUPER/config/super_config.txt
-		lpunpack $DIRIN/$imgname.img $DIRROM/super
+		lpunpack $DIRIN/$imgname.img $WORKDIR/super
 		rm -rf $DIRIN/$imgname.*
 
 		echo " "
-		echo -e "${G}Done! Output : $DIRROM/super ${NC}"
+		echo -e "${G}Done! Output : $WORKDIR/super ${NC}"
 	fi
 }
 	
@@ -1537,11 +1537,11 @@ super_u_zstd() {
 		echo "Unpacking super..."
 		mkdir -p $DIRSUPER/config
 		lpdump --slot=0 $DIRIN/super.img > $DIRSUPER/config/super_config.txt
-		lpunpack $DIRIN/super.img $DIRROM/super
+		lpunpack $DIRIN/super.img $WORKDIR/super
 		rm -rf $DIRIN/super.img
 
 		echo " "
-		echo -e "${G}Done! Output : $DIRROM/super ${NC}"
+		echo -e "${G}Done! Output : $WORKDIR/super ${NC}"
 	else
 		echo " "
 		echo -e "${R}File type is not Zstandard! aborting...${NC}"
@@ -1572,11 +1572,11 @@ super_u_datbr() {
 		echo "Unpacking $imgname.img..."
 		mkdir -p $DIRSUPER/config
 		lpdump --slot=0 $DIROUT/$imgname.img > $DIRSUPER/config/super_config.txt
-		lpunpack $DIROUT/$imgname.img $DIRROM/super
+		lpunpack $DIROUT/$imgname.img $WORKDIR/super
 		rm -rf $DIROUT/$imgname.*
 
 		echo " "
-		echo -e "${G}Done! Output : $DIRROM/super ${NC}"
+		echo -e "${G}Done! Output : $WORKDIR/super ${NC}"
 	fi
 }
 
