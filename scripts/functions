@@ -1707,23 +1707,19 @@ super_r() {
 		echo "Virtual A/B detected..."
 		echo "Compiling super with Virtual A/B format"
 		echo " "
-		while true; do
-		    echo "Choose which slot is active"
-		    echo "1. A"
-		    echo "2. B"
-		    read -p "" choose
-		    case $choose in
-		[1]* ) 
+		local slot_a_size=$(ls -l $DIRSUPER/*_a.img | awk '{sum += $5} END {print sum}')
+		local slot_b_size=$(ls -l $DIRSUPER/*_b.img | awk '{sum += $5} END {print sum}')
+		if (($slot_a_size > $slot_b_size)); then
+			echo "Active Slot: A (Auto Detected)"
+			echo " "
 			slot=_a
 			emptyslot=_b
-			break;;
-		[2]* )
+		else
+			echo "Active Slot: B (Auto Detected)"
+			echo " "
 			slot=_b
 			emptyslot=_a
-			break;;
-		* ) echo "Please answer 1 or 2.";;
-		    esac
-		done
+		fi
 		
 		ab_part_list=$(cat $DIRSUPER/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }' | grep ${slot})
 		ab_part_list_empty=$(cat $DIRSUPER/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }' | grep ${emptyslot})
