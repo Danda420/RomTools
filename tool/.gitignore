@@ -2,3 +2,4 @@ custom_scripts/*
 patch/*
 bin/__pycache__
 enableLogs
+split_partitions.conf
