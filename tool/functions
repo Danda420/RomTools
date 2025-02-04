@@ -1,6 +1,6 @@
 #!/bin/bash
 DIRTOOLS=$PWD
-DIRSCRIPTS=$DIRTOOLS/scripts
+DIRSCRIPTS=$DIRTOOLS/tool
 BIN=$DIRSCRIPTS/bin
 OPLUSMERGE=$BIN/oplus
 MERGE=$BIN/merge_non_dynamic

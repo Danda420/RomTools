@@ -1,5 +1,5 @@
 #!/bin/bash
 
-source ./scripts/functions
+source ./tool/functions
 
 start_tools

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ### IMPORT FUNCTIONS AND VARIABLES FROM TOOLS ###
-source ./scripts/functions
+source ./tool/functions
 #################################################
 clear
 #################################################
