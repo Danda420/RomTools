@@ -2,14 +2,15 @@
 DIRTOOLS=$PWD
 DIRSCRIPTS=$DIRTOOLS/tool
 BIN=$DIRSCRIPTS/bin
-OPLUSMERGE=$BIN/oplus
-MERGE=$BIN/merge_non_dynamic
+PYSCRIPTS=$BIN/py
+ABIEBIN=$BIN/booteditor
 DIRIN=$DIRTOOLS/input
 DIROUT=$DIRTOOLS/output
 WORKDIR=$DIRTOOLS/ROM_WORKDIR
-DIRSUPER=$WORKDIR/super
+superdir=$WORKDIR/super
 ext4dir=$WORKDIR/EXT4
 erofsdir=$WORKDIR/erofs
+u_bootdir=$WORKDIR/boot
 partitions="system vendor odm product system_ext"
 oplus_partitions="my_bigball my_carrier my_company my_engineering my_heytap my_manifest my_preload my_product my_region my_stock"
 G='\033[1;32m'
@@ -37,6 +38,14 @@ banner() {
 	echo -e "${LC}+-------------------------+"
 	echo -e "${LC}|   ROM TOOLS FOR LINUX   |"
 	echo -e "${LC}|        by  Danda        |"
+	echo -e "${LC}+-------------------------+${NC}"
+}
+
+booteditor_banner() {
+	clear
+	echo -e "${LC}+-------------------------+"
+	echo -e "${LC}|Android Boot Image Editor|"
+	echo -e "${LC}|         by cfig         |"
 	echo -e "${LC}+-------------------------+${NC}"
 }
 
@@ -84,9 +93,11 @@ clean() {
 
 	rm -rf $DIRIN \
 	       $DIROUT \
-	       $WORKDIR
-	sudo rm -rf $BIN/py/__pycache__
-	sudo rm -rf $BIN/py/*.pyc
+	       $WORKDIR \
+		   $ABIEBIN/uiderrors \
+		   $ABIEBIN/*.img*
+		   
+	sudo find $DIRSCRIPTS/ -name "__pycache__" -type d -exec rm -rf {} +
 
 	echo -e "${G}Done!${NC}"
 }
@@ -97,7 +108,7 @@ file_selector() {
 	local message=$3
 	if ls -1 $selected_dir/*$file_extension > /dev/null 2>&1 ; then
 	   ls -1 $selected_dir/*$file_extension | sed 's:.*/::' | awk '{print NR ".", $0}'
-	   nofilesfound=0
+	   local nofilesfound=0
 	else
 	   if [[ $file_extension == "" ]]; then
 	      echo -e "${R}No file(s) found in $selected_dir ${NC}"
@@ -210,13 +221,83 @@ patch_merge_fsconf_contexts() {
 	sed -i "s#/${image}/#/system/${image}/#g" $3
 }
 
+repack_bootimg() {
+	clear
+	booteditor_banner
+	echo " "
+	echo "choose which image you wanted to repack"
+	echo " "
+	extracted_partition_selector $u_bootdir "Repack all images shown"
+	for imgname in $FOLDER; do
+		local img=$imgname.img
+		if [[ $img != "vbmeta.img" ]] && [[ -f $DIRIN/vbmeta.img ]]; then
+			mv $DIRIN/vbmeta.img $ABIEBIN/
+		elif [[ $img != "vbmeta.img" ]] && [[ -f $u_bootdir/vbmeta/vbmeta.img ]]; then
+			mv $u_bootdir/vbmeta/vbmeta.img $ABIEBIN/
+		fi
+		mv $u_bootdir/$imgname/$img $ABIEBIN/
+		mv $u_bootdir/$imgname $ABIEBIN/build
+		cd $ABIEBIN
+		java -jar $ABIEBIN/bbootimg/bbootimg.jar pack
+		cd $DIRTOOLS
+		mv $ABIEBIN/$img $ABIEBIN/build
+		mv $ABIEBIN/build $u_bootdir/$imgname
+		if [[ -f $ABIEBIN/$img.signed ]]; then
+			mv $ABIEBIN/$img.signed $DIROUT/$imgname.signed.img
+			echo ""
+			echo -e "${G}Output: $DIROUT/$imgname.signed.img${NC}"
+		elif [[ -f $ABIEBIN/$img.clear ]]; then
+			mv $ABIEBIN/$img.clear $DIROUT/$imgname.unsigned.img
+			echo ""
+			echo -e "${G}Output: $DIROUT/$imgname.unsigned.img${NC}"
+		else
+			echo ""
+			echo -e "${R}Repacking failed!${NC}"
+		fi
+		if [[ $img != "vbmeta.img" ]] && [[ -f $ABIEBIN/vbmeta.img ]] && [[ -d $u_bootdir/vbmeta ]]; then
+			mv $ABIEBIN/vbmeta.img $u_bootdir/vbmeta/
+		elif [[ $img != "vbmeta.img" ]] && [[ -f $ABIEBIN/vbmeta.img ]] && [[ ! -d $u_bootdir/vbmeta ]]; then
+			mv $ABIEBIN/vbmeta.img $DIRIN/
+		fi
+	done
+}
+
+unpack_bootimg() {
+	clear
+	booteditor_banner
+	echo " "
+	echo "choose which image you wanted to unpack"
+	echo " "
+	file_selector $DIRIN ".img"
+	local img=$FILE.img
+	local extracted_folder=$FILE
+	mkdir -p $u_bootdir
+	if [[ -d $u_bootdir/$extracted_folder ]]; then
+		rm -rf $u_bootdir/$extracted_folder
+	fi
+	if [[ $img != "vbmeta.img" ]] && [[ -f $DIRIN/vbmeta.img ]]; then
+	   mv $DIRIN/vbmeta.img $ABIEBIN/
+	fi
+	cd $ABIEBIN/
+	mv $DIRIN/$img $ABIEBIN/
+	java -jar $ABIEBIN/bbootimg/bbootimg.jar unpack
+	mv $ABIEBIN/$img $ABIEBIN/build/
+	mv $ABIEBIN/build $u_bootdir/$extracted_folder
+	if [[ $img != "vbmeta.img" ]] && [[ -f $ABIEBIN/vbmeta.img ]]; then
+	   mv $ABIEBIN/vbmeta.img $DIRIN/
+	fi
+	cd $DIRTOOLS
+	echo ""
+	echo -e "Output: $u_bootdir/$extracted_folder"
+}
+
 convert_erofs_ext4(){
 	if [[ -f $DIRIN/$image.img ]]; then
 		echo " "
 		echo "Starting conversion..."
 		echo ""
 		echo "- Unpacking $image image (erofs)"
-	    $BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x > /dev/null 2>&1
+		$BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x > /dev/null 2>&1
 	        
 		echo "- Rebuilding $image as ext4 image..."
 		local foldersize=$(du -s -B1 $erofsdir/$image | awk '{print $1}')
@@ -251,7 +332,7 @@ rebuild_ext4(){
 		echo ""
 		echo "- Extracting $partition"
 		mkdir -p $WORKDIR/rebuildimg
-		sudo $BIN/py/imgextractor.py $DIRIN/$partition.img $WORKDIR/rebuildimg > /dev/null 2>&1
+		sudo $PYSCRIPTS/imgextractor.py $DIRIN/$partition.img $WORKDIR/rebuildimg > /dev/null 2>&1
 		local foldersize=$(sudo du -s -B1 $WORKDIR/rebuildimg/$partition | awk '{print $1}')
 		local SIZE=$(($foldersize + $foldersize * 1/10))
 		if (( $SIZE < 1474560 )); then
@@ -322,14 +403,13 @@ datbr_raw() {
 	local imgname=$FILE
 
 	if [ -f $DIRIN/$imgname.new.dat.br ]; then
-
 		echo "Unpacking..."
 		echo " "
 		brotli -d $DIRIN/$imgname.new.dat.br
 
 		rm -rf $DIRIN/$imgname.new.dat.br
 
-		python3 $BIN/py/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img  >> /dev/null 2>&1
+		python3 $PYSCRIPTS/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img  >> /dev/null 2>&1
 		echo " "
 		echo "Cleaning input folder..."
 
@@ -422,7 +502,7 @@ unpack_ext4() {
 	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
 		mkdir -p $ext4dir
 		echo ""
-		sudo $BIN/py/imgextractor.py $DIRIN/$image.img $WORKDIR/EXT4
+		sudo $PYSCRIPTS/imgextractor.py $DIRIN/$image.img $WORKDIR/EXT4
 		sudo chown -R $USER:$USER $WORKDIR/EXT4
 		echo ""
 		echo -e "${G}Output : $ext4dir/$image ${NC}"
@@ -806,7 +886,7 @@ sparsechunk_converter() {
 }
 
 merge_oplus() {
-		clear
+	clear
 	if [[ -f $DIRIN/system_file_contexts ]] && [[ -f $DIRIN/system_fs_config ]]; then
 		merge() {
 			if [[ -f $DIRIN/${partition}_file_contexts ]] && [[ -f $DIRIN/${partition}_fs_config ]]; then
@@ -949,7 +1029,7 @@ umount_resize_freespace() {
 
 	echo "Resizing $PARTITION..."
 	echo " "
-	valset=$PARTITION
+	local valset=$PARTITION
 	resize_to_build
 }
 
@@ -1038,7 +1118,6 @@ raw_sparse() {
 	local imgname=$FILE
 
 	if [ -f $DIRIN/$imgname.img ]; then
-
 		echo " "
 		echo "Converting raw image to sparse..."
 
@@ -1076,7 +1155,7 @@ raw_datbr() {
 
 		echo " " 
 		echo "converting image : $imgname to new.dat"
-		python3 $BIN/py/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIOUT/ -v 4 -p $imgname >> /dev/null 2>&1
+		python3 $PYSCRIPTS/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIOUT/ -v 4 -p $imgname >> /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.sparse.img
 
 		echo " " 
@@ -1219,10 +1298,10 @@ splits_compress() {
 
 	sparse() {
 	    if [[ -f $DIRIN/$partition.img ]]; then
-			echo ""
-			echo "converting $partition into sparse"
-			img2simg $DIRIN/$partition.img $DIRIN/$partition.sparse.img >> /dev/null 2>&1
-			rm -rf $DIRIN/$partition.img
+	    	echo ""
+	    	echo "converting $partition into sparse"
+	    	img2simg $DIRIN/$partition.img $DIRIN/$partition.sparse.img >> /dev/null 2>&1
+	    	rm -rf $DIRIN/$partition.img
 	    else
 	    	echo " "
 	    	echo -e "${R}there's no $partition.img supplied! skipping...${NC}"
@@ -1231,10 +1310,10 @@ splits_compress() {
 
 	img2sdat() {
 	    if [[ -f $DIRIN/$partition.sparse.img ]]; then
-			echo " "
-			echo "converting $partition into new.dat"
-			python3 $BIN/py/img2sdat.py $DIRIN/$partition.sparse.img -o $DIROUT/ -v 4 -p $partition >> /dev/null 2>&1
-			rm -rf $DIRIN/$partition.sparse.img
+	    	echo " "
+	    	echo "converting $partition into new.dat"
+	    	python3 $PYSCRIPTS/img2sdat.py $DIRIN/$partition.sparse.img -o $DIROUT/ -v 4 -p $partition >> /dev/null 2>&1
+	    	rm -rf $DIRIN/$partition.sparse.img
 	    else
 	    	echo " "
 	    	echo -e "${R}there's no $partition.sparse.img supplied! skipping...${NC}"
@@ -1243,10 +1322,10 @@ splits_compress() {
 
 	datbr() {
 	    if [[ -f $DIROUT/$partition.new.dat ]]; then
-			echo " " 
-			echo "compressing $partition using brotli..."
-			brotli -q $COMPLVL $DIROUT/$partition.new.dat
-			rm -rf $DIROUT/$partition.new.dat
+	    	echo " " 
+	    	echo "compressing $partition using brotli..."
+	    	brotli -q $COMPLVL $DIROUT/$partition.new.dat
+	    	rm -rf $DIROUT/$partition.new.dat
 	    else
 	    	echo " "
 	    	echo -e "${R}there's no $partition.new.dat supplied! skipping...${NC}"
@@ -1321,7 +1400,7 @@ splits_decompress() {
 	    if [[ -f $DIRIN/$partition.new.dat ]] && [[ -f $DIRIN/$partition.transfer.list ]]; then
 		echo " "
 		echo "Converting $partition.new.dat to $partition.img (raw)"
-		python3 $BIN/py/sdat2img.py $DIRIN/$partition.transfer.list $DIRIN/$partition.new.dat $DIROUT/$partition.img >> /dev/null 2>&1
+		python3 $PYSCRIPTS/sdat2img.py $DIRIN/$partition.transfer.list $DIRIN/$partition.new.dat $DIROUT/$partition.img >> /dev/null 2>&1
 		rm -rf $DIRIN/$partition.*
 	    else
 	    	echo " "
@@ -1384,8 +1463,8 @@ super_u_raw() {
 	if [ -f $DIRIN/$imgname.img ]; then
 		echo " "
 		echo "Unpacking $imgname.img..."
-		mkdir -p $DIRSUPER/config
-		lpdump --slot=0 $DIRIN/$imgname.img > $DIRSUPER/config/super_config.txt
+		mkdir -p $superdir/config
+		lpdump --slot=0 $DIRIN/$imgname.img > $superdir/config/super_config.txt
 		lpunpack $DIRIN/$imgname.img $WORKDIR/super
 		rm -rf $DIRIN/$imgname.*
 
@@ -1413,8 +1492,8 @@ super_u_zstd() {
 
 		echo " "
 		echo "Unpacking super..."
-		mkdir -p $DIRSUPER/config
-		lpdump --slot=0 $DIRIN/super.img > $DIRSUPER/config/super_config.txt
+		mkdir -p $superdir/config
+		lpdump --slot=0 $DIRIN/super.img > $superdir/config/super_config.txt
 		lpunpack $DIRIN/super.img $WORKDIR/super
 		rm -rf $DIRIN/super.img
 
@@ -1436,20 +1515,19 @@ super_u_datbr() {
 	local imgname=$FILE
 
 	if [ -f $DIRIN/$imgname.new.dat.br ]; then
-
 		echo "Decompressing brotli..."
 		brotli -d $DIRIN/$imgname.new.dat.br
 		rm -rf $DIRIN/$imgname.new.dat.br
 
 		echo " "
 		echo "Converting $imgname.new.dat to $imgname.img (raw)..."
-		python3 $BIN/py/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img >> /dev/null 2>&1
+		python3 $PYSCRIPTS/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img >> /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.*
 
 		echo " "
 		echo "Unpacking $imgname.img..."
-		mkdir -p $DIRSUPER/config
-		lpdump --slot=0 $DIROUT/$imgname.img > $DIRSUPER/config/super_config.txt
+		mkdir -p $superdir/config
+		lpdump --slot=0 $DIROUT/$imgname.img > $superdir/config/super_config.txt
 		lpunpack $DIROUT/$imgname.img $WORKDIR/super
 		rm -rf $DIROUT/$imgname.*
 
@@ -1459,23 +1537,23 @@ super_u_datbr() {
 }
 
 super_r() {
-	if [[ $(ls $DIRSUPER ) == "" ]]; then
+	if [[ $(ls $superdir ) == "" ]]; then
 	    banner
 	    echo ""
 	    echo -e "${R}No super extracted!${NC}"
 	    restart_tool
 	fi
-	local meta_size=$(cat $DIRSUPER/config/super_config.txt | awk '/Metadata max size:/ { print $4 }')
-	local meta_slot=$(cat $DIRSUPER/config/super_config.txt | awk '/Metadata slot count:/ { print $4 }')
-	local first_sector=$(cat $DIRSUPER/config/super_config.txt | awk '/First sector:/ { print ($3 * 512)}')
-	local group_table=$(cat $DIRSUPER/config/super_config.txt | grep -A10 "Group table:" | grep "Name:" | awk '{ print $2 }' | sed -n "2p")
-	local group_table2=$(cat $DIRSUPER/config/super_config.txt | grep -A10 "Group table:" | grep "Name:" | awk '{ print $2 }' | sed -n "3p")
-	local virtualAB=$(cat $DIRSUPER/config/super_config.txt | awk '/Header flags:/ { print $3 }')
-	local size_super=$(cat $DIRSUPER/config/super_config.txt | awk '/Size:/ { print $2 }')
-	local max_size_super=$(cat $DIRSUPER/config/super_config.txt | grep -A11 "Group table:" | grep "Maximum size:" | awk '{ print $3 }' | sed -n "2p")
+	local meta_size=$(cat $superdir/config/super_config.txt | awk '/Metadata max size:/ { print $4 }')
+	local meta_slot=$(cat $superdir/config/super_config.txt | awk '/Metadata slot count:/ { print $4 }')
+	local first_sector=$(cat $superdir/config/super_config.txt | awk '/First sector:/ { print ($3 * 512)}')
+	local group_table=$(cat $superdir/config/super_config.txt | grep -A10 "Group table:" | grep "Name:" | awk '{ print $2 }' | sed -n "2p")
+	local group_table2=$(cat $superdir/config/super_config.txt | grep -A10 "Group table:" | grep "Name:" | awk '{ print $2 }' | sed -n "3p")
+	local virtualAB=$(cat $superdir/config/super_config.txt | awk '/Header flags:/ { print $3 }')
+	local size_super=$(cat $superdir/config/super_config.txt | awk '/Size:/ { print $2 }')
+	local max_size_super=$(cat $superdir/config/super_config.txt | grep -A11 "Group table:" | grep "Maximum size:" | awk '{ print $3 }' | sed -n "2p")
 	local max_size_super2=$max_size_super
 
-	local TOTALSIZE=$(ls -l $DIRSUPER/*.img | awk '{sum += $5} END {print sum}')
+	local TOTALSIZE=$(ls -l $superdir/*.img | awk '{sum += $5} END {print sum}')
 	
 	if [[ $virtualAB = "virtual_ab_device" ]]; then
 	    local virtualABOption="--virtual-ab "
@@ -1551,7 +1629,7 @@ super_r() {
 		echo "Compiling super with A only format"
 		echo " "
 
-		local part_list=$(cat $DIRSUPER/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }')
+		local part_list=$(cat $superdir/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }')
 		
 		if (( $TOTALSIZE > $max_size_super )); then
 			echo -e "${R}Total size of all partitions exceeds max super size, aborting...${NC}"
@@ -1568,8 +1646,8 @@ super_r() {
 			echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot --device=super:$size_super:$first_sector --group=$group_table:$max_size_super '\'" >> $DIRSCRIPTS/build_super
 
 			for partition in $part_list; do
-				local partition_size=$(ls -nl $DIRSUPER/$partition.img | awk '{print $5}')
-				echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$DIRSUPER/$partition.img '\'" >> $DIRSCRIPTS/build_super
+				local partition_size=$(ls -nl $superdir/$partition.img | awk '{print $5}')
+				echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$superdir/$partition.img '\'" >> $DIRSCRIPTS/build_super
 			done
 
 			echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super
@@ -1586,8 +1664,8 @@ super_r() {
 		echo "Virtual A/B detected..."
 		echo "Compiling super with Virtual A/B format"
 		echo " "
-		local slot_a_size=$(ls -l $DIRSUPER/*_a.img | awk '{sum += $5} END {print sum}')
-		local slot_b_size=$(ls -l $DIRSUPER/*_b.img | awk '{sum += $5} END {print sum}')
+		local slot_a_size=$(ls -l $superdir/*_a.img | awk '{sum += $5} END {print sum}')
+		local slot_b_size=$(ls -l $superdir/*_b.img | awk '{sum += $5} END {print sum}')
 		if (($slot_a_size > $slot_b_size)); then
 			echo "Active Slot: A (Auto Detected)"
 			echo " "
@@ -1600,8 +1678,8 @@ super_r() {
 			local emptyslot=_a
 		fi
 		
-		local ab_part_list=$(cat $DIRSUPER/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }' | grep ${slot})
-		local ab_part_list_empty=$(cat $DIRSUPER/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }' | grep ${emptyslot})
+		local ab_part_list=$(cat $superdir/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }' | grep ${slot})
+		local ab_part_list_empty=$(cat $superdir/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }' | grep ${emptyslot})
 		
 		if (( $TOTALSIZE > $max_size_super )); then
 			echo -e "${R}Total size of all partitions exceeds max super size, aborting...${NC}"
@@ -1622,8 +1700,8 @@ super_r() {
 			fi
 			
 			for partition in $ab_part_list; do
-				local partition_size=$(ls -nl $DIRSUPER/$partition.img | awk '{print $5}')
-				echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$DIRSUPER/$partition.img '\'" >> $DIRSCRIPTS/build_super
+				local partition_size=$(ls -nl $superdir/$partition.img | awk '{print $5}')
+				echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$superdir/$partition.img '\'" >> $DIRSCRIPTS/build_super
 			done
 			echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super
 			
@@ -1648,7 +1726,7 @@ super_r() {
 	fi
 	
 	if [[ -f $DIRIN/$imgname.img ]]; then
-		rm -rf $DIRSUPER
+		rm -rf $superdir
 	fi
 	
 	case $COMPRESSION in
@@ -1685,7 +1763,7 @@ super_r() {
 		
 		echo " "
 		echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
-		python3 $BIN/py/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIROUT/ -v 4 -p $imgname >> /dev/null 2>&1
+		python3 $PYSCRIPTS/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIROUT/ -v 4 -p $imgname >> /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.sparse.img
 		if [[ -f $DIROUT/$imgname.new.dat ]] && [[ $(ls -l $DIROUT/$imgname.new.dat | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}super build done! Output : $DIROUT/$imgname.new.dat ${NC}"
@@ -1703,7 +1781,7 @@ super_r() {
 		
 		echo " "
 		echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
-		python3 $BIN/py/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIROUT/ -v 4 -p $imgname >> /dev/null 2>&1
+		python3 $PYSCRIPTS/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIROUT/ -v 4 -p $imgname >> /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.sparse.img 
 		
 		echo " "
@@ -1733,6 +1811,35 @@ super_r() {
 		fi
 	   ;;
 	esac
+}
+
+androidbooteditor() {
+	while true; do
+	    booteditor_banner
+	    echo " "
+	    echo "1. Repack Image"
+	    echo "2. Unpack Image"
+	    echo "c. Clean up"
+	    echo "x. Back to main menu"
+	    
+	    read -p "" choose
+	    case $choose in
+	    
+		1 ) 
+
+	repack_bootimg
+	restart_tool;;
+
+		2 ) 
+	   
+	unpack_bootimg
+	restart_tool;;
+
+		x )  
+	start_tools;;
+		* ) androidbooteditor;;
+	    esac
+	done
 }
 
 install_proprietary() {
@@ -2126,6 +2233,7 @@ start_tools() {
 	while true; do
 	    banner
 	    echo " "
+	    echo "0. Android Boot Image Editor"
 	    echo "1. Super partition tools"
 	    echo "2. Split partition tools (system,vendor,odm,system_ext,product)"
 	    echo "3. Convert or compress images"
@@ -2139,14 +2247,14 @@ start_tools() {
 	    echo "11. Merge fs context and config to system"
 	    echo "12. Zstd Tools"
 	    echo "c. Clean up folders"
-	    echo "0. Install proprietary packages"
+	    echo "i. Install proprietary packages"
 	    echo "x. Exit tool"
 	    
 	    read -p "" choose
 	    case $choose in
 	    
 		0 ) 
-	install_proprietary
+	androidbooteditor
 	restart_tool;;
 
 		1 ) 
@@ -2195,6 +2303,10 @@ start_tools() {
 	
 		12 ) 
 	zstd_main
+	restart_tool;;
+	
+		i ) 
+	install_proprietary
 	restart_tool;;
 
 		c ) 
