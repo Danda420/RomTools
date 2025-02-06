@@ -1176,7 +1176,7 @@ raw_datbr() {
 	fi
 }
 
-splits_compress() {
+inc_dynamic_compress() {
 	clear
 	while true; do
 	echo "Make sure you have already put the partitions you want to compress to input folder"
@@ -1194,13 +1194,13 @@ splits_compress() {
 
 	local dynamic_part_op_list=$DIROUT/dynamic_partitions_op_list
 	local updater_script=$DIROUT/updater-script
-	local split_imgs=$(ls -l $DIRIN/ | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//' | sed '/^$/d')
+	local inc_dynamic_imgs=$(ls -l $DIRIN/ | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//' | sed '/^$/d')
 
 	echo ""
-	echo "Reading configurations from $DIRSCRIPTS/split_partitions.conf..."
-	local SUPERSIZE=$(getvalue SUPER_SIZE $DIRSCRIPTS/split_partitions.conf)
-	local ACTIVESLOT=$(getvalue ACTIVE_SLOT $DIRSCRIPTS/split_partitions.conf)
-	local GROUPTABLE=$(getvalue GROUP_TABLE $DIRSCRIPTS/split_partitions.conf)
+	echo "Reading configurations from $DIRSCRIPTS/incremental_dynamic.conf..."
+	local SUPERSIZE=$(getvalue SUPER_SIZE $DIRSCRIPTS/incremental_dynamic.conf)
+	local ACTIVESLOT=$(getvalue ACTIVE_SLOT $DIRSCRIPTS/incremental_dynamic.conf)
+	local GROUPTABLE=$(getvalue GROUP_TABLE $DIRSCRIPTS/incremental_dynamic.conf)
 	echo "Max Super partition size: ${SUPERSIZE}"
 	echo "Group table: ${GROUPTABLE}"
 	echo "Active Slot: ${ACTIVESLOT}"
@@ -1226,7 +1226,7 @@ splits_compress() {
 			echo "# Add group ${GROUPTABLE}_${EMPTYSLOT} with maximum size ${SUPERSIZE}" >> $dynamic_part_op_list
 			echo "add_group q${GROUPTABLE}_${EMPTYSLOT} ${SUPERSIZE}" >> $dynamic_part_op_list
 			
-			for partition in $(echo $split_imgs); do
+			for partition in $(echo $inc_dynamic_imgs); do
 			   if [[ -f $DIRIN/$partition.img ]]; then
 			      echo "# Add partition ${partition}_${ACTIVESLOT} to group ${GROUPTABLE}_${ACTIVESLOT}" >> $dynamic_part_op_list
 			      echo "add ${partition}_${ACTIVESLOT} ${GROUPTABLE}_${ACTIVESLOT}" >> $dynamic_part_op_list
@@ -1234,7 +1234,7 @@ splits_compress() {
 			      echo "add ${partition}_${EMPTYSLOT} ${GROUPTABLE}_${EMPTYSLOT}" >> $dynamic_part_op_list
 			   fi
 			done
-			for partition in $(echo $split_imgs); do
+			for partition in $(echo $inc_dynamic_imgs); do
 			   if [[ -f $DIRIN/$partition.img ]]; then
 			      local partitionsize=$(ls -nl $DIRIN/$partition.img | awk '{print $5}')
 			      echo "# Grow partition ${partition}_${ACTIVESLOT} from 0 to $partitionsize" >> $dynamic_part_op_list
@@ -1247,13 +1247,13 @@ splits_compress() {
 			echo "# Add group ${GROUPTABLE} with maximum size ${SUPERSIZE}" >>  $dynamic_part_op_list
 			echo "add_group ${GROUPTABLE} ${SUPERSIZE}" >>  $dynamic_part_op_list
 			
-			for partition in $(echo $split_imgs); do
+			for partition in $(echo $inc_dynamic_imgs); do
 			   if [[ -f $DIRIN/$partition.img ]]; then
 			      echo "# Add partition $partition to group ${GROUPTABLE}" >>  $dynamic_part_op_list
 			      echo "add $partition ${GROUPTABLE}" >>  $dynamic_part_op_list
 			   fi
 			done
-			for partition in $(echo $split_imgs); do
+			for partition in $(echo $inc_dynamic_imgs); do
 			   if [[ -f $DIRIN/$partition.img ]]; then
 			      local partitionsize=$(ls -nl $DIRIN/$partition.img | awk '{print $5}')
 			      echo "# Grow partition $partition from 0 to $partitionsize" >>  $dynamic_part_op_list
@@ -1267,7 +1267,7 @@ splits_compress() {
 		echo "Generating updater-script..."
 		echo "assert(update_dynamic_partitions(package_extract_file("dynamic_partitions_op_list")));" > $updater_script
 		if [[ $ACTIVESLOT != "" ]]; then
-			for partition in $(echo $split_imgs); do
+			for partition in $(echo $inc_dynamic_imgs); do
 				if [[ -f $DIRIN/$partition.img ]]; then
 					echo "" >> $updater_script
 					echo "ui_print(\"Flashing ${partition}_${ACTIVESLOT} partition...\");" >> $updater_script
@@ -1277,7 +1277,7 @@ splits_compress() {
 				fi
 			done
 		else
-			for partition in $(echo $split_imgs); do
+			for partition in $(echo $inc_dynamic_imgs); do
 				if [[ -f $DIRIN/$partition.img ]]; then
 					echo "" >> $updater_script
 					echo "ui_print(\"Flashing ${partition} files...\");" >> $updater_script
@@ -1335,21 +1335,21 @@ splits_compress() {
 	compress() {
 		echo "========================================="
 
-		for partition in $(echo $split_imgs); do
+		for partition in $(echo $inc_dynamic_imgs); do
 		  sparse
 		done
 
 		echo " "
 		echo "========================================="
 
-		for partition in $(echo $split_imgs); do
+		for partition in $(echo $inc_dynamic_imgs); do
 		  img2sdat
 		done
 
 		echo " "
 		echo "========================================="
 
-		for partition in $(echo $split_imgs); do
+		for partition in $(echo $inc_dynamic_imgs); do
 		  datbr
 		done
 
@@ -1360,7 +1360,7 @@ splits_compress() {
 
 	}
 		
-	local TOTALSIZE=$(ls -l $DIRIN/*.img | awk '{sum += $5} END {print sum}')
+	local TOTALSIZE=$(ls -l $DIRIN/*.img 2>/dev/null | awk 'NF {sum += $5} END {print sum+0}')
 
 	if (( $TOTALSIZE > $SUPERSIZE )); then
 		echo ""
@@ -1368,7 +1368,7 @@ splits_compress() {
 		echo -e "${R}($TOTALSIZE/$SUPERSIZE)${NC}"
 	else
 		echo ""
-		echo "Splits total size :"
+		echo "Total size :"
 		echo -e "${G}($TOTALSIZE/$SUPERSIZE)${NC}"
 		brotli_lvl
 		echo ""
@@ -1380,9 +1380,9 @@ splits_compress() {
 	fi
 }
 
-splits_decompress() {
+inc_dynamic_decompress() {
 	clear
-	local split_compressed_imgs=$(ls -l $DIRIN/ | grep -v '^d' | grep .new.dat.br | awk '{print $9}' | sed 's/\.new.dat.br$//' | sed '/^$/d')
+	local inc_dynamic_compressed_imgs=$(ls -l $DIRIN/ | grep -v '^d' | grep .new.dat.br | awk '{print $9}' | sed 's/\.new.dat.br$//' | sed '/^$/d')
 
 	datbr() {
 	    if [[ -f $DIRIN/$partition.new.dat.br ]]; then
@@ -1410,14 +1410,14 @@ splits_decompress() {
 
 	echo "========================================="
 
-	for partition in $(echo $split_compressed_imgs); do
+	for partition in $(echo $inc_dynamic_compressed_imgs); do
 	  datbr
 	done
 
 	echo " "
 	echo "========================================="
 
-	for partition in $(echo $split_compressed_imgs); do
+	for partition in $(echo $inc_dynamic_compressed_imgs); do
 	  sdat2img
 	done
 
@@ -1553,7 +1553,7 @@ super_r() {
 	local max_size_super=$(cat $superdir/config/super_config.txt | grep -A11 "Group table:" | grep "Maximum size:" | awk '{ print $3 }' | sed -n "2p")
 	local max_size_super2=$max_size_super
 
-	local TOTALSIZE=$(ls -l $superdir/*.img | awk '{sum += $5} END {print sum}')
+	local TOTALSIZE=$(ls -l $superdir/*.img 2>/dev/null | awk 'NF {sum += $5} END {print sum+0}')
 	
 	if [[ $virtualAB = "virtual_ab_device" ]]; then
 	    local virtualABOption="--virtual-ab "
@@ -2031,29 +2031,29 @@ mount_umount_main() {
 	done
 }
 
-splits_main() {
+inc_dynamic_main() {
 	while true; do
 	    banner
 	    echo " "
-	    echo "1. Repack Splits (raw to dat.br)"
-	    echo "2. Unpack Splits"
+	    echo "1. Repack (raw to dat.br)"
+	    echo "2. Unpack"
 	    echo "x. Back to main menu"
 	    
 	    read -p "" choose
 	    case $choose in
 	    
 		1 ) 
-	splits_compress
+	inc_dynamic_compress
 	restart_tool;;
 
 		2 ) 
-	splits_decompress
+	inc_dynamic_decompress
 	restart_tool;;
 
 		x ) 
 	start_tools;;
 
-		* ) splits_main;;
+		* ) inc_dynamic_main;;
 	    esac
 	done
 }
@@ -2235,7 +2235,7 @@ start_tools() {
 	    echo " "
 	    echo "0. Android Boot Image Editor"
 	    echo "1. Super partition tools"
-	    echo "2. Split partition tools (system,vendor,odm,system_ext,product)"
+	    echo "2. Incremental dynamic partition tools"
 	    echo "3. Convert or compress images"
 	    echo "4. Unpack or repack images"
 	    echo "5. Convert erofs to ext4"
@@ -2262,7 +2262,7 @@ start_tools() {
 	restart_tool;;
 
 		2 ) 
-	splits_main
+	inc_dynamic_main
 	restart_tool;;
 
 		3 ) 

@@ -1,5 +1,5 @@
 custom_scripts/*
 patch/*
-bin/__pycache__
+bin/py/__pycache__
 enableLogs
 split_partitions.conf
