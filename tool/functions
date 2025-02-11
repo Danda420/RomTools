@@ -292,105 +292,90 @@ unpack_bootimg() {
 }
 
 convert_erofs_ext4(){
-	if [[ -f $DIRIN/$image.img ]]; then
-		echo " "
-		echo "Starting conversion..."
-		echo ""
-		echo "- Unpacking $image image (erofs)"
-		$BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x > /dev/null 2>&1
+	echo " "
+	echo "Starting conversion..."
+	echo ""
+	echo "- Unpacking $image image (erofs)"
+	$BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x > /dev/null 2>&1
 	        
-		echo "- Rebuilding $image as ext4 image..."
-		local foldersize=$(du -s -B1 $erofsdir/$image | awk '{print $1}')
-		local SIZE=$(($foldersize + $foldersize * 1/10))
-		if (( $SIZE < 1474560 )); then
-		    local SIZE=`sudo du -sk $erofsdir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
-		fi
-		repack_erofs_as_ext4_cmd $image $SIZE > /dev/null 2>&1
-		resize_img $DIROUT/$image.img smallest
-		echo ""
-		if [[ -f $DIROUT/$image.img ]] && [[ $(ls -l $DIROUT/$image.img | awk '{print $5}') != "0" ]]; then
-		   rm -rf $DIRIN/$image.img
-		   echo -e "${G}Conversion done..."
-		   echo -e "Output : $DIROUT/$image.img ${NC}"
-		else
-		   echo -e "${R}Conversion Failed!"
-		   echo -e "${NC}"
-		fi
-		echo ""
-		cd $DIRTOOLS
+	echo "- Rebuilding $image as ext4 image..."
+	local foldersize=$(du -s -B1 $erofsdir/$image | awk '{print $1}')
+	local SIZE=$(($foldersize + $foldersize * 1/10))
+	if (( $SIZE < 1474560 )); then
+	    local SIZE=`sudo du -sk $erofsdir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+	fi
+	repack_erofs_as_ext4_cmd $image $SIZE > /dev/null 2>&1
+	resize_img $DIROUT/$image.img smallest
+	echo ""
+	if [[ -f $DIROUT/$image.img ]] && [[ $(ls -l $DIROUT/$image.img | awk '{print $5}') != "0" ]]; then
+	   rm -rf $DIRIN/$image.img
+	   echo -e "${G}Conversion done..."
+	   echo -e "Output : $DIROUT/$image.img ${NC}"
 	else
-		echo ""
-		echo -e "${R}there's no image named "$image.img" in $DIRIN"
-		echo -e "${NC}"
-	 fi
+	   echo -e "${R}Conversion Failed!"
+	   echo -e "${NC}"
+	fi
 }
 		
 rebuild_ext4(){
-	if [[ -f $DIRIN/$partition.img ]]; then
-		echo " "
-		echo "Starting rebuilding..."
-		echo ""
-		echo "- Extracting $partition"
-		mkdir -p $WORKDIR/rebuildimg
-		sudo $PYSCRIPTS/imgextractor.py $DIRIN/$partition.img $WORKDIR/rebuildimg > /dev/null 2>&1
-		local foldersize=$(sudo du -s -B1 $WORKDIR/rebuildimg/$partition | awk '{print $1}')
-		local SIZE=$(($foldersize + $foldersize * 1/10))
-		if (( $SIZE < 1474560 )); then
-			local SIZE=`sudo du -sk $WORKDIR/rebuildimg/$partition | awk '{$1*=1024;$1=int($1*8);printf $1}'`
-		fi
-		echo "- Rebuilding $partition..."
-		if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
-			sudo $BIN/make_ext4fs -J -T -1 \
-			   -S "$WORKDIR/rebuildimg/config/$partition/${partition}_file_contexts" \
-			   -C "$WORKDIR/rebuildimg/config/$partition/${partition}_fs_config" \
-			   -l "$SIZE" \
-			   -L "/" \
-			   -a "/$partition" \
-			   "$DIROUT/$partition.img" "$WORKDIR/rebuildimg/$partition" > /dev/null 2>&1
-		else
-			sudo $BIN/make_ext4fs -J -T -1 \
-			   -S "$WORKDIR/rebuildimg/config/$partition/${partition}_file_contexts" \
-			   -C "$WORKDIR/rebuildimg/config/$partition/${partition}_fs_config" \
-			   -l "$SIZE" \
-			   -L "$partition" \
-			   -a "/$partition" \
-			   "$DIROUT/$partition.img" "$WORKDIR/rebuildimg/$partition" > /dev/null 2>&1
-		fi
-		resize_img $DIROUT/$partition.img smallest
-		sudo rm -rf $WORKDIR/rebuildimg
-		echo ""
-		if [[ -f $DIROUT/$partition.img ]] && [[ $(ls -l $DIROUT/$partition.img | awk '{print $5}') != "0" ]]; then
-		   rm -rf $DIRIN/$partition.img
-		   echo -e "${G}Rebuild done..."
-		   echo -e "Output : $DIROUT/$partition.img ${NC}"
-		else
-		   echo -e "${R}Rebuild Failed!"
-		   echo -e "${NC}"
-		fi
-		echo ""
-	 else
-		echo ""
-		echo -e "${R}there's no image named "$partition.img" in $DIRIN"
+	echo " "
+	echo "Starting rebuilding..."
+	echo ""
+	echo "- Extracting $partition"
+	mkdir -p $WORKDIR/rebuildimg
+	sudo $PYSCRIPTS/imgextractor.py $DIRIN/$partition.img $WORKDIR/rebuildimg > /dev/null 2>&1
+	local foldersize=$(sudo du -s -B1 $WORKDIR/rebuildimg/$partition | awk '{print $1}')
+	local SIZE=$(($foldersize + $foldersize * 1/10))
+	if (( $SIZE < 1474560 )); then
+		local SIZE=`sudo du -sk $WORKDIR/rebuildimg/$partition | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+	fi
+	echo "- Rebuilding $partition..."
+	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
+		sudo $BIN/make_ext4fs -J -T -1 \
+		   -S "$WORKDIR/rebuildimg/config/$partition/${partition}_file_contexts" \
+		   -C "$WORKDIR/rebuildimg/config/$partition/${partition}_fs_config" \
+		   -l "$SIZE" \
+		   -L "/" \
+		   -a "/$partition" \
+		   "$DIROUT/$partition.img" "$WORKDIR/rebuildimg/$partition" > /dev/null 2>&1
+	else
+		sudo $BIN/make_ext4fs -J -T -1 \
+		   -S "$WORKDIR/rebuildimg/config/$partition/${partition}_file_contexts" \
+		   -C "$WORKDIR/rebuildimg/config/$partition/${partition}_fs_config" \
+		   -l "$SIZE" \
+		   -L "$partition" \
+		   -a "/$partition" \
+		   "$DIROUT/$partition.img" "$WORKDIR/rebuildimg/$partition" > /dev/null 2>&1
+	fi
+	resize_img $DIROUT/$partition.img smallest
+	sudo rm -rf $WORKDIR/rebuildimg
+	echo ""
+	if [[ -f $DIROUT/$partition.img ]] && [[ $(ls -l $DIROUT/$partition.img | awk '{print $5}') != "0" ]]; then
+		rm -rf $DIRIN/$partition.img
+		echo -e "${G}Rebuild done..."
+		echo -e "Output : $DIROUT/$partition.img ${NC}"
+	else
+		echo -e "${R}Rebuild Failed!"
 		echo -e "${NC}"
 	fi
 }
 
 rebuild_ext4_single() {
-		clear
-		banner
-		echo " "
-		echo "choose which image you wanted to rebuild"
-		echo " "
-		file_selector $DIRIN ".img" "Rebuild all ext4 image shown above"
-		for partition in $FILE; do
-		   if [[ $(blkid -o value -s TYPE $DIRIN/$partition.img) == ext4 ]]; then
-		      rebuild_ext4
-		   else
-		      echo ""
-		      echo -e "${R}$partition.img fs type is $(blkid -o value -s TYPE $DIRIN/$partition.img), aborting..."
-		      echo -e "${NC}"
-		   fi
-		done
+	clear
+	banner
+	echo " "
+	echo "choose which image you wanted to rebuild"
+	echo " "
+	file_selector $DIRIN ".img" "Rebuild all ext4 image shown above"
+	for partition in $FILE; do
+		if [[ $(blkid -o value -s TYPE $DIRIN/$partition.img) == ext4 ]]; then
+		  rebuild_ext4
+		else
+		   echo ""
+		   echo -e "${R}$partition.img fs type is $(blkid -o value -s TYPE $DIRIN/$partition.img), aborting..."
+		   echo -e "${NC}"
+		fi
+	done
 }
 
 datbr_raw() {
@@ -498,28 +483,33 @@ decompress_zstd() {
 }
 
 unpack_ext4() {
-	if [[ -f $DIRIN/$image.img ]]; then
-	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
-		mkdir -p $ext4dir
-		echo ""
-		sudo $PYSCRIPTS/imgextractor.py $DIRIN/$image.img $WORKDIR/EXT4
-		sudo chown -R $USER:$USER $WORKDIR/EXT4
-		echo ""
-		echo -e "${G}Output : $ext4dir/$image ${NC}"
-		rm -rf $DIRIN/$image.img
-	   else
-	   	echo ""
-		echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
-		echo -e "${NC}"
-	   fi
-	else
-		echo -e "${R}Error: no image named $image.img in $DIRIN"
-		echo -e "${NC}"
+	mkdir -p $ext4dir
+	if [[ -d $ext4dir/$image ]]; then
+		echo "Folder named $image in $ext4dir exists, it will be deleted!"
+		echo "Move it somewhere first if its important"
+		echo "Press ENTER to confirm."
+		read
+		rm -rf $ext4dir/$image
+		rm -rf $ext4dir/config/$image
 	fi
+	echo ""
+	sudo $PYSCRIPTS/imgextractor.py $DIRIN/$image.img $WORKDIR/EXT4
+	sudo chown -R $USER:$USER $WORKDIR/EXT4
+	echo ""
+	echo -e "${G}Output : $ext4dir/$image ${NC}"
+	rm -rf $DIRIN/$image.img
 }
 
 unpack_erofs() {
 	mkdir -p $erofsdir
+	if [[ -d $erofsdir/$image ]]; then
+		echo "Folder named $image in $erofsdir exists, it will be deleted!"
+		echo "Move it somewhere first if its important"
+		echo "Press ENTER to confirm."
+		read
+		rm -rf $erofsdir/$image
+		rm -rf $erofsdir/config/$image_*
+	fi
 	echo ""
 	$BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x
 	echo ""
@@ -1461,6 +1451,13 @@ super_u_raw() {
 	local imgname=$FILE
 
 	if [ -f $DIRIN/$imgname.img ]; then
+		if [[ -d $superdir ]]; then
+			echo "Theres super extracted on $superdir, it will be deleted!"
+			echo "Move it somewhere first if its important"
+			echo "Press ENTER to confirm."
+			read
+			rm -rf $superdir
+		fi
 		echo " "
 		echo "Unpacking $imgname.img..."
 		mkdir -p $superdir/config
@@ -1483,6 +1480,13 @@ super_u_zstd() {
 	local filename=$FILE
 	
 	if [[ $(file $DIRIN/$filename | grep "Zstandard") != "" ]]; then
+		if [[ -d $superdir ]]; then
+			echo "Theres super extracted on $superdir, it will be deleted!"
+			echo "Move it somewhere first if its important"
+			echo "Press ENTER to confirm."
+			read
+			rm -rf $superdir
+		fi
 		mv $DIRIN/$filename $DIRIN/$filename.zst
 		
 		echo " "
@@ -1515,6 +1519,13 @@ super_u_datbr() {
 	local imgname=$FILE
 
 	if [ -f $DIRIN/$imgname.new.dat.br ]; then
+		if [[ -d $superdir ]]; then
+			echo "Theres super extracted on $superdir, it will be deleted!"
+			echo "Move it somewhere first if its important"
+			echo "Press ENTER to confirm."
+			read
+			rm -rf $superdir
+		fi
 		echo "Decompressing brotli..."
 		brotli -d $DIRIN/$imgname.new.dat.br
 		rm -rf $DIRIN/$imgname.new.dat.br
