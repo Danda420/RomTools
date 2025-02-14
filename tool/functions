@@ -305,11 +305,10 @@ convert_erofs_ext4(){
 	if (( $SIZE < 1474560 )); then
 	    local SIZE=`sudo du -sk $erofsdir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 	fi
-	repack_erofs_as_ext4_cmd $image $SIZE > /dev/null 2>&1
-	resize_img $DIROUT/$image.img smallest
-	echo ""
-	if [[ -f $DIROUT/$image.img ]] && [[ $(ls -l $DIROUT/$image.img | awk '{print $5}') != "0" ]]; then
+	if repack_erofs_as_ext4_cmd $image $SIZE > /dev/null 2>&1; then
+	   resize_img $DIROUT/$image.img smallest
 	   rm -rf $DIRIN/$image.img
+	   echo ""
 	   echo -e "${G}Conversion done..."
 	   echo -e "Output : $DIROUT/$image.img ${NC}"
 	else
@@ -437,10 +436,9 @@ compress_zstd() {
 		
 		echo " "
 		echo "Compressing $filename to ${filename}$ZSTDSUFFIX (zstd)"
-		zstd -${ZSTDLVL} -T$(nproc --all) $DIRIN/$filename -o $DIROUT/${filename}$ZSTDSUFFIX
-		rm -rf $DIRIN/$filename
-		echo " "
-		if [[ -f $DIROUT/${filename}$ZSTDSUFFIX ]] && [[ $(ls -l $DIROUT/${filename}$ZSTDSUFFIX | awk '{print $5}') != "0" ]]; then
+		if zstd -${ZSTDLVL} -T$(nproc --all) $DIRIN/$filename -o $DIROUT/${filename}$ZSTDSUFFIX; then
+		   rm -rf $DIRIN/$filename
+		   echo " "
 		   echo -e "${G}Done! Output : $DIROUT/${filename}$ZSTDSUFFIX ${NC}"
 		else
 		   echo -e "${R}Compression Failed!"
@@ -471,7 +469,9 @@ decompress_zstd() {
 		zstd -d $DIRIN/$filename.zst -o $DIROUT/$outputname
 		rm -rf $DIRIN/$filename.*
 		echo " "
-		if [[ -f $DIROUT/$outputname ]] && [[ $(ls -l $DIROUT/$outputname | awk '{print $5}') != "0" ]]; then
+		if zstd -d $DIRIN/$filename.zst -o $DIROUT/$outputname; then
+		   rm -rf $DIRIN/$filename.*
+		   echo " "
 		   echo -e "${G}Done! Output : $DIROUT/$outputname ${NC}"
 		else
 		   echo -e "${R}Decompression Failed!"
@@ -494,9 +494,14 @@ unpack_ext4() {
 		rm -rf $ext4dir/config/$image
 	fi
 	echo ""
-	sudo $PYSCRIPTS/imgextractor.py $DIRIN/$image.img $WORKDIR/EXT4
-	sudo chown -R $USER:$USER $WORKDIR/EXT4
-	echo ""
+	if sudo $PYSCRIPTS/imgextractor.py $DIRIN/$image.img $WORKDIR/EXT4; then
+		sudo chown -R $USER:$USER $WORKDIR/EXT4
+		echo ""
+		echo -e "${G}Output : $ext4dir/$image ${NC}"
+		rm -rf $DIRIN/$image.img
+	else
+		echo -e "${R}Unpacking failed!${NC}"
+	fi
 	echo -e "${G}Output : $ext4dir/$image ${NC}"
 	rm -rf $DIRIN/$image.img
 }
@@ -512,10 +517,13 @@ unpack_erofs() {
 		rm -rf $erofsdir/config/$image_*
 	fi
 	echo ""
-	$BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x
-	echo ""
-	echo -e "${G}Output : $erofsdir/$image ${NC}"
-	rm -rf $DIRIN/$image.img
+	if $BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x; then
+		echo ""
+		echo -e "${G}Output : $erofsdir/$image ${NC}"
+		rm -rf $DIRIN/$image.img
+	else
+		echo -e "${R}Unpacking failed!${NC}"
+	fi
 }
 
 unpack_f2fs(){
@@ -530,9 +538,8 @@ unpack_f2fs(){
 	fi
 	echo ""
 	echo "Unpacking $image.img (F2FS)..."
-	$BIN/extract.f2fs -o $f2fsdir $DIRIN/$image.img >> /dev/null 2>&1
-	echo ""
-	if [[ -d $f2fsdir/$image ]]; then
+	if $BIN/extract.f2fs -o $f2fsdir $DIRIN/$image.img >> /dev/null 2>&1; then
+		echo ""
 		echo -e "${G}Output : $f2fsdir/$image ${NC}"
 		mv $DIRIN/$image.img $f2fsdir/config/tmp/$image.img
 	else
@@ -1190,9 +1197,8 @@ raw_sparse() {
 		echo " "
 		echo "Converting raw image to sparse..."
 
-		img2simg $DIRIN/$imgname.img $DIROUT/$imgname.sparse.img
-		echo " "
-		if [[ -f $DIROUT/$imgname.sparse.img  ]] && [[ $(ls -l $DIROUT/$imgname.sparse.img | awk '{print $5}') != "0" ]]; then
+		if img2simg $DIRIN/$imgname.img $DIROUT/$imgname.sparse.img; then
+		   echo " "
 		   rm -rf $DIRIN/$imgname.img
 		   echo -e "${G}Done! Output : $DIROUT/$imgname.sparse.img ${NC}"
 		else
@@ -1508,9 +1514,8 @@ sparse_raw() {
 	if [ -f $DIRIN/$imgname.img ]; then
 		echo " "
 		echo "Converting sparse to raw image..."
-		simg2img $DIRIN/$imgname.img $DIROUT/$imgname.img >> /dev/null 2>&1
-		echo " "
-		if [[ -f $DIROUT/$imgname.img ]] && [[ $(ls -l $DIROUT/$imgname.img | awk '{print $5}') != "0" ]]; then
+		if simg2img $DIRIN/$imgname.img $DIROUT/$imgname.img >> /dev/null 2>&1; then
+		   echo " "
 		   rm -rf $DIRIN/$imgname.img
 		   echo -e "${G}Done! Output : $DIROUT/$imgname.img ${NC}"
 		else
