@@ -10,6 +10,7 @@ WORKDIR=$DIRTOOLS/ROM_WORKDIR
 superdir=$WORKDIR/super
 ext4dir=$WORKDIR/EXT4
 erofsdir=$WORKDIR/erofs
+f2fsdir=$WORKDIR/F2FS
 u_bootdir=$WORKDIR/boot
 partitions="system vendor odm product system_ext"
 oplus_partitions="my_bigball my_carrier my_company my_engineering my_heytap my_manifest my_preload my_product my_region my_stock"
@@ -517,6 +518,28 @@ unpack_erofs() {
 	rm -rf $DIRIN/$image.img
 }
 
+unpack_f2fs(){
+	mkdir -p $f2fsdir/config/tmp
+	if [[ -d $f2fsdir/$image ]]; then
+		echo "Folder named $image in $f2fsdir exists, it will be deleted!"
+		echo "Move it somewhere first if its important"
+		echo "Press ENTER to confirm."
+		read
+		rm -rf $f2fsdir/$image
+		rm -rf $f2fsdir/config/$image_*
+	fi
+	echo ""
+	echo "Unpacking $image.img (F2FS)..."
+	$BIN/extract.f2fs -o $f2fsdir $DIRIN/$image.img >> /dev/null 2>&1
+	echo ""
+	if [[ -d $f2fsdir/$image ]]; then
+		echo -e "${G}Output : $f2fsdir/$image ${NC}"
+		mv $DIRIN/$image.img $f2fsdir/config/tmp/$image.img
+	else
+		echo -e "${R}Unpacking failed!${NC}"
+	fi
+}
+
 repack_ext4_cmd() {
 	local partition=$1
 	local SIZE=$2
@@ -528,7 +551,7 @@ repack_ext4_cmd() {
 		   -l "$SIZE" \
 		   -L "/" \
 		   -a "/$partition" \
-		   "$DIROUT/$partition.new.img" "$ext4dir/$partition"
+		   "$DIROUT/$partition.ext4.img" "$ext4dir/$partition"
 	else
 		sudo $BIN/make_ext4fs -J -T -1 \
 		   -S "$ext4dir/config/$partition/${partition}_file_contexts" \
@@ -536,7 +559,7 @@ repack_ext4_cmd() {
 		   -l "$SIZE" \
 		   -L "$partition" \
 		   -a "/$partition" \
-		   "$DIROUT/$partition.new.img" "$ext4dir/$partition"
+		   "$DIROUT/$partition.ext4.img" "$ext4dir/$partition"
 	fi
 }
 
@@ -584,7 +607,36 @@ repack_erofs_cmd() {
 	   "$DIROUT/$partition.erofs.img" "$erofsdir/$partition/"
 }
 
-unpack_ext4_erofs_img() {
+repack_f2fs_cmd() {
+	local partition=$1
+	SIZE=$(( ((54 * 1024 * 1024) + $(du -sb "$f2fsdir/$partition" | awk '{print $1}') ) * 115 / 100 + 1))
+	$BIN/checkfsconfig $f2fsdir/$partition $f2fsdir/config/${partition}_fs_config
+	truncate -s $SIZE $f2fsdir/config/tmp/$partition.img
+	$BIN/mkfs.f2fs $f2fsdir/config/tmp/$partition.img \
+		-O extra_attr \
+		-O inode_checksum \
+		-O sb_checksum \
+		-O compression -f
+
+	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
+		$BIN/sload.f2fs -f "$f2fsdir/$partition" \
+			-C "$f2fsdir/config/${partition}_fs_config" \
+			-s "$f2fsdir/config/${partition}_file_contexts" \
+			-T $(date +%s) \
+			-t "/" \
+			-c "$f2fsdir/config/tmp/$partition.img"
+	else
+		$BIN/sload.f2fs -f "$f2fsdir/$partition" \
+			-C "$f2fsdir/config/${partition}_fs_config" \
+			-s "$f2fsdir/config/${partition}_file_contexts" \
+			-T $(date +%s) \
+			-t "/$partition" \
+			-c "$f2fsdir/config/tmp/$partition.img"
+	fi
+	cp $f2fsdir/config/tmp/$partition.img $DIROUT/$partition.f2fs.img
+}
+
+unpack_ext4_erofs_f2fs_img() {
 	clear
 	banner
 	echo " "
@@ -596,9 +648,11 @@ unpack_ext4_erofs_img() {
 	       unpack_ext4
 	   elif [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
 	       unpack_erofs
+	   elif [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == f2fs ]]; then
+	       unpack_f2fs
 	   else
 	       echo ""
-	       echo -e "${R}$image.img fs type is not ext4 or erofs!"
+	       echo -e "${R}$image.img fs type is not ext4/f2fs/erofs!"
 	       echo -e "${NC}"
 	   fi
 	done
@@ -621,13 +675,13 @@ repack_ext4_img_foldersize() {
 		if (( $SIZE < 1474560 )); then
 		    local SIZE=`sudo du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
-		repack_ext4_cmd $image $SIZE
-		resize_img $DIROUT/$image.new.img smallest
-		echo ""
-		if [[ -f $DIROUT/$image.new.img ]] && [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
+		if repack_ext4_cmd $image $SIZE; then
+		   resize_img $DIROUT/$image.ext4.img smallest
+		   echo ""
 		   echo -e "${G}Repack done..."
-		   echo -e "Output : $DIROUT/$image.new.img ${NC}"
+		   echo -e "Output : $DIROUT/$image.ext4.img ${NC}"
 		else
+		   echo ""
 		   echo -e "${R}Repack Failed!"
 		   echo -e "${NC}"
 		fi
@@ -656,13 +710,13 @@ repack_ext4_img_freespace() {
 		if (( $SIZE < 1474560 )); then
 		    local SIZE=`sudo du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
-		repack_ext4_cmd $image $SIZE
-		resize_img $DIROUT/$image.new.img freespace
-		echo ""
-		if [[ -f $DIROUT/$image.new.img ]] && [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
+		if repack_ext4_cmd $image $SIZE; then
+		   resize_img $DIROUT/$image.ext4.img freespace
+		   echo ""
 		   echo -e "${G}Repack done..."
-		   echo -e "Output : $DIROUT/$image.new.img ${NC}"
+		   echo -e "Output : $DIROUT/$image.ext4.img ${NC}"
 		else
+		   echo ""
 		   echo -e "${R}Repack Failed!"
 		   echo -e "${NC}"
 		fi
@@ -685,12 +739,12 @@ repack_ext4_img_samesize() {
 		if (( $SIZE < 1474560 )); then
 		    local SIZE=`sudo du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
-		repack_ext4_cmd $image $SIZE
-		echo ""
-		if [[ -f $DIROUT/$image.new.img ]] && [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
+		if repack_ext4_cmd $image $SIZE; then
+		   echo ""
 		   echo -e "${G}Repack done..."
-		   echo -e "Output : $DIROUT/$image.new.img ${NC}"
+		   echo -e "Output : $DIROUT/$image.ext4.img ${NC}"
 		else
+		   echo ""
 		   echo -e "${R}Repack Failed!"
 		   echo -e "${NC}"
 		fi
@@ -717,12 +771,12 @@ repack_ext4_img_inputsize() {
 		echo ""
 		echo "- Repacking $image..."
 		echo ""
-		repack_ext4_cmd $image $SIZE
-		echo ""
-		if [[ -f $DIROUT/$image.new.img ]] && [[ $(ls -l $DIROUT/$image.new.img | awk '{print $5}') != "0" ]]; then
+		if repack_ext4_cmd $image $SIZE; then
+		   echo ""
 		   echo -e "${G}Repack done..."
-		   echo -e "Output : $DIROUT/$image.new.img ${NC}"
+		   echo -e "Output : $DIROUT/$image.ext4.img ${NC}"
 		else
+		   echo ""
 		   echo -e "${R}Repack Failed!"
 		   echo -e "${NC}"
 		fi
@@ -818,17 +872,42 @@ repack_erofs() {
 		echo " "
 		echo "- Repacking $image..."
 		echo ""
-		repack_erofs_cmd $image $compression $legacy
-		echo ""
-		if [[ -f $DIROUT/$image.erofs.img ]] && [[ $(ls -l $DIROUT/$image.erofs.img | awk '{print $5}') != "0" ]]; then
+		if repack_erofs_cmd $image $compression $legacy; then
+		   echo ""
 		   echo -e "${G}Repack done..."
 		   echo -e "Output : $DIROUT/$image.erofs.img ${NC}"
 		else
+		   echo ""
 		   echo -e "${R}Repack Failed!"
 		   echo -e "${NC}"
 		fi
 	fi
 }
+
+repack_f2fs() {
+	clear
+	banner
+	echo " "
+	echo "choose which partition you wanted to repack"
+	echo " "
+	extracted_partition_selector $f2fsdir
+	local image=$FOLDER
+	if [[ -d $f2fsdir/$image ]]; then
+		echo " "
+		echo "- Repacking $image..."
+		echo ""
+		if repack_f2fs_cmd $image; then
+		   echo ""
+		   echo -e "${G}Repack done..."
+		   echo -e "Output : $DIROUT/$image.f2fs.img ${NC}"
+		else
+		   echo ""s
+		   echo -e "${R}Repack Failed!"
+		   echo -e "${NC}"
+		fi
+	fi
+}
+
 
 erofs_ext4_main() {
 	clear
@@ -2129,7 +2208,7 @@ super_main() {
 	done
 }
 
-repack_ext4_erofs() {
+repack_ext4_erofs_f2fs() {
 	while true; do
 	    banner
 	    echo " "
@@ -2138,6 +2217,7 @@ repack_ext4_erofs() {
 	    echo "3. Repack EXT4 image with free space"
 	    echo "4. Repack EXT4 image and manually input size"
 	    echo "5. Repack EROFS image"
+		echo "6. Repack F2FS image"
 	    echo "x. Back to main menu"
 	    
 	    read -p "" choose
@@ -2162,11 +2242,15 @@ repack_ext4_erofs() {
 		5 )
 	repack_erofs
 	restart_tool;;
+
+		6 )
+	repack_f2fs
+	restart_tool;;
 	
 		x ) 
 	start_tools;;
 
-		* ) repack_ext4;;
+		* ) repack_ext4_erofs_f2fs;;
 	    esac
 	done
 }
@@ -2175,19 +2259,19 @@ unpack_repack_main() {
 	while true; do
 	    banner
 	    echo " "
-	    echo "1. Repack EXT4/EROFS image"
-	    echo "2. Unpack EXT4/EROFS image"
+	    echo "1. Repack EXT4/F2FS/EROFS image"
+	    echo "2. Unpack EXT4/F2FS/EROFS image"
 	    echo "x. Back to main menu"
 	    
 	    read -p "" choose
 	    case $choose in
 	    
 		1 ) 
-	repack_ext4_erofs
+	repack_ext4_erofs_f2fs
 	restart_tool;;
 
 		2 ) 
-	unpack_ext4_erofs_img
+	unpack_ext4_erofs_f2fs_img
 	restart_tool;;
 	
 		x ) 

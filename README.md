@@ -14,7 +14,7 @@ You can do it by starting the tool first then choose "Install proprietary packag
 
 ***
 ### Features ###
-- Unpack and repack super, ext4, erofs, boot images (like boot, vendor boot, etc) and others.
+- Unpack and repack super, ext4, f2fs, erofs, boot images (like boot, vendor boot, etc) and others.
 - Converting images
   - sparse to raw & raw to sparse
   - erofs to ext4
