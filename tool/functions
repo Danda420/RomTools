@@ -53,8 +53,8 @@ booteditor_banner() {
 getvalue() { grep "^$1=" "$2" 2>/dev/null | tail -n1 | cut -d= -f2-; }
 
 give_perm() {
-	local partiton=$1
-	sudo chown -R $USER:$USER $WORKDIR/$partition >> /dev/null 2>&1
+	local partition=$1
+	sudo chown -R $USER:$USER $WORKDIR/$partition > /dev/null 2>&1
 }
 
 restore_perm() {
@@ -292,11 +292,136 @@ unpack_bootimg() {
 	echo -e "Output: $u_bootdir/$extracted_folder"
 }
 
+convert_ext4_erofs() {
+	while true; do
+	    read -p "Compiling erofs image for old kernel? (Y/N)" yn
+	    case $yn in
+		[Yy]* ) 
+		local legacy=1 
+		break;;
+		[Nn]* ) 
+		local legacy=0 
+		break;;
+		* ) echo "Please answer yes or no.";;
+	    esac
+	done
+		
+	while true; do
+	   echo " "
+	   echo "Choose compressor : "
+	   echo " "
+	   echo "1. lz4"
+	   echo "2. lz4hc"
+	   echo "3. lzma"
+	   echo "4. deflate"
+			    
+	   read -p "" choose
+	   case $choose in
+			    
+		1 ) 
+		local compressor=lz4
+		break;;
+
+		2 ) 
+		local compressor=lz4hc
+		break;;
+			
+		3 )
+		local compressor=lzma
+		break;;
+			
+		4 ) 
+		local compressor=deflate
+		break;;
+
+		* ) echo "please choose one!";;
+	   esac
+	done
+	
+	case $compressor in
+	   "lz4" )
+	      local compression=lz4
+	   ;;
+	   
+	   "lz4hc" )
+	      echo ""
+	      echo "Input erofs compression level (0-12, default is 9)"
+	   ;;
+	   
+	   "lzma" )
+	      echo ""
+	      echo "Input erofs compression level (0-9,100-109. 0-9=normal, 100-109=extreme, default is 6)"
+	   ;;
+		   
+	   "deflate" )
+	      echo ""
+	      echo "Input erofs compression level (0-9, default is 1)"
+	   ;;
+	esac
+		
+	if [[ $compressor != "lz4" ]]; then
+	   echo "Leave it empty if you want the default compression"
+	   read
+	   local erofscomplvl=$REPLY
+		if [[ $erofscomplvl == "" ]]; then
+	      local compression=${compressor}
+		else
+	      local compression=${compressor},${erofscomplvl}
+		fi
+	fi
+	echo " "
+	echo "Starting conversion..."
+	echo ""
+	echo "- Unpacking $image image (ext4)"
+	if [[ -d $ext4dir/$image ]]; then
+		rm -rf $ext4dir/$image $ext4dir/config/$image
+	fi
+	sudo $PYSCRIPTS/imgextractor.py $DIRIN/$image.img $ext4dir > /dev/null 2>&1
+	sudo chown -R $USER:$USER $WORKDIR/EXT4
+
+	echo "- Rebuilding $image as erofs image..."
+	if repack_ext4_as_erofs_cmd $image $compression $legacy > /dev/null 2>&1; then
+	   rm -rf $DIRIN/$image.img $ext4dir/$image $ext4dir/config/$image
+	   echo ""
+	   echo -e "${G}Conversion done..."
+	   echo -e "Output : $DIROUT/$image.erofs.img ${NC}"
+	else
+	   echo -e "${R}Conversion Failed!"
+	   echo -e "${NC}"
+	fi
+}
+
+convert_ext4_f2fs() {
+	echo " "
+	echo "Starting conversion..."
+	echo ""
+	echo "- Unpacking $image image (ext4)"
+	if [[ -d $ext4dir/$image ]]; then
+		rm -rf $ext4dir/$image $ext4dir/config/$image
+	fi
+	sudo $PYSCRIPTS/imgextractor.py $DIRIN/$image.img $ext4dir > /dev/null 2>&1
+	sudo chown -R $USER:$USER $WORKDIR/EXT4
+
+	echo "- Rebuilding $image as erofs image..."
+	if repack_ext4_as_f2fs_cmd $image > /dev/null 2>&1; then
+	   rm -rf $DIRIN/$image.img $ext4dir/$image $ext4dir/config/$image
+	   echo ""
+	   echo -e "${G}Conversion done..."
+	   echo -e "Output : $DIROUT/$image.f2fs.img ${NC}"
+	else
+	   echo -e "${R}Conversion Failed!"
+	   echo -e "${NC}"
+	fi
+}
+
 convert_erofs_ext4(){
 	echo " "
 	echo "Starting conversion..."
 	echo ""
 	echo "- Unpacking $image image (erofs)"
+	if [[ -d $erofsdir/$image ]]; then
+		rm -rf $erofsdir/$image $erofsdir/config/$image_*
+	fi
 	$BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x > /dev/null 2>&1
 	        
 	echo "- Rebuilding $image as ext4 image..."
@@ -306,17 +431,165 @@ convert_erofs_ext4(){
 	    local SIZE=`sudo du -sk $erofsdir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 	fi
 	if repack_erofs_as_ext4_cmd $image $SIZE > /dev/null 2>&1; then
-	   resize_img $DIROUT/$image.img smallest
-	   rm -rf $DIRIN/$image.img
+	   resize_img $DIROUT/$image.ext4.img smallest
+	   rm -rf $DIRIN/$image.img $erofsdir/$image $erofsdir/config/$image_*
 	   echo ""
 	   echo -e "${G}Conversion done..."
-	   echo -e "Output : $DIROUT/$image.img ${NC}"
+	   echo -e "Output : $DIROUT/$image.ext4.img ${NC}"
 	else
 	   echo -e "${R}Conversion Failed!"
 	   echo -e "${NC}"
 	fi
 }
+
+convert_erofs_f2fs(){
+	echo " "
+	echo "Starting conversion..."
+	echo ""
+	echo "- Unpacking $image image (erofs)"
+	if [[ -d $erofsdir/$image ]]; then
+		rm -rf $erofsdir/$image $erofsdir/config/$image_*
+	fi
+	$BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x > /dev/null 2>&1
+	        
+	echo "- Rebuilding $image as f2fs image..."
+	if repack_erofs_as_f2fs_cmd $image > /dev/null 2>&1; then
+	   rm -rf $DIRIN/$image.img $erofsdir/$image $erofsdir/config/$image_*
+	   echo ""
+	   echo -e "${G}Conversion done..."
+	   echo -e "Output : $DIROUT/$image.f2fs.img ${NC}"
+	else
+	   echo -e "${R}Conversion Failed!"
+	   echo -e "${NC}"
+	fi
+}
+
+convert_f2fs_ext4() {
+	echo " "
+	echo "Starting conversion..."
+	echo ""
+	echo "- Unpacking $image image (f2fs)"
+	if [[ -d $f2fsdir/$image ]]; then
+		rm -rf $f2fsdir/$image $f2fsdir/config/$image_*
+	fi
+	$BIN/extract.f2fs -o $f2fsdir $DIRIN/$image.img > /dev/null 2>&1
+	        
+	echo "- Rebuilding $image as ext4 image..."
+	local foldersize=$(du -s -B1 $f2fsdir/$image | awk '{print $1}')
+	local SIZE=$(($foldersize + $foldersize * 1/10))
+	if (( $SIZE < 1474560 )); then
+	    local SIZE=`sudo du -sk $f2fsdir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+	fi
+	if repack_f2fs_as_ext4_cmd $image $SIZE > /dev/null 2>&1; then
+	   resize_img $DIROUT/$image.ext4.img smallest
+	   rm -rf $DIRIN/$image.img $f2fsdir/$image $f2fsdir/config/$image_*
+	   echo ""
+	   echo -e "${G}Conversion done..."
+	   echo -e "Output : $DIROUT/$image.ext4.img ${NC}"
+	else
+	   echo -e "${R}Conversion Failed!"
+	   echo -e "${NC}"
+	fi
+}
+
+convert_f2fs_erofs() {
+	while true; do
+	    read -p "Compiling erofs image for old kernel? (Y/N)" yn
+	    case $yn in
+		[Yy]* ) 
+		local legacy=1 
+		break;;
+		[Nn]* ) 
+		local legacy=0 
+		break;;
+		* ) echo "Please answer yes or no.";;
+	    esac
+	done
 		
+	while true; do
+	   echo " "
+	   echo "Choose compressor : "
+	   echo " "
+	   echo "1. lz4"
+	   echo "2. lz4hc"
+	   echo "3. lzma"
+	   echo "4. deflate"
+			    
+	   read -p "" choose
+	   case $choose in
+			    
+		1 ) 
+		local compressor=lz4
+		break;;
+
+		2 ) 
+		local compressor=lz4hc
+		break;;
+			
+		3 )
+		local compressor=lzma
+		break;;
+			
+		4 ) 
+		local compressor=deflate
+		break;;
+
+		* ) echo "please choose one!";;
+	   esac
+	done
+	
+	case $compressor in
+	   "lz4" )
+	      local compression=lz4
+	   ;;
+	   
+	   "lz4hc" )
+	      echo ""
+	      echo "Input erofs compression level (0-12, default is 9)"
+	   ;;
+	   
+	   "lzma" )
+	      echo ""
+	      echo "Input erofs compression level (0-9,100-109. 0-9=normal, 100-109=extreme, default is 6)"
+	   ;;
+		   
+	   "deflate" )
+	      echo ""
+	      echo "Input erofs compression level (0-9, default is 1)"
+	   ;;
+	esac
+		
+	if [[ $compressor != "lz4" ]]; then
+	   echo "Leave it empty if you want the default compression"
+	   read
+	   local erofscomplvl=$REPLY
+		if [[ $erofscomplvl == "" ]]; then
+	      local compression=${compressor}
+		else
+	      local compression=${compressor},${erofscomplvl}
+		fi
+	fi
+	echo " "
+	echo "Starting conversion..."
+	echo ""
+	echo "- Unpacking $image image (f2fs)"
+	if [[ -d $f2fsdir/$image ]]; then
+		rm -rf $f2fsdir/$image $f2fsdir/config/$image_*
+	fi
+	$BIN/extract.f2fs -o $f2fsdir $DIRIN/$image.img > /dev/null 2>&1
+	        
+	echo "- Rebuilding $image as erofs image..."
+	if repack_f2fs_as_erofs_cmd $image $compression $legacy > /dev/null 2>&1; then
+	   rm -rf $DIRIN/$image.img $f2fsdir/$image $f2fsdir/config/$image_*
+	   echo ""
+	   echo -e "${G}Conversion done..."
+	   echo -e "Output : $DIROUT/$image.erofs.img ${NC}"
+	else
+	   echo -e "${R}Conversion Failed!"
+	   echo -e "${NC}"
+	fi
+}
+
 rebuild_ext4(){
 	echo " "
 	echo "Starting rebuilding..."
@@ -331,33 +604,27 @@ rebuild_ext4(){
 	fi
 	echo "- Rebuilding $partition..."
 	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
-		sudo $BIN/make_ext4fs -J -T -1 \
-		   -S "$WORKDIR/rebuildimg/config/$partition/${partition}_file_contexts" \
-		   -C "$WORKDIR/rebuildimg/config/$partition/${partition}_fs_config" \
-		   -l "$SIZE" \
-		   -L "/" \
-		   -a "/$partition" \
-		   "$DIROUT/$partition.img" "$WORKDIR/rebuildimg/$partition" > /dev/null 2>&1
+		local mountpoint=""
 	else
-		sudo $BIN/make_ext4fs -J -T -1 \
+		local mountpoint=$partition
+	fi
+	if sudo $BIN/make_ext4fs -J -T -1 \
 		   -S "$WORKDIR/rebuildimg/config/$partition/${partition}_file_contexts" \
 		   -C "$WORKDIR/rebuildimg/config/$partition/${partition}_fs_config" \
 		   -l "$SIZE" \
 		   -L "$partition" \
-		   -a "/$partition" \
-		   "$DIROUT/$partition.img" "$WORKDIR/rebuildimg/$partition" > /dev/null 2>&1
-	fi
-	resize_img $DIROUT/$partition.img smallest
-	sudo rm -rf $WORKDIR/rebuildimg
-	echo ""
-	if [[ -f $DIROUT/$partition.img ]] && [[ $(ls -l $DIROUT/$partition.img | awk '{print $5}') != "0" ]]; then
+		   -a "/$mountpoint" \
+		   "$DIROUT/$partition.img" "$WORKDIR/rebuildimg/$partition" > /dev/null 2>&1; then
+		resize_img $DIROUT/$partition.img smallest
 		rm -rf $DIRIN/$partition.img
+		echo ""
 		echo -e "${G}Rebuild done..."
 		echo -e "Output : $DIROUT/$partition.img ${NC}"
 	else
 		echo -e "${R}Rebuild Failed!"
 		echo -e "${NC}"
 	fi
+	sudo rm -rf $WORKDIR/rebuildimg
 }
 
 rebuild_ext4_single() {
@@ -394,7 +661,7 @@ datbr_raw() {
 
 		rm -rf $DIRIN/$imgname.new.dat.br
 
-		python3 $PYSCRIPTS/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img  >> /dev/null 2>&1
+		python3 $PYSCRIPTS/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img  > /dev/null 2>&1
 		echo " "
 		echo "Cleaning input folder..."
 
@@ -502,8 +769,6 @@ unpack_ext4() {
 	else
 		echo -e "${R}Unpacking failed!${NC}"
 	fi
-	echo -e "${G}Output : $ext4dir/$image ${NC}"
-	rm -rf $DIRIN/$image.img
 }
 
 unpack_erofs() {
@@ -527,18 +792,17 @@ unpack_erofs() {
 }
 
 unpack_f2fs(){
-	mkdir -p $f2fsdir/config/tmp
 	if [[ -d $f2fsdir/$image ]]; then
 		echo "Folder named $image in $f2fsdir exists, it will be deleted!"
 		echo "Move it somewhere first if its important"
 		echo "Press ENTER to confirm."
 		read
-		rm -rf $f2fsdir/$image
-		rm -rf $f2fsdir/config/$image_*
+		rm -rf $f2fsdir/$image $f2fsdir/config/$image_* $f2fsdir/config/tmp/$image.img
 	fi
+	mkdir -p $f2fsdir/config/tmp
 	echo ""
 	echo "Unpacking $image.img (F2FS)..."
-	if $BIN/extract.f2fs -o $f2fsdir $DIRIN/$image.img >> /dev/null 2>&1; then
+	if $BIN/extract.f2fs -o $f2fsdir $DIRIN/$image.img > /dev/null 2>&1; then
 		echo ""
 		echo -e "${G}Output : $f2fsdir/$image ${NC}"
 		mv $DIRIN/$image.img $f2fsdir/config/tmp/$image.img
@@ -552,22 +816,83 @@ repack_ext4_cmd() {
 	local SIZE=$2
 	$BIN/checkfsconfig $ext4dir/$partition $ext4dir/config/$partition/${partition}_fs_config
 	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
-		sudo $BIN/make_ext4fs -J -T -1 \
-		   -S "$ext4dir/config/$partition/${partition}_file_contexts" \
-		   -C "$ext4dir/config/$partition/${partition}_fs_config" \
-		   -l "$SIZE" \
-		   -L "/" \
-		   -a "/$partition" \
-		   "$DIROUT/$partition.ext4.img" "$ext4dir/$partition"
+		local mountpoint=""
 	else
-		sudo $BIN/make_ext4fs -J -T -1 \
-		   -S "$ext4dir/config/$partition/${partition}_file_contexts" \
-		   -C "$ext4dir/config/$partition/${partition}_fs_config" \
-		   -l "$SIZE" \
-		   -L "$partition" \
-		   -a "/$partition" \
-		   "$DIROUT/$partition.ext4.img" "$ext4dir/$partition"
+		local mountpoint=$partition
 	fi
+	sudo $BIN/make_ext4fs -J -T -1 \
+		-S "$ext4dir/config/$partition/${partition}_file_contexts" \
+		-C "$ext4dir/config/$partition/${partition}_fs_config" \
+		-l "$SIZE" \
+		-L "$partition" \
+		-a "/$mountpoint" \
+		"$DIROUT/$partition.ext4.img" "$ext4dir/$partition"
+}
+
+repack_ext4_as_erofs_cmd() {
+	local partition=$1
+	local compression=$2
+	local legacy=$3
+	if [[ $legacy == "1" ]]; then
+		local other=" -E legacy-compress"
+	else
+		local other=""
+	fi
+
+	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
+		local mountpoint=""
+	else
+		local mountpoint=$partition
+	fi
+
+	local context=$(head -n 1 $ext4dir/config/$partition/${partition}_file_contexts | awk '{print $2}') 
+	sed -i "/([/].*)? /d" $ext4dir/config/$partition/${partition}_file_contexts
+	sed -i "1i / $context\n/$partition $context\n/$partition/ $context" $ext4dir/config/$partition/${partition}_file_contexts
+	sed -i "1i / 0 0 0755\n${partition}/ 0 0 0755" $ext4dir/config/$partition/${partition}_fs_config
+	$BIN/mkfs.erofs${other} \
+	   -z${compression} \
+	   -T $(date +%s) \
+	   --workers=$(nproc --all) \
+	   --mount-point="/$partition" \
+	   --fs-config-file="$ext4dir/config/$partition/${partition}_fs_config" \
+	   --file-contexts="$ext4dir/config/$partition/${partition}_file_contexts" \
+	   "$DIROUT/$partition.erofs.img" "$ext4dir/$partition/"
+}
+
+repack_ext4_as_f2fs_cmd() {
+	local partition=$1
+	local SIZE=$(( ((54 * 1024 * 1024) + $(du -sb "$ext4dir/$partition" | awk '{print $1}') ) * 115 / 100 + 1))
+
+	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
+		local mountpoint=""
+	else
+		local mountpoint=$partition
+	fi
+
+	local context=$(head -n 1 $ext4dir/config/$partition/${partition}_file_contexts | awk '{print $2}') 
+	sed -i "/([/].*)? /d" $ext4dir/config/$partition/${partition}_file_contexts
+	sed -i "1i / $context\n/${partition}(/.*)? $context" $ext4dir/config/$partition/${partition}_file_contexts
+	sed -i "1i / 0 0 0755\n${partition}/ 0 0 0755" $ext4dir/config/$partition/${partition}_fs_config
+	
+	cp $BIN/f2fs_tmp $DIROUT/$partition.f2fs.img
+	truncate -s $SIZE $DIROUT/$partition.f2fs.img
+	$BIN/mkfs.f2fs $DIROUT/$partition.f2fs.img \
+		-O extra_attr \
+		-O inode_checksum \
+		-O sb_checksum \
+		-O compression -f
+
+	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
+		local mountpoint=""
+	else
+		local mountpoint=$partition
+	fi
+	$BIN/sload.f2fs -f "$ext4dir/$partition" \
+		-C "$ext4dir/config/$partition/${partition}_fs_config" \
+		-s "$ext4dir/config/$partition/${partition}_file_contexts" \
+		-T $(date +%s) \
+		-t "/$mountpoint" \
+		-c "$DIROUT/$partition.f2fs.img"
 }
 
 repack_erofs_as_ext4_cmd() {
@@ -575,22 +900,93 @@ repack_erofs_as_ext4_cmd() {
 	local SIZE=$2
 	$BIN/checkfsconfig $erofsdir/$partition $erofsdir/config/${partition}_fs_config
 	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
-		sudo $BIN/make_ext4fs -J -T -1 \
-		   -S "$erofsdir/config/${partition}_file_contexts" \
-		   -C "$erofsdir/config/${partition}_fs_config" \
-		   -l "$SIZE" \
-		   -L "/" \
-		   -a "/$partition" \
-		   "$DIROUT/$partition.img" "$erofsdir/$partition"
+		local mountpoint=""
 	else
-		sudo $BIN/make_ext4fs -J -T -1 \
-		   -S "$erofsdir/config/${partition}_file_contexts" \
-		   -C "$erofsdir/config/${partition}_fs_config" \
-		   -l "$SIZE" \
-		   -L "$partition" \
-		   -a "/$partition" \
-		   "$DIROUT/$partition.img" "$erofsdir/$partition"
+		local mountpoint=$partition
 	fi
+	sudo $BIN/make_ext4fs -J -T -1 \
+		-S "$erofsdir/config/${partition}_file_contexts" \
+		-C "$erofsdir/config/${partition}_fs_config" \
+		-l "$SIZE" \
+		-L "$partition" \
+		-a "/$mountpoint" \
+		"$DIROUT/$partition.ext4.img" "$erofsdir/$partition"
+}
+
+repack_erofs_as_f2fs_cmd() {
+	local partition=$1
+	local SIZE=$(( ((54 * 1024 * 1024) + $(du -sb "$erofsdir/$partition" | awk '{print $1}') ) * 115 / 100 + 1))
+	sed -i "/[/]${partition}[/] /d" $erofsdir/config/${partition}_file_contexts
+	sed -i "s#/${partition} #/${partition}(/.*) #g" $erofsdir/config/${partition}_file_contexts
+	cp $BIN/f2fs_tmp $DIROUT/$partition.f2fs.img
+	truncate -s $SIZE $DIROUT/$partition.f2fs.img
+	$BIN/mkfs.f2fs $DIROUT/$partition.f2fs.img \
+		-O extra_attr \
+		-O inode_checksum \
+		-O sb_checksum \
+		-O compression -f
+
+	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
+		local mountpoint=""
+	else
+		local mountpoint=$partition
+	fi
+	if ! $BIN/sload.f2fs -f "$erofsdir/$partition" \
+		-C "$erofsdir/config/${partition}_fs_config" \
+		-s "$erofsdir/config/${partition}_file_contexts" \
+		-T $(date +%s) \
+		-t "/$mountpoint" \
+		-c "$DIROUT/$partition.f2fs.img"; then
+		rm -rf $DIROUT/$partition.f2fs.img
+	fi
+}
+
+repack_f2fs_as_ext4_cmd() {
+	local partition=$1
+	local SIZE=$2
+	$BIN/checkfsconfig $f2fsdir/$partition $f2fsdir/config/${partition}_fs_config
+	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
+		local mountpoint=""
+	else
+		local mountpoint=$partition
+	fi
+	sudo $BIN/make_ext4fs -J -T -1 \
+		-S "$f2fsdir/config/${partition}_file_contexts" \
+		-C "$f2fsdir/config/${partition}_fs_config" \
+		-l "$SIZE" \
+		-L "$partition" \
+		-a "/$mountpoint" \
+		"$DIROUT/$partition.ext4.img" "$f2fsdir/$partition"
+}
+
+repack_f2fs_as_erofs_cmd() {
+	local partition=$1
+	local compression=$2
+	local legacy=$3
+	if [[ $legacy == "1" ]]; then
+		local other=" -E legacy-compress"
+	else
+		local other=""
+	fi
+
+	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
+		local mountpoint=""
+	else
+		local mountpoint=$partition
+	fi
+
+	local context=$(head -n 1 $f2fsdir/config/${partition}_file_contexts | awk '{print $2}') 
+	sed -i "/([/].*)? /d" $f2fsdir/config/${partition}_file_contexts
+	sed -i "/[/] $context/d" $f2fsdir/config/${partition}_file_contexts
+	sed -i "1i / $context\n/$partition $context\n/$partition/ $context" $f2fsdir/config/${partition}_file_contexts
+	$BIN/mkfs.erofs${other} \
+	   -z${compression} \
+	   -T $(date +%s) \
+	   --workers=$(nproc --all) \
+	   --mount-point="/$partition" \
+	   --fs-config-file="$f2fsdir/config/${partition}_fs_config" \
+	   --file-contexts="$f2fsdir/config/${partition}_file_contexts" \
+	   "$DIROUT/$partition.erofs.img" "$f2fsdir/$partition/"
 }
 
 repack_erofs_cmd() {
@@ -616,7 +1012,7 @@ repack_erofs_cmd() {
 
 repack_f2fs_cmd() {
 	local partition=$1
-	SIZE=$(( ((54 * 1024 * 1024) + $(du -sb "$f2fsdir/$partition" | awk '{print $1}') ) * 115 / 100 + 1))
+	local SIZE=$(( ((54 * 1024 * 1024) + $(du -sb "$f2fsdir/$partition" | awk '{print $1}') ) * 115 / 100 + 1))
 	$BIN/checkfsconfig $f2fsdir/$partition $f2fsdir/config/${partition}_fs_config
 	truncate -s $SIZE $f2fsdir/config/tmp/$partition.img
 	$BIN/mkfs.f2fs $f2fsdir/config/tmp/$partition.img \
@@ -626,20 +1022,16 @@ repack_f2fs_cmd() {
 		-O compression -f
 
 	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
-		$BIN/sload.f2fs -f "$f2fsdir/$partition" \
-			-C "$f2fsdir/config/${partition}_fs_config" \
-			-s "$f2fsdir/config/${partition}_file_contexts" \
-			-T $(date +%s) \
-			-t "/" \
-			-c "$f2fsdir/config/tmp/$partition.img"
+		local mountpoint=""
 	else
-		$BIN/sload.f2fs -f "$f2fsdir/$partition" \
-			-C "$f2fsdir/config/${partition}_fs_config" \
-			-s "$f2fsdir/config/${partition}_file_contexts" \
-			-T $(date +%s) \
-			-t "/$partition" \
-			-c "$f2fsdir/config/tmp/$partition.img"
+		local mountpoint=$partition
 	fi
+	$BIN/sload.f2fs -f "$f2fsdir/$partition" \
+		-C "$f2fsdir/config/${partition}_fs_config" \
+		-s "$f2fsdir/config/${partition}_file_contexts" \
+		-T $(date +%s) \
+		-t "/$mountpoint" \
+		-c "$f2fsdir/config/tmp/$partition.img"
 	cp $f2fsdir/config/tmp/$partition.img $DIROUT/$partition.f2fs.img
 }
 
@@ -840,7 +1232,7 @@ repack_erofs() {
 			local compressor=deflate
 			break;;
 
-			* ) choose_compressor;;
+			* ) echo "please choose one!";;
 		   esac
 		done
 		
@@ -915,8 +1307,46 @@ repack_f2fs() {
 	fi
 }
 
+convert_ext4_erofs_s() {
+	clear
+	banner
+	echo " "
+	echo "choose which image you wanted to convert to erofs"
+	echo " "
+	file_selector $DIRIN ".img"
+	for image in $FILE; do
+	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
+	      convert_ext4_erofs
+	   else
+	      echo ""
+	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
+	      echo -e "${NC}"
+	   fi
+	done
+	restart_tool
+}
 
-erofs_ext4_main() {
+convert_ext4_f2fs_s() {
+	clear
+	banner
+	echo " "
+	echo "choose which image you wanted to convert to f2fs"
+	echo " "
+	file_selector $DIRIN ".img" "Convert all image shown above to f2fs"
+	for image in $FILE; do
+	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
+	      convert_ext4_f2fs
+	   else
+	      echo ""
+	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
+	      echo -e "${NC}"
+	   fi
+	done
+	restart_tool
+}
+
+
+convert_erofs_ext4_s() {
 	clear
 	banner
 	echo " "
@@ -926,7 +1356,63 @@ erofs_ext4_main() {
 	for image in $FILE; do
 	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
 	      convert_erofs_ext4
-	      rm -rf $erofsdir
+	   else
+	      echo ""
+	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
+	      echo -e "${NC}"
+	   fi
+	done
+	restart_tool
+}
+
+convert_erofs_f2fs_s() {
+	clear
+	banner
+	echo " "
+	echo "choose which image you wanted to convert to f2fs"
+	echo " "
+	file_selector $DIRIN ".img" "Convert all image shown above to f2fs"
+	for image in $FILE; do
+	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
+	      convert_erofs_f2fs
+	   else
+	      echo ""
+	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
+	      echo -e "${NC}"
+	   fi
+	done
+	restart_tool
+}
+
+convert_f2fs_ext4_s() {
+	clear
+	banner
+	echo " "
+	echo "choose which image you wanted to convert to ext4"
+	echo " "
+	file_selector $DIRIN ".img" "Convert all image shown above to ext4"
+	for image in $FILE; do
+	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == f2fs ]]; then
+	      convert_f2fs_ext4
+	   else
+	      echo ""
+	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
+	      echo -e "${NC}"
+	   fi
+	done
+	restart_tool
+}
+
+convert_f2fs_erofs_s() {
+	clear
+	banner
+	echo " "
+	echo "choose which image you wanted to convert to erofs"
+	echo " "
+	file_selector $DIRIN ".img"
+	for image in $FILE; do
+	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == f2fs ]]; then
+	      convert_f2fs_erofs
 	   else
 	      echo ""
 	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
@@ -1031,7 +1517,7 @@ mount_imgs() {
 	local images=$(ls -l $WORKDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
 	for partition in $images; do
 		mkdir -p $WORKDIR/$partition
-		sudo mount -t ext4 -o $OPTIONS $WORKDIR/${partition}.img $WORKDIR/$partition >> /dev/null 2>&1
+		sudo mount -t ext4 -o $OPTIONS $WORKDIR/${partition}.img $WORKDIR/$partition > /dev/null 2>&1
 		give_perm $partition
 	done
 }
@@ -1067,7 +1553,7 @@ mount_resize() {
 	echo "Mounting partitions..."
 	for partition in $images; do
 		mkdir -p $WORKDIR/$partition
-		sudo mount -t ext4 -o loop $WORKDIR/${partition}.img $WORKDIR/$partition >> /dev/null 2>&1
+		sudo mount -t ext4 -o loop $WORKDIR/${partition}.img $WORKDIR/$partition > /dev/null 2>&1
 		give_perm $partition
 	done
 }
@@ -1092,7 +1578,7 @@ umount_resize_freespace() {
 	local PARTITION=$(echo $FILE | sed 's/\.img$//')
 		
 	echo " "
-	echo "Input partiton free space in mb (megabytes) :"
+	echo "Input partition free space in mb (megabytes) :"
 	read
 	local FREESPACE=$REPLY
 			
@@ -1100,7 +1586,7 @@ umount_resize_freespace() {
 	echo "Unmounting $PARTITION..."
 	echo " "
 	restore_perm $PARTITION > /dev/null 2>&1
-	sudo umount $WORKDIR/$PARTITION >> /dev/null 2>&1
+	sudo umount $WORKDIR/$PARTITION > /dev/null 2>&1
 	rm -rf $WORKDIR/$PARTITION
 
 	echo "Resizing $PARTITION..."
@@ -1122,7 +1608,7 @@ umount_resize() {
 	echo " "
 	for partition in $images; do
 	   restore_perm $partition > /dev/null 2>&1
-	   sudo umount $WORKDIR/$partition >> /dev/null 2>&1
+	   sudo umount $WORKDIR/$partition > /dev/null 2>&1
 	   rm -rf $WORKDIR/$partition
 	done
 
@@ -1142,7 +1628,7 @@ umount_normal() {
 	local images=$(ls -l $WORKDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
 	for partition in $images; do
 	   restore_perm $partition > /dev/null 2>&1
- 	   sudo umount $WORKDIR/$partition >> /dev/null 2>&1
+ 	   sudo umount $WORKDIR/$partition > /dev/null 2>&1
  	   rm -rf $WORKDIR/$partition
 	done
 }
@@ -1225,12 +1711,12 @@ raw_datbr() {
 
 		echo " " 
 		echo "converting image : $imgname to sparse"
-		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
+		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img > /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.img
 
 		echo " " 
 		echo "converting image : $imgname to new.dat"
-		python3 $PYSCRIPTS/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIOUT/ -v 4 -p $imgname >> /dev/null 2>&1
+		python3 $PYSCRIPTS/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIOUT/ -v 4 -p $imgname > /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.sparse.img
 
 		echo " " 
@@ -1375,7 +1861,7 @@ inc_dynamic_compress() {
 	    if [[ -f $DIRIN/$partition.img ]]; then
 	    	echo ""
 	    	echo "converting $partition into sparse"
-	    	img2simg $DIRIN/$partition.img $DIRIN/$partition.sparse.img >> /dev/null 2>&1
+	    	img2simg $DIRIN/$partition.img $DIRIN/$partition.sparse.img > /dev/null 2>&1
 	    	rm -rf $DIRIN/$partition.img
 	    else
 	    	echo " "
@@ -1387,7 +1873,7 @@ inc_dynamic_compress() {
 	    if [[ -f $DIRIN/$partition.sparse.img ]]; then
 	    	echo " "
 	    	echo "converting $partition into new.dat"
-	    	python3 $PYSCRIPTS/img2sdat.py $DIRIN/$partition.sparse.img -o $DIROUT/ -v 4 -p $partition >> /dev/null 2>&1
+	    	python3 $PYSCRIPTS/img2sdat.py $DIRIN/$partition.sparse.img -o $DIROUT/ -v 4 -p $partition > /dev/null 2>&1
 	    	rm -rf $DIRIN/$partition.sparse.img
 	    else
 	    	echo " "
@@ -1475,7 +1961,7 @@ inc_dynamic_decompress() {
 	    if [[ -f $DIRIN/$partition.new.dat ]] && [[ -f $DIRIN/$partition.transfer.list ]]; then
 		echo " "
 		echo "Converting $partition.new.dat to $partition.img (raw)"
-		python3 $PYSCRIPTS/sdat2img.py $DIRIN/$partition.transfer.list $DIRIN/$partition.new.dat $DIROUT/$partition.img >> /dev/null 2>&1
+		python3 $PYSCRIPTS/sdat2img.py $DIRIN/$partition.transfer.list $DIRIN/$partition.new.dat $DIROUT/$partition.img > /dev/null 2>&1
 		rm -rf $DIRIN/$partition.*
 	    else
 	    	echo " "
@@ -1514,7 +2000,7 @@ sparse_raw() {
 	if [ -f $DIRIN/$imgname.img ]; then
 		echo " "
 		echo "Converting sparse to raw image..."
-		if simg2img $DIRIN/$imgname.img $DIROUT/$imgname.img >> /dev/null 2>&1; then
+		if simg2img $DIRIN/$imgname.img $DIROUT/$imgname.img > /dev/null 2>&1; then
 		   echo " "
 		   rm -rf $DIRIN/$imgname.img
 		   echo -e "${G}Done! Output : $DIROUT/$imgname.img ${NC}"
@@ -1616,7 +2102,7 @@ super_u_datbr() {
 
 		echo " "
 		echo "Converting $imgname.new.dat to $imgname.img (raw)..."
-		python3 $PYSCRIPTS/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img >> /dev/null 2>&1
+		python3 $PYSCRIPTS/sdat2img.py $DIRIN/$imgname.transfer.list $DIRIN/$imgname.new.dat $DIROUT/$imgname.img > /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.*
 
 		echo " "
@@ -1862,7 +2348,7 @@ super_r() {
 	   "sparse" )
 		echo " "
 		echo "Converting raw $imgname.img to sparse..."
-		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
+		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img > /dev/null 2>&1
 		if [[ -f $DIRIN/$imgname.sparse.img ]] && [[ $(ls -l $DIRIN/$imgname.sparse.img | awk '{print $5}') != "0" ]]; then
 		   rm -rf $DIRIN/$imgname.img
 		   mv $DIRIN/$imgname.sparse.img $DIROUT/$imgname.sparse.img
@@ -1876,12 +2362,12 @@ super_r() {
 	   "dat" )
 		echo " "
 		echo "Converting raw $imgname.img to sparse..."
-		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
+		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img > /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.img
 		
 		echo " "
 		echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
-		python3 $PYSCRIPTS/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIROUT/ -v 4 -p $imgname >> /dev/null 2>&1
+		python3 $PYSCRIPTS/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIROUT/ -v 4 -p $imgname > /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.sparse.img
 		if [[ -f $DIROUT/$imgname.new.dat ]] && [[ $(ls -l $DIROUT/$imgname.new.dat | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}super build done! Output : $DIROUT/$imgname.new.dat ${NC}"
@@ -1894,12 +2380,12 @@ super_r() {
 	   "br" )
 		echo " "
 		echo "Converting raw $imgname.img to sparse..."
-		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img >> /dev/null 2>&1
+		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img > /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.img
 		
 		echo " "
 		echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
-		python3 $PYSCRIPTS/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIROUT/ -v 4 -p $imgname >> /dev/null 2>&1
+		python3 $PYSCRIPTS/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIROUT/ -v 4 -p $imgname > /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.sparse.img 
 		
 		echo " "
@@ -2086,6 +2572,53 @@ mount_main() {
 	start_tools;;
 
 		* ) mount_main;;
+	    esac
+	done
+}
+
+convert_images_main() {
+	while true; do
+	    banner
+	    echo " "
+	    echo "1. EXT4 to EROFS"
+	    echo "2. EXT4 to F2FS"
+	    echo "3. F2FS to EXT4"
+	    echo "4. F2FS to EROFS"
+	    echo "5. EROFS to EXT4"
+	    echo "6. EROFS to F2FS"
+	    echo "x. Back to main menu"
+	    
+	    read -p "" choose
+	    case $choose in
+	    
+		1 ) 
+	convert_ext4_erofs_s
+	restart_tool;;
+
+		2 ) 
+	convert_ext4_f2fs_s
+	restart_tool;;
+
+		3 ) 
+	convert_f2fs_ext4_s
+	restart_tool;;
+
+		4 ) 
+	convert_f2fs_erofs_s
+	restart_tool;;
+
+		5 ) 
+	convert_erofs_ext4_s
+	restart_tool;;
+
+		6 ) 
+	convert_erofs_f2fs_s
+	restart_tool;;
+
+		x ) 
+	start_tools;;
+
+		* ) convert_images_main;;
 	    esac
 	done
 }
@@ -2361,7 +2894,7 @@ start_tools() {
 	    echo "2. Incremental dynamic partition tools"
 	    echo "3. Convert or compress images"
 	    echo "4. Unpack or repack images"
-	    echo "5. Convert erofs to ext4"
+	    echo "5. Convert image types (ext4/f2fs/erofs)"
 	    echo "6. Rebuild EXT4 Images (removes avb)"
 	    echo "7. Mount or Umount raw imgs"
 	    echo "8. Decompress Sparsechunk"
@@ -2397,7 +2930,7 @@ start_tools() {
 	restart_tool;;
 
 		5 ) 
-	erofs_ext4_main
+	convert_images_main
 	restart_tool;;
 
 		6 ) 

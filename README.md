@@ -17,7 +17,7 @@ You can do it by starting the tool first then choose "Install proprietary packag
 - Unpack and repack super, ext4, f2fs, erofs, boot images (like boot, vendor boot, etc) and others.
 - Converting images
   - sparse to raw & raw to sparse
-  - erofs to ext4
+  - erofs to ext4, erofs to f2fs, ext4 to erofs, ext4 to f2fs, f2fs to ext4, f2fs to erofs
   - raw to dat.br & dat.br to raw
   - and so on...
 - Auto generate missing fs_config (file perms depends on the location)
