@@ -22,10 +22,23 @@ You can do it by starting the tool first then choose "Install proprietary packag
   - and so on...
 - Auto generate missing fs_config (file perms depends on the location)
 - Mount and umount images
-- Custom Scripts (put your scripts into tool/custom_scripts)
+- Custom Scripts (put your scripts into tool/custom_scripts, you can use functions from tool)
 - Zstd unpacking and repacking
 ***
 ### Available on ###
 - Linux (x86_64)
-- Windows WSL (Some features might not work on windows)
+- Windows WSL (features like image mounting and unmounting is unavailable)
 ***
+
+### Credits ###
+
+[cfig](https://github.com/cfig/Android_boot_image_editor)
+
+[cyberphantom52](https://github.com/cyberphantom52/payload-dumper-rs)
+
+[xpirt-sdat2img](https://github.com/xpirt/sdat2img)
+
+[xpirt-img2sdat](https://github.com/xpirt/img2sdat)
+
+[althafvly-imgextractor](https://github.com/althafvly/AmlogicKitchen/blob/master/bin/imgextractor.py)
+

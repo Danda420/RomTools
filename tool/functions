@@ -420,7 +420,7 @@ convert_erofs_ext4(){
 	echo ""
 	echo "- Unpacking $image image (erofs)"
 	if [[ -d $erofsdir/$image ]]; then
-		rm -rf $erofsdir/$image $erofsdir/config/$image_*
+		rm -rf $erofsdir/$image $erofsdir/config/${image}_*
 	fi
 	$BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x > /dev/null 2>&1
 	        
@@ -432,7 +432,7 @@ convert_erofs_ext4(){
 	fi
 	if repack_erofs_as_ext4_cmd $image $SIZE > /dev/null 2>&1; then
 	   resize_img $DIROUT/$image.ext4.img smallest
-	   rm -rf $DIRIN/$image.img $erofsdir/$image $erofsdir/config/$image_*
+	   rm -rf $DIRIN/$image.img $erofsdir/$image $erofsdir/config/${image}_*
 	   echo ""
 	   echo -e "${G}Conversion done..."
 	   echo -e "Output : $DIROUT/$image.ext4.img ${NC}"
@@ -448,13 +448,13 @@ convert_erofs_f2fs(){
 	echo ""
 	echo "- Unpacking $image image (erofs)"
 	if [[ -d $erofsdir/$image ]]; then
-		rm -rf $erofsdir/$image $erofsdir/config/$image_*
+		rm -rf $erofsdir/$image $erofsdir/config/${image}_*
 	fi
 	$BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x > /dev/null 2>&1
 	        
 	echo "- Rebuilding $image as f2fs image..."
 	if repack_erofs_as_f2fs_cmd $image > /dev/null 2>&1; then
-	   rm -rf $DIRIN/$image.img $erofsdir/$image $erofsdir/config/$image_*
+	   rm -rf $DIRIN/$image.img $erofsdir/$image $erofsdir/config/${image}_*
 	   echo ""
 	   echo -e "${G}Conversion done..."
 	   echo -e "Output : $DIROUT/$image.f2fs.img ${NC}"
@@ -470,7 +470,7 @@ convert_f2fs_ext4() {
 	echo ""
 	echo "- Unpacking $image image (f2fs)"
 	if [[ -d $f2fsdir/$image ]]; then
-		rm -rf $f2fsdir/$image $f2fsdir/config/$image_*
+		rm -rf $f2fsdir/$image $f2fsdir/config/${image}_*
 	fi
 	$BIN/extract.f2fs -o $f2fsdir $DIRIN/$image.img > /dev/null 2>&1
 	        
@@ -482,7 +482,7 @@ convert_f2fs_ext4() {
 	fi
 	if repack_f2fs_as_ext4_cmd $image $SIZE > /dev/null 2>&1; then
 	   resize_img $DIROUT/$image.ext4.img smallest
-	   rm -rf $DIRIN/$image.img $f2fsdir/$image $f2fsdir/config/$image_*
+	   rm -rf $DIRIN/$image.img $f2fsdir/$image $f2fsdir/config/${image}_*
 	   echo ""
 	   echo -e "${G}Conversion done..."
 	   echo -e "Output : $DIROUT/$image.ext4.img ${NC}"
@@ -574,13 +574,13 @@ convert_f2fs_erofs() {
 	echo ""
 	echo "- Unpacking $image image (f2fs)"
 	if [[ -d $f2fsdir/$image ]]; then
-		rm -rf $f2fsdir/$image $f2fsdir/config/$image_*
+		rm -rf $f2fsdir/$image $f2fsdir/config/${image}_*
 	fi
 	$BIN/extract.f2fs -o $f2fsdir $DIRIN/$image.img > /dev/null 2>&1
 	        
 	echo "- Rebuilding $image as erofs image..."
 	if repack_f2fs_as_erofs_cmd $image $compression $legacy > /dev/null 2>&1; then
-	   rm -rf $DIRIN/$image.img $f2fsdir/$image $f2fsdir/config/$image_*
+	   rm -rf $DIRIN/$image.img $f2fsdir/$image $f2fsdir/config/${image}_*
 	   echo ""
 	   echo -e "${G}Conversion done..."
 	   echo -e "Output : $DIROUT/$image.erofs.img ${NC}"
@@ -612,8 +612,8 @@ rebuild_ext4(){
 		   -S "$WORKDIR/rebuildimg/config/$partition/${partition}_file_contexts" \
 		   -C "$WORKDIR/rebuildimg/config/$partition/${partition}_fs_config" \
 		   -l "$SIZE" \
-		   -L "$partition" \
-		   -a "/$mountpoint" \
+		   -L "/$mountpoint" \
+		   -a "/$partition" \
 		   "$DIROUT/$partition.img" "$WORKDIR/rebuildimg/$partition" > /dev/null 2>&1; then
 		resize_img $DIROUT/$partition.img smallest
 		rm -rf $DIRIN/$partition.img
@@ -779,7 +779,7 @@ unpack_erofs() {
 		echo "Press ENTER to confirm."
 		read
 		rm -rf $erofsdir/$image
-		rm -rf $erofsdir/config/$image_*
+		rm -rf $erofsdir/config/${image}_*
 	fi
 	echo ""
 	if $BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x; then
@@ -797,7 +797,7 @@ unpack_f2fs(){
 		echo "Move it somewhere first if its important"
 		echo "Press ENTER to confirm."
 		read
-		rm -rf $f2fsdir/$image $f2fsdir/config/$image_* $f2fsdir/config/tmp/$image.img
+		rm -rf $f2fsdir/$image $f2fsdir/config/${image}_* $f2fsdir/config/tmp/$image.img
 	fi
 	mkdir -p $f2fsdir/config/tmp
 	echo ""
@@ -824,8 +824,8 @@ repack_ext4_cmd() {
 		-S "$ext4dir/config/$partition/${partition}_file_contexts" \
 		-C "$ext4dir/config/$partition/${partition}_fs_config" \
 		-l "$SIZE" \
-		-L "$partition" \
-		-a "/$mountpoint" \
+		-L "/$mountpoint" \
+		-a "/$partition" \
 		"$DIROUT/$partition.ext4.img" "$ext4dir/$partition"
 }
 
@@ -853,7 +853,7 @@ repack_ext4_as_erofs_cmd() {
 	   -z${compression} \
 	   -T $(date +%s) \
 	   --workers=$(nproc --all) \
-	   --mount-point="/$partition" \
+	   --mount-point="/$mountpoint" \
 	   --fs-config-file="$ext4dir/config/$partition/${partition}_fs_config" \
 	   --file-contexts="$ext4dir/config/$partition/${partition}_file_contexts" \
 	   "$DIROUT/$partition.erofs.img" "$ext4dir/$partition/"
@@ -908,8 +908,8 @@ repack_erofs_as_ext4_cmd() {
 		-S "$erofsdir/config/${partition}_file_contexts" \
 		-C "$erofsdir/config/${partition}_fs_config" \
 		-l "$SIZE" \
-		-L "$partition" \
-		-a "/$mountpoint" \
+		-L "/$mountpoint" \
+		-a "/$partition" \
 		"$DIROUT/$partition.ext4.img" "$erofsdir/$partition"
 }
 
@@ -954,8 +954,8 @@ repack_f2fs_as_ext4_cmd() {
 		-S "$f2fsdir/config/${partition}_file_contexts" \
 		-C "$f2fsdir/config/${partition}_fs_config" \
 		-l "$SIZE" \
-		-L "$partition" \
-		-a "/$mountpoint" \
+		-L "/$mountpoint" \
+		-a "/$partition" \
 		"$DIROUT/$partition.ext4.img" "$f2fsdir/$partition"
 }
 
@@ -983,7 +983,7 @@ repack_f2fs_as_erofs_cmd() {
 	   -z${compression} \
 	   -T $(date +%s) \
 	   --workers=$(nproc --all) \
-	   --mount-point="/$partition" \
+	   --mount-point="/$mountpoint" \
 	   --fs-config-file="$f2fsdir/config/${partition}_fs_config" \
 	   --file-contexts="$f2fsdir/config/${partition}_file_contexts" \
 	   "$DIROUT/$partition.erofs.img" "$f2fsdir/$partition/"
