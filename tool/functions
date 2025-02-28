@@ -19,6 +19,10 @@ R='\033[1;31m'
 NC='\033[0m'
 LC='\033[1;36m'
 
+if command -v zypper >/dev/null 2>&1; then
+	export PATH=$PATH:/usr/sbin
+fi
+
 restart_tool() {
 	echo " "
 	while true; do
@@ -2458,6 +2462,13 @@ install_proprietary() {
 		sudo mv $DIRTOOLS/dtc /usr/bin/dtc
 		rm -rf $DIRTOOLS/dtc.tar.gz
 	}
+	install_lptools() {
+		git clone https://github.com/Danda420/RomTools -b lptools-bins $DIRSCRIPTS/lptools-bins
+		rm -rf $DIRSCRIPTS/lptools-bins/.git
+		chmod 755 $DIRSCRIPTS/lptools-bins/*
+		sudo mv $DIRSCRIPTS/lptools-bins/* /usr/bin/
+		rm -rf $DIRSCRIPTS/lptools-bins
+	}
 	while true; do
 	    banner
 		if command -v dnf >/dev/null 2>&1; then
@@ -2468,6 +2479,8 @@ install_proprietary() {
 			local PKGMAN=apt
 		elif command -v pacman >/dev/null 2>&1; then
 			local PKGMAN=pacman
+		elif command -v zypper >/dev/null 2>&1; then
+			local PKGMAN=zypper
 		else
 			local PKGMAN="Error! Unknown Package Manager!"
 		fi
@@ -2475,7 +2488,7 @@ install_proprietary() {
 		echo "Package Manager: $PKGMAN"
 
 		if [[ $PKGMAN == "Error! Unknown Package Manager!" ]]; then
-		   echo "Unknown package manager! exiting tool!"
+		   echo -e "${R}Unknown package manager! exiting tool!${NC}"
 		   exit 0
 		fi
 
@@ -2502,11 +2515,12 @@ install_proprietary() {
 			"apt" )
 				sudo apt install -y android-sdk-libsparse-utils erofs-utils gawk brotli cpio zstd
 				install_dtc
-				git clone https://github.com/Danda420/RomTools -b ubuntu-moment $DIRSCRIPTS/ubuntu-bins
-				rm -rf $DIRSCRIPTS/ubuntu-bins/.git
-				chmod 755 $DIRSCRIPTS/ubuntu-bins/*
-				sudo mv $DIRSCRIPTS/ubuntu-bins/* /usr/bin/
-				rm -rf $DIRSCRIPTS/ubuntu-bins
+				install_lptools
+				restart_tool;;
+			"zypper" )
+				sudo zypper install -y android-tools erofs-utils gawk brotli cpio zstd
+				install_dtc
+				install_lptools
 				restart_tool;;
 			esac
 		elif [[ "$yn" =~ ^[Nn] ]]; then
