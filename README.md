@@ -1,5 +1,5 @@
 # CLI ROM Tools
-## ROM Tool written in bash
+## Android Kitchen written in bash
 To start the tool just open terminal on RomTools folder, then run
 ```` shell
 bash start
@@ -24,9 +24,20 @@ You can do it by starting the tool first then choose "Install proprietary packag
 - Mount and umount images
 - Custom Scripts (put your scripts into tool/custom_scripts, you can use functions from tool)
 - Zstd unpacking and repacking
+
+| Supported Image Types                   |
+|-----------------------------------------|
+| Android Boot & Vendor boot Image        |
+| Android Recovery Image                  |
+| Super                                   |
+| Ext4                                    |
+| F2fs                                    |
+| Erofs                                   |
+| Payload (unpack)                        |
+| Sparsechunk (decompress)                |
 ***
 ### Available on ###
-- Linux (x86_64)
+- Linux (Arch, Debian, RedHat, OpenSUSE base supported)
 - Windows WSL (features like image mounting and unmounting is unavailable)
 ***
 
