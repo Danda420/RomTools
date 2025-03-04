@@ -139,13 +139,13 @@ file_selector() {
 	   clear
 	   banner
 	   echo ""
-	   file_selector $selected_dir $file_extension $message
+	   file_selector $selected_dir $file_extension "$message"
 	else
 	   if [[ $(ls -1 $selected_dir | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)") == "" ]]; then
 	      clear
 	      banner
 	      echo ""
-	      file_selector $selected_dir $file_extension $message
+	      file_selector $selected_dir $file_extension "$message"
 	   fi
 	   if [[ $file_extension == "" ]]; then
 	      FILE=$(ls -1 $selected_dir | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
@@ -188,7 +188,7 @@ extracted_partition_selector() {
 	   clear
 	   banner
 	   echo ""
-	   extracted_partition_selector $selected_dir $message
+	   extracted_partition_selector $selected_dir "$message"
 	else
 	   FOLDER=$(ls -1 $selected_dir | grep -v "config" | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
 	   if [[ $FOLDER != "" ]]; then
@@ -198,7 +198,7 @@ extracted_partition_selector() {
 	      clear
 	      banner
 	      echo ""
-	      extracted_partition_selector $selected_dir $message
+	      extracted_partition_selector $selected_dir "$message"
 	   fi
 	fi
 }
