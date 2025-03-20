@@ -843,12 +843,6 @@ repack_ext4_as_erofs_cmd() {
 		local other=""
 	fi
 
-	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
-		local mountpoint=""
-	else
-		local mountpoint=$partition
-	fi
-
 	local context=$(head -n 1 $ext4dir/config/$partition/${partition}_file_contexts | awk '{print $2}') 
 	sed -i "/([/].*)? /d" $ext4dir/config/$partition/${partition}_file_contexts
 	sed -i "1i / $context\n/$partition $context\n/$partition/ $context" $ext4dir/config/$partition/${partition}_file_contexts
@@ -971,12 +965,6 @@ repack_f2fs_as_erofs_cmd() {
 		local other=" -E legacy-compress"
 	else
 		local other=""
-	fi
-
-	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
-		local mountpoint=""
-	else
-		local mountpoint=$partition
 	fi
 
 	local context=$(head -n 1 $f2fsdir/config/${partition}_file_contexts | awk '{print $2}') 
