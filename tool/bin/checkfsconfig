@@ -12,16 +12,16 @@ echo ""
 cd $extracted_dir
 for i in $(find .); do
    j=${i:2}
-   if [[ ! $(grep -rF "$partition/$j" $fs_config) ]]; then
+   if [[ ! $(grep -rF "$partition/$j " $fs_config) ]]; then
       test -f $extracted_dir/$j
       if [[ $? == 0 ]]; then
          if [[ $(echo /$j | grep "/bin/") ]]; then
-            echo $partition/$j 0 2000 0755 >> $fs_config
+            echo "$partition/$j 0 2000 0755" >> $fs_config
          else
-            echo $partition/$j 0 0 0644 >> $fs_config
+            echo "$partition/$j 0 0 0644" >> $fs_config
          fi
       else
-         echo $partition/$j 0 0 0755 >> $fs_config
+         echo "$partition/$j 0 0 0755" >> $fs_config
       fi
    fi
 done
