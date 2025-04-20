@@ -847,11 +847,12 @@ repack_ext4_as_erofs_cmd() {
 	sed -i "/([/].*)? /d" $ext4dir/config/$partition/${partition}_file_contexts
 	sed -i "1i / $context\n/$partition $context\n/$partition/ $context" $ext4dir/config/$partition/${partition}_file_contexts
 	sed -i "1i / 0 0 0755\n${partition}/ 0 0 0755" $ext4dir/config/$partition/${partition}_fs_config
+	$BIN/checkfsconfig $ext4dir/$partition $ext4dir/config/$partition/${partition}_fs_config
 	$BIN/mkfs.erofs${other} \
 	   -z${compression} \
 	   -T $(date +%s) \
 	   --workers=$(nproc --all) \
-	   --mount-point="/$mountpoint" \
+	   --mount-point="/$partition" \
 	   --fs-config-file="$ext4dir/config/$partition/${partition}_fs_config" \
 	   --file-contexts="$ext4dir/config/$partition/${partition}_file_contexts" \
 	   "$DIROUT/$partition.erofs.img" "$ext4dir/$partition/"
@@ -871,7 +872,7 @@ repack_ext4_as_f2fs_cmd() {
 	sed -i "/([/].*)? /d" $ext4dir/config/$partition/${partition}_file_contexts
 	sed -i "1i / $context\n/${partition}(/.*)? $context" $ext4dir/config/$partition/${partition}_file_contexts
 	sed -i "1i / 0 0 0755\n${partition}/ 0 0 0755" $ext4dir/config/$partition/${partition}_fs_config
-	
+	$BIN/checkfsconfig $ext4dir/$partition $ext4dir/config/$partition/${partition}_fs_config
 	cp $BIN/f2fs_tmp $DIROUT/$partition.f2fs.img
 	truncate -s $SIZE $DIROUT/$partition.f2fs.img
 	$BIN/mkfs.f2fs $DIROUT/$partition.f2fs.img \
@@ -916,6 +917,7 @@ repack_erofs_as_f2fs_cmd() {
 	local SIZE=$(( ((54 * 1024 * 1024) + $(du -sb "$erofsdir/$partition" | awk '{print $1}') ) * 115 / 100 + 1))
 	sed -i "/[/]${partition}[/] /d" $erofsdir/config/${partition}_file_contexts
 	sed -i "s#/${partition} #/${partition}(/.*) #g" $erofsdir/config/${partition}_file_contexts
+	$BIN/checkfsconfig $erofsdir/$partition $erofsdir/config/${partition}_fs_config
 	cp $BIN/f2fs_tmp $DIROUT/$partition.f2fs.img
 	truncate -s $SIZE $DIROUT/$partition.f2fs.img
 	$BIN/mkfs.f2fs $DIROUT/$partition.f2fs.img \
@@ -971,11 +973,12 @@ repack_f2fs_as_erofs_cmd() {
 	sed -i "/([/].*)? /d" $f2fsdir/config/${partition}_file_contexts
 	sed -i "/[/] $context/d" $f2fsdir/config/${partition}_file_contexts
 	sed -i "1i / $context\n/$partition $context\n/$partition/ $context" $f2fsdir/config/${partition}_file_contexts
+	$BIN/checkfsconfig $f2fsdir/$partition $f2fsdir/config/${partition}_fs_config
 	$BIN/mkfs.erofs${other} \
 	   -z${compression} \
 	   -T $(date +%s) \
 	   --workers=$(nproc --all) \
-	   --mount-point="/$mountpoint" \
+	   --mount-point="/$partition" \
 	   --fs-config-file="$f2fsdir/config/${partition}_fs_config" \
 	   --file-contexts="$f2fsdir/config/${partition}_file_contexts" \
 	   "$DIROUT/$partition.erofs.img" "$f2fsdir/$partition/"
