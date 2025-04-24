@@ -737,9 +737,6 @@ decompress_zstd() {
 		
 		echo " "
 		echo "Decompressing $filename (zstd)"
-		zstd -d $DIRIN/$filename.zst -o $DIROUT/$outputname
-		rm -rf $DIRIN/$filename.*
-		echo " "
 		if zstd -d $DIRIN/$filename.zst -o $DIROUT/$outputname; then
 		   rm -rf $DIRIN/$filename.*
 		   echo " "
