@@ -395,8 +395,7 @@ convert_ext4_erofs() {
 	   echo -e "${G}Conversion done..."
 	   echo -e "Output : $DIROUT/$image.erofs.img ${NC}"
 	else
-	   echo -e "${R}Conversion Failed!"
-	   echo -e "${NC}"
+	   echo -e "${R}Conversion Failed! ${NC}"
 	fi
 }
 
@@ -418,8 +417,7 @@ convert_ext4_f2fs() {
 	   echo -e "${G}Conversion done..."
 	   echo -e "Output : $DIROUT/$image.f2fs.img ${NC}"
 	else
-	   echo -e "${R}Conversion Failed!"
-	   echo -e "${NC}"
+	   echo -e "${R}Conversion Failed! ${NC}"
 	fi
 }
 
@@ -446,8 +444,7 @@ convert_erofs_ext4(){
 	   echo -e "${G}Conversion done..."
 	   echo -e "Output : $DIROUT/$image.ext4.img ${NC}"
 	else
-	   echo -e "${R}Conversion Failed!"
-	   echo -e "${NC}"
+	   echo -e "${R}Conversion Failed! ${NC}"
 	fi
 }
 
@@ -468,8 +465,7 @@ convert_erofs_f2fs(){
 	   echo -e "${G}Conversion done..."
 	   echo -e "Output : $DIROUT/$image.f2fs.img ${NC}"
 	else
-	   echo -e "${R}Conversion Failed!"
-	   echo -e "${NC}"
+	   echo -e "${R}Conversion Failed! ${NC}"
 	fi
 }
 
@@ -496,8 +492,7 @@ convert_f2fs_ext4() {
 	   echo -e "${G}Conversion done..."
 	   echo -e "Output : $DIROUT/$image.ext4.img ${NC}"
 	else
-	   echo -e "${R}Conversion Failed!"
-	   echo -e "${NC}"
+	   echo -e "${R}Conversion Failed! ${NC}"
 	fi
 }
 
@@ -594,8 +589,7 @@ convert_f2fs_erofs() {
 	   echo -e "${G}Conversion done..."
 	   echo -e "Output : $DIROUT/$image.erofs.img ${NC}"
 	else
-	   echo -e "${R}Conversion Failed!"
-	   echo -e "${NC}"
+	   echo -e "${R}Conversion Failed! ${NC}"
 	fi
 }
 
@@ -630,8 +624,7 @@ rebuild_ext4(){
 		echo -e "${G}Rebuild done..."
 		echo -e "Output : $DIROUT/$partition.img ${NC}"
 	else
-		echo -e "${R}Rebuild Failed!"
-		echo -e "${NC}"
+		echo -e "${R}Rebuild Failed! ${NC}"
 	fi
 	sudo rm -rf $WORKDIR/rebuildimg
 }
@@ -648,8 +641,7 @@ rebuild_ext4_single() {
 		  rebuild_ext4
 		else
 		   echo ""
-		   echo -e "${R}$partition.img fs type is $(blkid -o value -s TYPE $DIRIN/$partition.img), aborting..."
-		   echo -e "${NC}"
+		   echo -e "${R}$partition.img fs type is $(blkid -o value -s TYPE $DIRIN/$partition.img), aborting... ${NC}"
 		fi
 	done
 }
@@ -679,8 +671,7 @@ datbr_raw() {
 		   rm -rf $DIRIN/$imgname.*
 		   echo -e "${G}Done! Output : $DIROUT/$imgname.img ${NC}"
 		else
-		   echo -e "${R}Decompression Failed!"
-		   echo -e "${NC}"
+		   echo -e "${R}Decompression Failed! ${NC}"
 		fi
 	fi
 }
@@ -717,8 +708,7 @@ compress_zstd() {
 		   echo " "
 		   echo -e "${G}Done! Output : $DIROUT/${filename}$ZSTDSUFFIX ${NC}"
 		else
-		   echo -e "${R}Compression Failed!"
-		   echo -e "${NC}"
+		   echo -e "${R}Compression Failed! ${NC}"
 		fi
 	fi	
 }
@@ -747,8 +737,7 @@ decompress_zstd() {
 		   echo " "
 		   echo -e "${G}Done! Output : $DIROUT/$outputname ${NC}"
 		else
-		   echo -e "${R}Decompression Failed!"
-		   echo -e "${NC}"
+		   echo -e "${R}Decompression Failed! ${NC}"
 		fi
 	else
 		echo " "
@@ -1048,8 +1037,7 @@ unpack_ext4_erofs_f2fs_img() {
 	       unpack_f2fs
 	   else
 	       echo ""
-	       echo -e "${R}$image.img fs type is not ext4/f2fs/erofs!"
-	       echo -e "${NC}"
+	       echo -e "${R}$image.img fs type is not ext4/f2fs/erofs! ${NC}"
 	   fi
 	done
 }
@@ -1078,8 +1066,7 @@ repack_ext4_img_foldersize() {
 		   echo -e "Output : $DIROUT/$image.ext4.img ${NC}"
 		else
 		   echo ""
-		   echo -e "${R}Repack Failed!"
-		   echo -e "${NC}"
+		   echo -e "${R}Repack Failed! ${NC}"
 		fi
 	   fi
 	done
@@ -1113,8 +1100,7 @@ repack_ext4_img_freespace() {
 		   echo -e "Output : $DIROUT/$image.ext4.img ${NC}"
 		else
 		   echo ""
-		   echo -e "${R}Repack Failed!"
-		   echo -e "${NC}"
+		   echo -e "${R}Repack Failed! ${NC}"
 		fi
 	fi
 }
@@ -1141,8 +1127,7 @@ repack_ext4_img_samesize() {
 		   echo -e "Output : $DIROUT/$image.ext4.img ${NC}"
 		else
 		   echo ""
-		   echo -e "${R}Repack Failed!"
-		   echo -e "${NC}"
+		   echo -e "${R}Repack Failed! ${NC}"
 		fi
 	   fi
 	done
@@ -1173,8 +1158,7 @@ repack_ext4_img_inputsize() {
 		   echo -e "Output : $DIROUT/$image.ext4.img ${NC}"
 		else
 		   echo ""
-		   echo -e "${R}Repack Failed!"
-		   echo -e "${NC}"
+		   echo -e "${R}Repack Failed! ${NC}"
 		fi
 	fi
 }
@@ -1274,8 +1258,7 @@ repack_erofs() {
 		   echo -e "Output : $DIROUT/$image.erofs.img ${NC}"
 		else
 		   echo ""
-		   echo -e "${R}Repack Failed!"
-		   echo -e "${NC}"
+		   echo -e "${R}Repack Failed! ${NC}"
 		fi
 	fi
 }
@@ -1298,8 +1281,7 @@ repack_f2fs() {
 		   echo -e "Output : $DIROUT/$image.f2fs.img ${NC}"
 		else
 		   echo ""s
-		   echo -e "${R}Repack Failed!"
-		   echo -e "${NC}"
+		   echo -e "${R}Repack Failed! ${NC}"
 		fi
 	fi
 }
@@ -1316,8 +1298,7 @@ convert_ext4_erofs_s() {
 	      convert_ext4_erofs
 	   else
 	      echo ""
-	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
-	      echo -e "${NC}"
+	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
 	   fi
 	done
 	restart_tool
@@ -1335,8 +1316,7 @@ convert_ext4_f2fs_s() {
 	      convert_ext4_f2fs
 	   else
 	      echo ""
-	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
-	      echo -e "${NC}"
+	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
 	   fi
 	done
 	restart_tool
@@ -1355,8 +1335,7 @@ convert_erofs_ext4_s() {
 	      convert_erofs_ext4
 	   else
 	      echo ""
-	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
-	      echo -e "${NC}"
+	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
 	   fi
 	done
 	restart_tool
@@ -1374,8 +1353,7 @@ convert_erofs_f2fs_s() {
 	      convert_erofs_f2fs
 	   else
 	      echo ""
-	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
-	      echo -e "${NC}"
+	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
 	   fi
 	done
 	restart_tool
@@ -1393,8 +1371,7 @@ convert_f2fs_ext4_s() {
 	      convert_f2fs_ext4
 	   else
 	      echo ""
-	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
-	      echo -e "${NC}"
+	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
 	   fi
 	done
 	restart_tool
@@ -1412,8 +1389,7 @@ convert_f2fs_erofs_s() {
 	      convert_f2fs_erofs
 	   else
 	      echo ""
-	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting..."
-	      echo -e "${NC}"
+	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
 	   fi
 	done
 	restart_tool
@@ -1436,8 +1412,7 @@ sparsechunk_converter() {
 	   if [[ -f $DIROUT/super.img ]]; then
 	       echo -e "${G}Done! Output : $DIROUT/super.img ${NC}"
 	   else
-	       echo -e "${R}Conversion Failed!"
-	       echo -e "${NC}"
+	       echo -e "${R}Conversion Failed! ${NC}"
 	   fi
 	else
 	  echo -e "${R}No sparsechunk with the name of $SPARSECHUNK in input ${NC}"
@@ -1477,9 +1452,7 @@ merge_oplus() {
 		echo -e "${G}merged all fs context and config.. Output : $DIROUT ${NC}"
 
 	else
-		echo -e "${R}Error: put your system_file_contexts & system_fs_config to $DIRIN"
-		echo -e "${NC}"
-		
+		echo -e "${R}Error: put your system_file_contexts & system_fs_config to $DIRIN ${NC}"
 	fi
 }
 
@@ -1503,8 +1476,7 @@ merge_non_dynamic() {
 		mv $DIRIN/system_file_contexts $DIROUT/
 		mv $DIRIN/system_fs_config $DIROUT/
 	else
-		echo -e "${R}Error: you probably missed some important partitions fs conf and context..."
-		echo -e "${NC}"
+		echo -e "${R}Error: you probably missed some important partitions fs conf and context... ${NC}"
 	fi
 }
 
@@ -1630,9 +1602,12 @@ umount_normal() {
 	done
 }
 
-payload() {
+payload_all() {
 	clear
+	banner
+	echo " "
 	if [ -f $DIRIN/payload.bin ]; then
+		clear
 		$BIN/payload $DIRIN/payload.bin -c $(nproc --all) -o $DIROUT
 
 		echo " "
@@ -1643,8 +1618,61 @@ payload() {
 		echo " "
 		echo -e "Done! Output : $DIROUT ${NC}"
 	else
-		echo -e "${R}there's no payload.bin in $DIRIN"
-		echo -e "${NC}"
+		echo " "
+		echo -e "${R}there's no payload.bin in $DIRIN ${NC}"
+	fi
+}
+
+payload_s_part() {
+	clear
+	banner
+	echo ""
+	if [ -f $DIRIN/payload.bin ]; then
+		echo "Choose which partition you want to extract :"
+		$BIN/payload -l $DIRIN/payload.bin | grep '(' | awk '{print $1}' | awk '{print NR ".", $0}'
+		echo "m. Extract more than one partition"
+		echo "x. Back to main menu"
+		read
+		local CHOOSE=$REPLY
+		if [[ $CHOOSE == "x" ]]; then
+			start_tools
+		elif [[ $CHOOSE == "m" ]]; then
+			clear
+			banner
+			echo ""
+			echo "Input partitions you want to extract :"
+			$BIN/payload -l $DIRIN/payload.bin | grep '(' | awk '{print $1}'
+			echo ""
+			echo 'For example: vendor odm system (no commas, no anything.. like the list above, just separate it with space)'
+			read
+			local selected_partitions=$REPLY
+			clear
+			banner
+			for partition in $selected_partitions; do
+				echo ""
+				echo "Extracting $partition from payload.bin"
+				if $BIN/payload $DIRIN/payload.bin -c $(nproc --all) -p $partition -o $DIROUT -q; then
+					echo -e "${G}Success! Output : $DIROUT/$partition.img ${NC}"
+				else
+					echo -e "${R}$partition extraction failed! ${NC}"
+				fi
+			done
+		elif [[ $CHOOSE == "" ]]; then
+			payload_s_part
+		else
+			clear
+			banner
+			echo ""
+			partition=$($BIN/payload -l $DIRIN/payload.bin | grep '(' | awk '{print $1}' | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
+			echo "Extracting $partition from payload.bin"
+			if $BIN/payload $DIRIN/payload.bin -c $(nproc --all) -p $partition -o $DIROUT -q; then
+				echo -e "${G}Success! Output : $DIROUT/$partition.img ${NC}"
+			else
+				echo -e "${R}$partition extraction failed!"
+			fi
+		fi
+	else
+		echo -e "${R}there's no payload.bin in $DIRIN ${NC}"
 	fi
 }
 
@@ -1685,8 +1713,7 @@ raw_sparse() {
 		   rm -rf $DIRIN/$imgname.img
 		   echo -e "${G}Done! Output : $DIROUT/$imgname.sparse.img ${NC}"
 		else
-		   echo -e "${R}Conversion Failed!"
-		   echo -e "${NC}"
+		   echo -e "${R}Conversion Failed! ${NC}"
 		fi
 	fi
 }
@@ -1728,8 +1755,7 @@ raw_datbr() {
 		if [[ -f $DIROUT/$imgname.new.dat.br ]]; then
 		   echo -e "Done! Output : $DIROUT/$imgname.new.dat.br ${NC}"
 		else
-		   echo -e "${R}Decompression Failed!"
-		   echo -e "${NC}"
+		   echo -e "${R}Decompression Failed! ${NC}"
 		fi
 	fi
 }
@@ -2002,8 +2028,7 @@ sparse_raw() {
 		   rm -rf $DIRIN/$imgname.img
 		   echo -e "${G}Done! Output : $DIROUT/$imgname.img ${NC}"
 		else
-		   echo -e "${R}Decompression Failed!"
-		   echo -e "${NC}"
+		   echo -e "${R}Decompression Failed! ${NC}"
 		fi
 	fi
 }
@@ -2322,8 +2347,7 @@ super_r() {
 			rm -rf $DIRSCRIPTS/build_super
 		fi
 	else
-		echo -e "${R}Meta slot $meta_slot is not supported!"
-		echo -e "${NC}"
+		echo -e "${R}Meta slot $meta_slot is not supported! ${NC}"
 	fi
 	
 	if [[ -f $DIRIN/$imgname.img ]]; then
@@ -2337,8 +2361,7 @@ super_r() {
 		if [[ -f $DIROUT/$imgname.img ]] && [[ $(ls -l $DIROUT/$imgname.img | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}super build done! Output : $DIROUT/$imgname.img ${NC}"
 		else
-		   echo -e "${R}Build Failed!"
-		   echo -e "${NC}"
+		   echo -e "${R}Build Failed! ${NC}"
 		fi
 	   ;;
 		
@@ -2351,8 +2374,7 @@ super_r() {
 		   mv $DIRIN/$imgname.sparse.img $DIROUT/$imgname.sparse.img
 		   echo -e "${G}super build done! Output : $DIROUT/$imgname.sparse.img ${NC}"
 		else
-		   echo -e "${R}Build Failed!"
-		   echo -e "${NC}"
+		   echo -e "${R}Build Failed! ${NC}"
 		fi
 	   ;;
 		
@@ -2369,8 +2391,7 @@ super_r() {
 		if [[ -f $DIROUT/$imgname.new.dat ]] && [[ $(ls -l $DIROUT/$imgname.new.dat | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}super build done! Output : $DIROUT/$imgname.new.dat ${NC}"
 		else
-		   echo -e "${R}Build Failed!"
-		   echo -e "${NC}"
+		   echo -e "${R}Build Failed! ${NC}"
 		fi
 	   ;;
 	   
@@ -2393,8 +2414,7 @@ super_r() {
 		   rm -rf $DIROUT/$imgname.new.dat
 		   echo -e "${G}super build done! Output : $DIROUT/$imgname.new.dat.br ${NC}"
 		else
-		   echo -e "${R}Build Failed!"
-		   echo -e "${NC}"
+		   echo -e "${R}Build Failed! ${NC}"
 		fi
 	   ;;
 	   
@@ -2407,8 +2427,7 @@ super_r() {
 		   rm -rf $DIRIN/$imgname.img
 		   echo -e "${G}super build done! Output : $DIROUT/${imgname}$ZSTDSUFFIX ${NC}"
 		else
-		   echo -e "${R}Build Failed!"
-		   echo -e "${NC}"
+		   echo -e "${R}Build Failed! ${NC}"
 		fi
 	   ;;
 	esac
@@ -2553,7 +2572,7 @@ mount_main() {
 	while true; do
 	    banner
 	    echo " "
-		echo "put your images on $WORKDIR"
+		echo "put your images in $WORKDIR"
 		echo " "
 	    echo "1. Mount raw image and resize"
 	    echo "2. Mount without resizing"
@@ -2891,6 +2910,35 @@ zstd_main() {
 	done
 }
 
+payload_main() {
+	while true; do
+	    banner
+	    echo " "
+		echo "put your payload.bin in $DIRIN"
+	    echo " "
+	    echo "1. Unpack all partitions in payload.bin"
+	    echo "2. Unpack specific partition from payload.bin"
+	    echo "x. Back to main menu"
+	    
+	    read -p "" choose
+	    case $choose in
+	    
+		1 ) 
+	payload_all
+	restart_tool;;
+
+		2 ) 
+	payload_s_part
+	restart_tool;;
+
+		x ) 
+	start_tools;;
+
+		* ) zstd_main;;
+	    esac
+	done
+}
+
 start_tools() {
 	setup
 	while true; do
@@ -2953,7 +3001,7 @@ start_tools() {
 	restart_tool;;
 
 		9 ) 
-	payload
+	payload_main
 	restart_tool;;
 
 		10 ) 
