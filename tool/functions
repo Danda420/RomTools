@@ -1,5 +1,5 @@
 #!/bin/bash
-DIRTOOLS=$PWD
+DIRTOOLS=$(dirname "$(realpath "$0")")
 DIRSCRIPTS=$DIRTOOLS/tool
 BIN=$DIRSCRIPTS/bin
 PYSCRIPTS=$BIN/py
@@ -78,17 +78,22 @@ restore_perm() {
 
 setup() {
 	clear
-	if [[ ! -d $WORKDIR ]] && [[ ! -d $DIRIN ]] && [[ ! -d $DIROUT ]]; then
+	if [[ ! -d $WORKDIR ]] || [[ ! -d $DIRIN ]] || [[ ! -d $DIROUT ]]; then
 		mkdir -p $DIRIN \
 		         $DIROUT \
 		         $WORKDIR
-		if [[ ! -f /bin/romtools ]]; then
-		    echo "#!/bin/bash" > $DIRSCRIPTS/romtools
-		    echo "cd $DIRTOOLS" >> $DIRSCRIPTS/romtools
-		    echo "$DIRTOOLS/start" >> $DIRSCRIPTS/romtools
-		    sudo mv $DIRSCRIPTS/romtools /bin/romtools
-		    sudo chmod 755 /bin/romtools
+	fi
+
+	local romtools_bin=/bin/romtools
+	local startscript=$DIRTOOLS/start
+	if [[ -L $romtools_bin ]]; then
+    	if [[ ! -e $romtools_bin || ! -f $romtools_bin ]]; then
+			sudo rm -rf $romtools_bin
+			sudo ln -s "$startscript" $romtools_bin
 		fi
+	else
+		sudo rm -rf $romtools_bin
+		sudo ln -s "$startscript" $romtools_bin
 	fi
 }
 

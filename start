@@ -1,5 +1,5 @@
 #!/bin/bash
-
-source ./tool/functions
+script_dir=$(dirname "$(realpath "$0")")
+source $script_dir/tool/functions
 
 start_tools
