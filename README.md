@@ -1,16 +1,21 @@
-# CLI ROM Tools
+# CLI ROM Tools for Linux
 ## Android Kitchen written in bash
-To start the tool just open terminal on RomTools folder, then run
+### Setup ###
+- Clone this repository or download code zip then extract (where you cloned or extracted this tool will detemine the tool directory after you're done setting up)
+- Open terminal on RomTools folder
+- Run this on terminal
 ```` shell
 bash start
 # or
 ./start
 ````
+- Choose "Install proprietary packages" option (it will auto detect your linux distribution base)
 
-After starting the tool for the first time, you can just type `romtools` in terminal to start it. 
+After setting up, you can just type `romtools` in terminal to start it.
 
-Before using this tool for the first time, make sure to install proprietary packages..
-You can do it by starting the tool first then choose "Install proprietary packages".
+To use the tool, put files you desire to "input" folder, output files are located on "output" folder, while decompiled partitions are extracted to "ROM_WORKDIR" folder inside RomTools folder.
+
+Those folders are auto generated after starting the tool
 
 ***
 ### Features ###
