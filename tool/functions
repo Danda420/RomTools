@@ -1395,7 +1395,41 @@ convert_f2fs_erofs_s() {
 	restart_tool
 }
 
-sparsechunk_converter() {
+sparsechunk_comp() {
+	clear
+	banner
+	echo " "
+	echo "choose which image you wanted to convert into sparsechunk"
+	echo " "
+	file_selector $DIRIN ".img"
+	echo ""
+	echo "Input output file name/pattern (default is "${FILE}.img_sparsechunk" if you leave this empty):"
+	read
+	local outpattern=$REPLY
+	if [[ $outpattern == "" ]]; then
+		local outpattern=${FILE}.img_sparsechunk
+	fi
+	echo "Input chunk size in MiB (default is 512 if you leave this empty):"
+	read
+	local chunksize=$REPLY
+	if [[ $chunksize == "" ]]; then
+		local chunksize=512
+	fi
+	echo ""
+	for image in $FILE; do
+	   if python3 $PYSCRIPTS/img2simg.py $DIRIN/$image.img -S $chunksize -o $DIROUT/$outpattern -D 00000000 -D FFFFFFFF; then
+	    	rm -rf $DIRIN/$image.img
+			echo ""
+			echo -e "${G}Done! Output : $DIROUT/$outpattern.* ${NC}"
+	   else
+			echo ""
+	    	echo -e "${R}Conversion Failed! ${NC}"
+	   fi
+	done
+
+}
+
+sparsechunk_decomp() {
 	clear
 	banner
 	echo ""
@@ -1403,14 +1437,20 @@ sparsechunk_converter() {
 	echo 'example.. sparsechunk name is "super.img_sparsechunk.0-12", put "super.img_sparsechunk" here'
 	read
 	local SPARSECHUNK=$REPLY
+	echo ""
+	echo "Input output file name (without extension):"
+	read
+	local outname=$REPLY
 	
 	if [[ -f $DIRIN/$SPARSECHUNK.0 ]]; then
 	   echo ""
-	   echo "Converting sparsechunk image into raw image"
-	   if simg2img $DIRIN/$SPARSECHUNK.* $DIROUT/super.img; then
+	   echo "Converting sparsechunk into raw image"
+	   if simg2img $DIRIN/$SPARSECHUNK.* $DIROUT/$outname.img; then
 	       rm -rf $DIRIN/$SPARSECHUNK.*
-	       echo -e "${G}Done! Output : $DIROUT/super.img ${NC}"
+		   echo ""
+	       echo -e "${G}Done! Output : $DIROUT/$outname.img ${NC}"
 	   else
+		   echo ""
 	       echo -e "${R}Conversion Failed! ${NC}"
 	   fi
 	else
@@ -2070,7 +2110,7 @@ super_u_sparse() {
 	file_selector $DIRIN ".img"
 	local imgname=$FILE
 
-	if [[ $(file $DIRIN/$imgname | grep "Android sparse image") != "" ]]; then
+	if [[ $(file $DIRIN/$imgname.img | grep "Android sparse image") != "" ]]; then
 		if [[ -d $superdir ]]; then
 			echo "Theres super extracted on $superdir, it will be deleted!"
 			echo "Move it somewhere first if its important"
@@ -2085,10 +2125,13 @@ super_u_sparse() {
 		mkdir -p $superdir/config
 		lpdump --slot=0 $DIRIN/${imgname}_tmp.img > $superdir/config/super_config.txt
 		lpunpack $DIRIN/${imgname}_tmp.img $WORKDIR/super
-		rm -rf $DIRIN/$imgname.*
+		rm -rf $DIRIN/${imgname}_tmp.img 
 
 		echo " "
 		echo -e "${G}Done! Output : $WORKDIR/super ${NC}"
+	else
+		echo " "
+		echo -e "${R}$imgname.img is not Android sparse image! aborting...${NC}"
 	fi
 }
 
@@ -2110,13 +2153,14 @@ super_u_sparsechunk() {
 			rm -rf $superdir
 	   fi
 	   echo ""
-	   echo "Converting sparsechunk image into raw image"
+	   echo "Converting sparsechunk into raw image"
 	   
 	   if simg2img $DIRIN/$SPARSECHUNK.* $DIRIN/super_tmp.img; then
 	       rm -rf $DIRIN/$SPARSECHUNK.*
 		   mkdir -p $superdir/config
 		   lpdump --slot=0 $DIRIN/super_tmp.img> $superdir/config/super_config.txt
 		   lpunpack $DIRIN/super_tmp.img $WORKDIR/super
+		   rm -rf $DIRIN/super_tmp.img
 	       echo -e "${G}Done! Output : $WORKDIR/super ${NC}"
 	   else
 	       echo -e "${R}Conversion Failed! ${NC}"
@@ -2248,9 +2292,10 @@ super_r() {
 	   echo "Compress image to :"
 	   echo "1. raw"
 	   echo "2. sparse"
-	   echo "3. new.dat"
-	   echo "4. dat.br"
-	   echo "5. zstd"
+	   echo "3. sparsechunk"
+	   echo "4. new.dat"
+	   echo "5. dat.br"
+	   echo "6. zstd"
 	   read -p "" choose
 	   case $choose in
 		[1]* ) 
@@ -2260,16 +2305,32 @@ super_r() {
 		local COMPRESSION=sparse
 		break;;
 		[3]* )
-		local COMPRESSION=dat
+		local COMPRESSION=sparsechunk
+		echo ""
+		echo "Input output file name/pattern for sparsechunk (default is "${imgname}.img_sparsechunk" if you leave this empty) :"
+		read
+		local CHUNKOUTPATTERN=$REPLY
+		if [[ $CHUNKOUTPATTERN == "" ]]; then
+			local CHUNKOUTPATTERN=${imgname}.img_sparsechunk
+		fi
+		echo "Input chunk size in MiB (default is 512 if you leave this empty):"
+		read
+		local CHUNKSIZE=$REPLY
+		if [[ $CHUNKSIZE == "" ]]; then
+			local CHUNKSIZE=512
+		fi
 		break;;
 		[4]* )
+		local COMPRESSION=dat
+		break;;
+		[5]* )
 		local COMPRESSION=br
 		echo " "
 		echo "Input Brotli compression level (0-11) :"
 		read
 		local COMPLVL=$REPLY
 		break;;
-		[5]* )
+		[6]* )
 		local COMPRESSION=zstd
 		echo " "
 		echo "Input zstd suffix (leave it empty if you want .zst) :"
@@ -2432,11 +2493,20 @@ super_r() {
 	   "sparse" )
 		echo " "
 		echo "Converting raw $imgname.img to sparse..."
-		python3 $PYSCRIPTS/img2simg.py $DIRIN/$imgname.img -o $DIRIN/$imgname.sparse.img > /dev/null 2>&1
-		if [[ -f $DIRIN/$imgname.sparse.img ]] && [[ $(ls -l $DIRIN/$imgname.sparse.img | awk '{print $5}') != "0" ]]; then
+		if python3 $PYSCRIPTS/img2simg.py $DIRIN/$imgname.img -o $DIROUT/$imgname.sparse.img > /dev/null 2>&1; then
 		   rm -rf $DIRIN/$imgname.img
-		   mv $DIRIN/$imgname.sparse.img $DIROUT/$imgname.sparse.img
 		   echo -e "${G}super build done! Output : $DIROUT/$imgname.sparse.img ${NC}"
+		else
+		   echo -e "${R}Build Failed! ${NC}"
+		fi
+	   ;;
+
+	   "sparsechunk" )
+	    echo " "
+	    echo "Converting raw $imgname.img to sparsechunk..."
+	    if python3 $PYSCRIPTS/img2simg.py $DIRIN/$imgname.img -S $CHUNKSIZE -o $DIROUT/$CHUNKOUTPATTERN -D 00000000 -D FFFFFFFF; then
+		   rm -rf $DIRIN/$imgname.img
+		   echo -e "${G}super build done! Output : $DIROUT/$CHUNKOUTPATTERN.* ${NC}"
 		else
 		   echo -e "${R}Build Failed! ${NC}"
 		fi
@@ -2485,12 +2555,12 @@ super_r() {
 	   "zstd" )
 		echo " "
 		echo "Compressing $imgname.img to ${imgname}$ZSTDSUFFIX (zstd)"
-		zstd -${ZSTDLVL} -T$(nproc --all) $DIRIN/$imgname.img -o $DIROUT/${imgname}$ZSTDSUFFIX
-		echo " "
-		if [[ -f $DIROUT/${imgname}$ZSTDSUFFIX ]] && [[ $(ls -l $DIROUT/${imgname}$ZSTDSUFFIX | awk '{print $5}') != "0" ]]; then
+		if zstd -${ZSTDLVL} -T$(nproc --all) $DIRIN/$imgname.img -o $DIROUT/${imgname}$ZSTDSUFFIX; then
 		   rm -rf $DIRIN/$imgname.img
+		   echo " "
 		   echo -e "${G}super build done! Output : $DIROUT/${imgname}$ZSTDSUFFIX ${NC}"
 		else
+		   echo " "
 		   echo -e "${R}Build Failed! ${NC}"
 		fi
 	   ;;
@@ -2984,6 +3054,33 @@ zstd_main() {
 	done
 }
 
+sparsechunk_main() {
+	while true; do
+	    banner
+	    echo " "
+	    echo "1. Convert raw image into sparsechunk"
+	    echo "2. Convert sparsechunk into raw image"
+	    echo "x. Back to main menu"
+	    
+	    read -p "" choose
+	    case $choose in
+	    
+		1 ) 
+	sparsechunk_comp
+	restart_tool;;
+
+		2 ) 
+	sparsechunk_decomp
+	restart_tool;;
+
+		x ) 
+	start_tools;;
+
+		* ) sparsechunk_main;;
+	    esac
+	done
+}
+
 payload_main() {
 	while true; do
 	    banner
@@ -3026,7 +3123,7 @@ start_tools() {
 	    echo "5. Convert image types (ext4/f2fs/erofs)"
 	    echo "6. Rebuild EXT4 Images (removes avb)"
 	    echo "7. Mount or Umount raw imgs"
-	    echo "8. Decompress Sparsechunk"
+	    echo "8. Sparsechunk tools"
 	    echo "9. Unpack payload.bin"
 	    echo "10. Custom Scripts"
 	    echo "11. Merge fs context and config to system"
@@ -3071,7 +3168,7 @@ start_tools() {
 	restart_tool;;
 	
 		8 )
-	sparsechunk_converter
+	sparsechunk_main
 	restart_tool;;
 
 		9 ) 

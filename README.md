@@ -21,7 +21,7 @@ Those folders are auto generated after starting the tool
 ### Features ###
 - Unpack and repack super, ext4, f2fs, erofs, boot images (like boot, vendor boot, etc) and others.
 - Converting images
-  - sparse to raw & raw to sparse
+  - sparse to raw & raw to sparse (sparsechunk also supported)
   - erofs to ext4, erofs to f2fs, ext4 to erofs, ext4 to f2fs, f2fs to ext4, f2fs to erofs
   - raw to dat.br & dat.br to raw
   - and so on...
@@ -38,8 +38,8 @@ Those folders are auto generated after starting the tool
 | Ext4                                    |
 | F2fs                                    |
 | Erofs                                   |
+| Sparsechunk                             |
 | Payload (unpack)                        |
-| Sparsechunk (decompress)                |
 ***
 ### Available on ###
 - Linux (Arch, Debian, RedHat, OpenSUSE base supported)
@@ -57,4 +57,6 @@ Those folders are auto generated after starting the tool
 [xpirt-img2sdat](https://github.com/xpirt/img2sdat)
 
 [althafvly-imgextractor](https://github.com/althafvly/AmlogicKitchen/blob/master/bin/imgextractor.py)
+
+[dlenski-PySIMG](https://github.com/dlenski/PySIMG)
 
