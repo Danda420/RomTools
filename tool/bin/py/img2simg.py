@@ -256,19 +256,20 @@ def main():
             for nb, block in enumerate(iter(partial(args.img.read, args.blocksize), b'')):
                 wr.write(block)
 
-                if args.split and ((wr.tell() + args.blocksize) >> 20) >= args.split:
-                    # writing one more block (might) exceed desired split size in MiB...
+                if args.split and (wr.tell() >> 20) >= args.split:
+                    # Close cleanly after finishing the last full block
+                    wr.flush()
+                    print('%s: Wrote %d blocks in %d sparse chunks (%d%% compression)' % (
+                        outf.name, nb + 1, wr.nchunks, (wr.tell() / ((nb + 1) * args.blocksize)) * 100), file=stderr)
+                    start_block += nb + 1
+                    split_number += 1
                     break
             else:
-                # we only reach this when we run out of input "naturally"...
+                # Finished reading image
                 done = True
-
-            wr.flush()
-            print('%s: Wrote %d blocks in %d sparse chunks (%d%% compression)' % (
-            outf.name, nb, wr.nchunks, (wr.tell() / (nb * args.blocksize)) * 100), file=stderr)
-
-            start_block += nb
-            split_number += 1
+                wr.flush()
+                print('%s: Wrote %d blocks in %d sparse chunks (%d%% compression)' % (
+                    outf.name, nb + 1, wr.nchunks, (wr.tell() / ((nb + 1) * args.blocksize)) * 100), file=stderr)
 
 
 if __name__ == '__main__':
