@@ -1399,17 +1399,16 @@ sparsechunk_converter() {
 	clear
 	banner
 	echo ""
-	echo "Input sparsechunk name:"
-	echo 'example.. sparsechunk name is "super.img_sparsechunk.0-12", write "super.img_sparsechunk" here'
+	echo "Input sparsechunk pattern:"
+	echo 'example.. sparsechunk name is "super.img_sparsechunk.0-12", put "super.img_sparsechunk" here'
 	read
 	local SPARSECHUNK=$REPLY
 	
 	if [[ -f $DIRIN/$SPARSECHUNK.0 ]]; then
 	   echo ""
 	   echo "Converting sparsechunk image into raw image"
-	   simg2img $DIRIN/$SPARSECHUNK.* $DIROUT/super.img
-	   rm -rf $DIRIN/$SPARSECHUNK.*
-	   if [[ -f $DIROUT/super.img ]]; then
+	   if simg2img $DIRIN/$SPARSECHUNK.* $DIROUT/super.img; then
+	       rm -rf $DIRIN/$SPARSECHUNK.*
 	       echo -e "${G}Done! Output : $DIROUT/super.img ${NC}"
 	   else
 	       echo -e "${R}Conversion Failed! ${NC}"
@@ -1708,7 +1707,7 @@ raw_sparse() {
 		echo " "
 		echo "Converting raw image to sparse..."
 
-		if img2simg $DIRIN/$imgname.img $DIROUT/$imgname.sparse.img; then
+		if python3 $PYSCRIPTS/img2simg.py $DIRIN/$imgname.img -o $DIROUT/$imgname.sparse.img; then
 		   echo " "
 		   rm -rf $DIRIN/$imgname.img
 		   echo -e "${G}Done! Output : $DIROUT/$imgname.sparse.img ${NC}"
@@ -1735,7 +1734,7 @@ raw_datbr() {
 
 		echo " " 
 		echo "converting image : $imgname to sparse"
-		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img > /dev/null 2>&1
+		python3 $PYSCRIPTS/img2simg.py $DIRIN/$imgname.img -o $DIRIN/$imgname.sparse.img > /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.img
 
 		echo " " 
@@ -1884,7 +1883,7 @@ inc_dynamic_compress() {
 	    if [[ -f $DIRIN/$partition.img ]]; then
 	    	echo ""
 	    	echo "converting $partition into sparse"
-	    	img2simg $DIRIN/$partition.img $DIRIN/$partition.sparse.img > /dev/null 2>&1
+	    	python3 $PYSCRIPTS/img2simg.py $DIRIN/$partition.img -o $DIRIN/$partition.sparse.img > /dev/null 2>&1
 	    	rm -rf $DIRIN/$partition.img
 	    else
 	    	echo " "
@@ -2059,6 +2058,71 @@ super_u_raw() {
 
 		echo " "
 		echo -e "${G}Done! Output : $WORKDIR/super ${NC}"
+	fi
+}
+
+super_u_sparse() {
+	clear
+	banner
+	echo " "
+	echo "choose which super partition you wanted to extract"
+	echo " "
+	file_selector $DIRIN ".img"
+	local imgname=$FILE
+
+	if [[ $(file $DIRIN/$imgname | grep "Android sparse image") != "" ]]; then
+		if [[ -d $superdir ]]; then
+			echo "Theres super extracted on $superdir, it will be deleted!"
+			echo "Move it somewhere first if its important"
+			echo "Press ENTER to confirm."
+			read
+			rm -rf $superdir
+		fi
+		echo " "
+		echo "Unpacking $imgname.img..."
+		simg2img $DIRIN/$imgname.img $DIRIN/${imgname}_tmp.img
+		rm -rf $DIRIN/$imgname.img
+		mkdir -p $superdir/config
+		lpdump --slot=0 $DIRIN/${imgname}_tmp.img > $superdir/config/super_config.txt
+		lpunpack $DIRIN/${imgname}_tmp.img $WORKDIR/super
+		rm -rf $DIRIN/$imgname.*
+
+		echo " "
+		echo -e "${G}Done! Output : $WORKDIR/super ${NC}"
+	fi
+}
+
+super_u_sparsechunk() {
+	clear
+	banner
+	echo ""
+	echo "Input sparsechunk pattern:"
+	echo 'example.. sparsechunk name is "super.img_sparsechunk.0-12", put "super.img_sparsechunk" here'
+	read
+	local SPARSECHUNK=$REPLY
+	
+	if [[ -f $DIRIN/$SPARSECHUNK.0 ]]; then
+	   if [[ -d $superdir ]]; then
+			echo "Theres super extracted on $superdir, it will be deleted!"
+			echo "Move it somewhere first if its important"
+			echo "Press ENTER to confirm."
+			read
+			rm -rf $superdir
+	   fi
+	   echo ""
+	   echo "Converting sparsechunk image into raw image"
+	   
+	   if simg2img $DIRIN/$SPARSECHUNK.* $DIRIN/super_tmp.img; then
+	       rm -rf $DIRIN/$SPARSECHUNK.*
+		   mkdir -p $superdir/config
+		   lpdump --slot=0 $DIRIN/super_tmp.img> $superdir/config/super_config.txt
+		   lpunpack $DIRIN/super_tmp.img $WORKDIR/super
+	       echo -e "${G}Done! Output : $WORKDIR/super ${NC}"
+	   else
+	       echo -e "${R}Conversion Failed! ${NC}"
+	   fi
+	else
+	  echo -e "${R}No sparsechunk with the name of $SPARSECHUNK in input ${NC}"
 	fi
 }
 	
@@ -2368,7 +2432,7 @@ super_r() {
 	   "sparse" )
 		echo " "
 		echo "Converting raw $imgname.img to sparse..."
-		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img > /dev/null 2>&1
+		python3 $PYSCRIPTS/img2simg.py $DIRIN/$imgname.img -o $DIRIN/$imgname.sparse.img > /dev/null 2>&1
 		if [[ -f $DIRIN/$imgname.sparse.img ]] && [[ $(ls -l $DIRIN/$imgname.sparse.img | awk '{print $5}') != "0" ]]; then
 		   rm -rf $DIRIN/$imgname.img
 		   mv $DIRIN/$imgname.sparse.img $DIROUT/$imgname.sparse.img
@@ -2381,7 +2445,7 @@ super_r() {
 	   "dat" )
 		echo " "
 		echo "Converting raw $imgname.img to sparse..."
-		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img > /dev/null 2>&1
+		python3 $PYSCRIPTS/img2simg.py $DIRIN/$imgname.img -o $DIRIN/$imgname.sparse.img > /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.img
 		
 		echo " "
@@ -2398,7 +2462,7 @@ super_r() {
 	   "br" )
 		echo " "
 		echo "Converting raw $imgname.img to sparse..."
-		img2simg $DIRIN/$imgname.img $DIRIN/$imgname.sparse.img > /dev/null 2>&1
+		python3 $PYSCRIPTS/img2simg.py $DIRIN/$imgname.img -o $DIRIN/$imgname.sparse.img > /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.img
 		
 		echo " "
@@ -2572,8 +2636,8 @@ mount_main() {
 	while true; do
 	    banner
 	    echo " "
-		echo "put your images in $WORKDIR"
-		echo " "
+	    echo "put your images in $WORKDIR"
+	    echo " "
 	    echo "1. Mount raw image and resize"
 	    echo "2. Mount without resizing"
 	    echo "3. Mount read only"
@@ -2742,7 +2806,9 @@ super_main() {
 	    echo "1. Repack Super (raw, sparse, .dat, .br, zstd)"
 	    echo "2. Unpack Super (dat.br)"
 	    echo "3. Unpack Super (zstd)"
-	    echo "4. Unpack Super (raw)"
+	    echo "4. Unpack Super (sparse)"
+	    echo "5. Unpack Super (sparsechunk)"
+	    echo "6. Unpack Super (raw)"
 	    echo "x. Back to main menu"
 	    
 	    read -p "" choose
@@ -2759,8 +2825,16 @@ super_main() {
 		3 ) 
 	super_u_zstd
 	restart_tool;;
-	
+
 		4 ) 
+	super_u_sparse
+	restart_tool;;
+
+		5 ) 
+	super_u_sparsechunk
+	restart_tool;;
+	
+		6 ) 
 	super_u_raw
 	restart_tool;;
 
@@ -2781,7 +2855,7 @@ repack_ext4_erofs_f2fs() {
 	    echo "3. Repack EXT4 image with free space"
 	    echo "4. Repack EXT4 image and manually input size"
 	    echo "5. Repack EROFS image"
-		echo "6. Repack F2FS image"
+	    echo "6. Repack F2FS image"
 	    echo "x. Back to main menu"
 	    
 	    read -p "" choose
@@ -2914,7 +2988,7 @@ payload_main() {
 	while true; do
 	    banner
 	    echo " "
-		echo "put your payload.bin in $DIRIN"
+	    echo "put your payload.bin in $DIRIN"
 	    echo " "
 	    echo "1. Unpack all partitions in payload.bin"
 	    echo "2. Unpack specific partition from payload.bin"
@@ -2934,7 +3008,7 @@ payload_main() {
 		x ) 
 	start_tools;;
 
-		* ) zstd_main;;
+		* ) payload_main;;
 	    esac
 	done
 }
