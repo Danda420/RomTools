@@ -1417,7 +1417,7 @@ sparsechunk_comp() {
 	fi
 	echo ""
 	for image in $FILE; do
-	   if python3 $PYSCRIPTS/img2simg.py $DIRIN/$image.img -S $chunksize -o $DIROUT/$outpattern -D 00000000 -D FFFFFFFF; then
+	   if python3 $PYSCRIPTS/img2simg.py $DIRIN/$image.img -S $chunksize -o $DIROUT/$outpattern; then
 	    	rm -rf $DIRIN/$image.img
 			echo ""
 			echo -e "${G}Done! Output : $DIROUT/$outpattern.* ${NC}"
@@ -2504,12 +2504,12 @@ super_r() {
 	   "sparsechunk" )
 	    echo " "
 	    echo "Converting raw $imgname.img to sparsechunk..."
-	    if python3 $PYSCRIPTS/img2simg.py $DIRIN/$imgname.img -S $CHUNKSIZE -o $DIROUT/$CHUNKOUTPATTERN -D 00000000 -D FFFFFFFF; then
-		   rm -rf $DIRIN/$imgname.img
-		   echo -e "${G}super build done! Output : $DIROUT/$CHUNKOUTPATTERN.* ${NC}"
-		else
-		   echo -e "${R}Build Failed! ${NC}"
-		fi
+	    if python3 $PYSCRIPTS/img2simg.py $DIRIN/$imgname.img -S $CHUNKSIZE -o $DIROUT/$CHUNKOUTPATTERN; then
+	       rm -rf $DIRIN/$imgname.img
+	       echo -e "${G}super build done! Output : $DIROUT/$CHUNKOUTPATTERN.* ${NC}"
+	    else
+	       echo -e "${R}Build Failed! ${NC}"
+	    fi
 	   ;;
 		
 	   "dat" )
