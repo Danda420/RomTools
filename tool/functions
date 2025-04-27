@@ -1,5 +1,5 @@
 #!/bin/bash
-DIRTOOLS=$(dirname "$(realpath "$0")")
+DIRTOOLS="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")")"
 DIRSCRIPTS=$DIRTOOLS/tool
 BIN=$DIRSCRIPTS/bin
 PYSCRIPTS=$BIN/py
