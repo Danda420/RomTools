@@ -1715,6 +1715,273 @@ payload_s_part() {
 	fi
 }
 
+payload_compile() {
+	clear
+	if [[ $(getvalue ACTIVE_SLOT $DIRSCRIPTS/dynamic_partitions.conf) == "" ]]; then
+		echo "A only partition scheme is not supported as of now..."
+		restart_tool
+	fi
+	while true; do
+	echo "Make sure you have already put the partitions you want to compile into payload.bin"
+	echo "and remove/move partitions that you dont want to compile from input folder"
+	echo "If the partitions you're trying to compile has complete firmware images"
+	echo "add it to $DIRSCRIPTS/common_firmware_images"
+	echo "Type y/Y to continue, x/X to go back"
+	read -p "" yn
+	case $yn in
+		[Yy]* ) 
+		break;;
+		[Xx]* ) 
+		start_tools;;   
+		* ) echo "please choose y or x";;
+		esac
+	done
+
+	local firmwareimages=$(cat $DIRSCRIPTS/common_firmware_images)
+
+	if grep -qEi "(Microsoft|WSL)" /proc/version; then
+		echo ""
+		echo "Since you're running this tool WSL, and WSL doesn't support mounting images"
+		echo "you need to input the name of partition that has checkpoint_gc binary. for ex: vendor (dont add any extension like: vendor.img)"
+		read
+		local postinstall_partition=$REPLY
+	fi
+
+	echo ""
+	echo "Collecting required files and values from files provided..."
+
+	mv $DIRIN/*.img $BIN/payloadRepackTool/IMAGES/
+
+	local dp_part=$(find $BIN/payloadRepackTool/IMAGES/ -maxdepth 1 -name "*.img" | sed 's#.*/##' | grep -v -x -f <(echo "$firmwareimages") | sed 's/.img//g' | tr '\n' ' ')
+
+	if ! grep -qEi "(Microsoft|WSL)" /proc/version; then
+		local partlist=$(find $BIN/payloadRepackTool/IMAGES/ -maxdepth 1 -name "*.img" | sed 's#.*/##' | grep -v -x -f <(echo "$firmwareimages") | tr '\n' ' ')
+		for partition in $(echo $partlist); do                        
+			mkdir -p $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+			sudo mount -t auto -o loop $BIN/payloadRepackTool/IMAGES/$partition $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+		done
+		for part in $(echo $dp_part); do
+			if [[ $(sudo find $BIN/payloadRepackTool/IMAGES/ -type f -name "checkpoint_gc" | grep "${part}.img_mnt") != "" ]]; then
+				echo "Found checkpoint_gc at $part"
+				local postinstall_partition=$part
+				break
+			fi
+		done
+		for partition in $(echo $partlist); do
+			sudo umount $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+			rm -rf $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+		done
+	fi
+
+	echo ""
+	echo "Reading configurations from $DIRSCRIPTS/dynamic_partitions.conf..."
+	local ACTIVESLOT=$(getvalue ACTIVE_SLOT $DIRSCRIPTS/dynamic_partitions.conf)
+	local SUPERSIZE=$(getvalue SUPER_SIZE $DIRSCRIPTS/dynamic_partitions.conf)
+	local GROUPTABLESIZE=$(getvalue GROUP_TABLE_SIZE $DIRSCRIPTS/dynamic_partitions.conf)
+	local GROUPTABLE=$(getvalue GROUP_TABLE $DIRSCRIPTS/dynamic_partitions.conf)
+
+	echo ""
+	echo "Generating dynamic_partition_info from configurations"
+	echo "virtual_ab=true" > $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "super_partition_size=${SUPERSIZE}" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "super_${GROUPTABLE}_group_size=${GROUPTABLESIZE}" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "super_partition_groups=${GROUPTABLE}" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "super_${GROUPTABLE}_partition_list=${dp_part}" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "#virtual_ab_compression=false" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "#virtual_ab_compression_method=gz" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "#virtual_ab_cow_version=2" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "#virtual_ab_compression_factor=4096" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+
+	echo ""
+	echo "Generating postinstall_config"
+	echo "RUN_POSTINSTALL_${postinstall_partition}=true" > $BIN/payloadRepackTool/META/postinstall_config.txt
+	echo "POSTINSTALL_PATH_${postinstall_partition}=bin/checkpoint_gc" >> $BIN/payloadRepackTool/META/postinstall_config.txt
+	echo "#FILESYSTEM_TYPE_${postinstall_partition}=ext4" >> $BIN/payloadRepackTool/META/postinstall_config.txt
+	echo "#POSTINSTALL_OPTIONAL_${postinstall_partition}=true" >> $BIN/payloadRepackTool/META/postinstall_config.txt
+
+	echo ""
+	echo "Building payload.bin"
+	$BIN/payloadRepackTool/payloadRepackTool -p
+	if [[ -f $BIN/payloadRepackTool/output/payload.bin ]] && [[ -f $BIN/payloadRepackTool/output/payload_properties.txt ]]; then
+		mv $BIN/payloadRepackTool/output/payload.bin $DIROUT/payload.bin
+		mv $BIN/payloadRepackTool/output/payload_properties.txt $DIROUT/payload_properties.txt
+		echo ""
+		echo "Cleaning..."
+		rm -rf $BIN/payloadRepackTool/IMAGES/* $BIN/payloadRepackTool/output/* $BIN/payloadRepackTool/META/*
+		echo ""
+		echo -e "${G}payload.bin build completed successfully! "
+		echo "Output:"
+		echo "   $DIROUT/payload.bin"
+		echo "   $DIROUT/payload_properties.txt"
+		echo -e "${NC}"
+	else
+		echo ""
+		mv $BIN/payloadRepackTool/IMAGES/*.img $DIRIN/
+		rm -rf $BIN/payloadRepackTool/output/* $BIN/payloadRepackTool/META/*
+		echo -e "${R}payload.bin build failed! ${NC}"
+	fi
+}
+
+payload_compile_ota() {
+	clear
+	if [[ $(getvalue ACTIVE_SLOT $DIRSCRIPTS/dynamic_partitions.conf) == "" ]]; then
+		echo "A only partition scheme is not supported as of now..."
+		restart_tool
+	fi
+	if [[ ! -d $BIN/payloadRepackTool/venv ]]; then
+		echo "No Python venv detected on payload repack tool!"
+		echo "Setting up a python venv for payload.bin ota compiling"
+		$BIN/payloadRepackTool/payloadRepackTool -s
+		clear
+	fi
+	while true; do
+	echo "Make sure you have already put the partitions you want to compile into payload.bin"
+	echo "and remove/move partitions that you dont want to compile from input folder"
+	echo "If the partitions you're trying to compile has complete firmware images"
+	echo "add it to $DIRSCRIPTS/common_firmware_images"
+	echo "Type y/Y to continue, x/X to go back"
+	read -p "" yn
+	case $yn in
+		[Yy]* ) 
+		break;;
+		[Xx]* ) 
+		start_tools;;   
+		* ) echo "please choose y or x";;
+		esac
+	done
+
+	local firmwareimages=$(cat $DIRSCRIPTS/common_firmware_images)
+
+	if grep -qEi "(Microsoft|WSL)" /proc/version && [[ ! -f $DIRIN/build.prop ]]; then
+		echo ""
+		echo "Since WSL doesn't support mounting images, you can unpack your system.img, take system build.prop"
+		echo "then put your system build.prop into $DIRIN then try compiling again."
+		restart_tool
+	fi
+	if grep -qEi "(Microsoft|WSL)" /proc/version; then
+		echo ""
+		echo "Since you're running this tool WSL, and WSL doesn't support mounting images"
+		echo "you need to input the name of partition that has checkpoint_gc binary. for ex: vendor (dont add any extension like: vendor.img)"
+		read
+		local postinstall_partition=$REPLY
+	fi
+	echo ""
+	echo "Input your supported devices codename (if more than one, separate it with a comma. like this: alioth,aliothin)"
+	read
+	local supported_devices="$REPLY"
+
+	echo ""
+	echo "Collecting required files and values from files provided..."
+
+	mv $DIRIN/*.img $BIN/payloadRepackTool/IMAGES/
+
+	local dp_part=$(find $BIN/payloadRepackTool/IMAGES/ -maxdepth 1 -name "*.img" | sed 's#.*/##' | grep -v -x -f <(echo "$firmwareimages") | sed 's/.img//g' | tr '\n' ' ')
+	local ab_part=$(find $BIN/payloadRepackTool/IMAGES/ -maxdepth 1 -name "*.img" | grep -v -x -f <(echo "$firmwareimages") | sed 's#.*/##; s/.img//g')
+
+	if grep -qEi "(Microsoft|WSL)" /proc/version; then
+		mv $DIRIN/build.prop $BIN/payloadRepackTool/SYSTEM/build.prop
+	else
+		local partlist=$(find $BIN/payloadRepackTool/IMAGES/ -maxdepth 1 -name "*.img" | sed 's#.*/##' | grep -v -x -f <(echo "$firmwareimages") | tr '\n' ' ')
+		for partition in $(echo $partlist); do                        
+			mkdir -p $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+			sudo mount -t auto -o loop $BIN/payloadRepackTool/IMAGES/$partition $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+		done
+		for part in $(echo $dp_part); do
+			if [[ $(sudo find $BIN/payloadRepackTool/IMAGES/ -type f -name "checkpoint_gc" | grep "${part}.img_mnt") != "" ]]; then
+				echo "Found checkpoint_gc at $part"
+				local postinstall_partition=$part
+				break
+			fi
+		done
+		sudo cp $BIN/payloadRepackTool/IMAGES/system.img_mnt/system/build.prop $BIN/payloadRepackTool/SYSTEM/build.prop
+		sudo chown $USER:$USER $BIN/payloadRepackTool/SYSTEM/build.prop
+		for partition in $(echo $partlist); do
+			sudo umount $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+			rm -rf $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+		done
+	fi
+
+	if [[ $(getvalue "ro.build.fingerprint" $BIN/payloadRepackTool/SYSTEM/build.prop) == "" ]]; then
+		local fp_prop=$(getvalue ro.system.build.fingerprint $BIN/payloadRepackTool/SYSTEM/build.prop)
+		echo "ro.build.fingerprint=$fp_prop" >> $BIN/payloadRepackTool/SYSTEM/build.prop
+	fi
+	if [[ $(getvalue "ro.build.version.incremental" $BIN/payloadRepackTool/SYSTEM/build.prop) == "" ]]; then
+		local verinc_prop=$(getvalue ro.system.build.version.incremental $BIN/payloadRepackTool/SYSTEM/build.prop)
+		echo "ro.build.version.incremental=$verinc_prop" >> $BIN/payloadRepackTool/SYSTEM/build.prop
+	fi
+
+	if [[ $(getvalue "ro.product.system.device" $BIN/payloadRepackTool/SYSTEM/build.prop) != "" ]]; then
+		sed -i '/ro.product.system.device=/d' $BIN/payloadRepackTool/SYSTEM/build.prop
+		echo "ro.product.system.device=$supported_devices" >> $BIN/payloadRepackTool/SYSTEM/build.prop
+	fi
+	if [[ $(getvalue "ro.product.device" $BIN/payloadRepackTool/SYSTEM/build.prop) != "" ]]; then
+		sed -i '/ro.product.device=/d' $BIN/payloadRepackTool/SYSTEM/build.prop
+		echo "ro.product.device=$supported_devices" >> $BIN/payloadRepackTool/SYSTEM/build.prop
+	fi
+
+	echo ""
+	echo "Reading configurations from $DIRSCRIPTS/dynamic_partitions.conf..."
+	local ACTIVESLOT=$(getvalue ACTIVE_SLOT $DIRSCRIPTS/dynamic_partitions.conf)
+	local SUPERSIZE=$(getvalue SUPER_SIZE $DIRSCRIPTS/dynamic_partitions.conf)
+	local GROUPTABLESIZE=$(getvalue GROUP_TABLE_SIZE $DIRSCRIPTS/dynamic_partitions.conf)
+	local GROUPTABLE=$(getvalue GROUP_TABLE $DIRSCRIPTS/dynamic_partitions.conf)
+
+	echo ""
+	echo "Generating dynamic_partition_info from configurations"
+	echo "virtual_ab=true" > $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "super_partition_size=${SUPERSIZE}" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "super_${GROUPTABLE}_group_size=${GROUPTABLESIZE}" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "super_partition_groups=${GROUPTABLE}" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "super_${GROUPTABLE}_partition_list=${dp_part}" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "#virtual_ab_compression=false" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "#virtual_ab_compression_method=gz" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "#virtual_ab_cow_version=2" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+	echo "#virtual_ab_compression_factor=4096" >> $BIN/payloadRepackTool/META/dynamic_partitions_info.txt
+
+	echo ""
+	echo "Generating ab_partitions from supplied images"
+	echo "$ab_part" > $BIN/payloadRepackTool/META/ab_partitions.txt
+
+	echo ""
+	echo "Generating misc_info"
+	echo "default_system_dev_certificate=key/testkey" > $BIN/payloadRepackTool/META/misc_info.txt
+	echo "recovery_api_version=3" >> $BIN/payloadRepackTool/META/misc_info.txt
+	echo "fstab_version=2" >> $BIN/payloadRepackTool/META/misc_info.txt
+	echo "ab_update=true" >> $BIN/payloadRepackTool/META/misc_info.txt
+	echo "" >> $BIN/payloadRepackTool/META/misc_info.txt
+	echo "# A-only" >> $BIN/payloadRepackTool/META/misc_info.txt
+	echo "#blockimgdiff_versions=1,2,3,4" >> $BIN/payloadRepackTool/META/misc_info.txt
+	echo "#cache_size=536870912" >> $BIN/payloadRepackTool/META/misc_info.txt
+	echo "#cache_fs_type=ext4" >> $BIN/payloadRepackTool/META/misc_info.txt
+
+	echo ""
+	echo "Generating postinstall_config"
+	echo "RUN_POSTINSTALL_${postinstall_partition}=true" > $BIN/payloadRepackTool/META/postinstall_config.txt
+	echo "POSTINSTALL_PATH_${postinstall_partition}=bin/checkpoint_gc" >> $BIN/payloadRepackTool/META/postinstall_config.txt
+	echo "#FILESYSTEM_TYPE_${postinstall_partition}=ext4" >> $BIN/payloadRepackTool/META/postinstall_config.txt
+	echo "#POSTINSTALL_OPTIONAL_${postinstall_partition}=true" >> $BIN/payloadRepackTool/META/postinstall_config.txt
+
+	echo ""
+	echo "Building OTA.zip"
+	$BIN/payloadRepackTool/payloadRepackTool -p-ota
+	if [[ -f $BIN/payloadRepackTool/output/OTA.zip ]]; then
+		mv $BIN/payloadRepackTool/output/OTA.zip $DIROUT/OTA.zip
+		echo ""
+		echo "Cleaning..."
+		rm -rf $BIN/payloadRepackTool/IMAGES/* $BIN/payloadRepackTool/output/* $BIN/payloadRepackTool/META/* $BIN/payloadRepackTool/SYSTEM/*
+		echo ""
+		echo -e "${G}OTA build completed successfully! Output: $DIROUT/OTA.zip ${NC}"
+	else
+		echo ""
+		mv $BIN/payloadRepackTool/IMAGES/*.img $DIRIN/
+		rm -rf $BIN/payloadRepackTool/output/* $BIN/payloadRepackTool/META/* $BIN/payloadRepackTool/SYSTEM/*
+		echo -e "${R}OTA build failed! ${NC}"
+	fi
+	
+}
+
 custom_scripts() {
 	clear
 	banner
@@ -1820,13 +2087,15 @@ inc_dynamic_compress() {
 	local inc_dynamic_imgs=$(ls -l $DIRIN/ | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//' | sed '/^$/d')
 
 	echo ""
-	echo "Reading configurations from $DIRSCRIPTS/incremental_dynamic.conf..."
-	local SUPERSIZE=$(getvalue SUPER_SIZE $DIRSCRIPTS/incremental_dynamic.conf)
-	local ACTIVESLOT=$(getvalue ACTIVE_SLOT $DIRSCRIPTS/incremental_dynamic.conf)
-	local GROUPTABLE=$(getvalue GROUP_TABLE $DIRSCRIPTS/incremental_dynamic.conf)
-	echo "Max Super partition size: ${SUPERSIZE}"
-	echo "Group table: ${GROUPTABLE}"
+	echo "Reading configurations from $DIRSCRIPTS/dynamic_partitions.conf..."
+	local ACTIVESLOT=$(getvalue ACTIVE_SLOT $DIRSCRIPTS/dynamic_partitions.conf)
+	local SUPERSIZE=$(getvalue SUPER_SIZE $DIRSCRIPTS/dynamic_partitions.conf)
+	local GROUPTABLESIZE=$(getvalue GROUP_TABLE_SIZE $DIRSCRIPTS/dynamic_partitions.conf)
+	local GROUPTABLE=$(getvalue GROUP_TABLE $DIRSCRIPTS/dynamic_partitions.conf)
 	echo "Active Slot: ${ACTIVESLOT}"
+	echo "Max Super partition size: ${SUPERSIZE}"
+	echo "Group table size: ${GROUPTABLESIZE}"
+	echo "Group table: ${GROUPTABLE}"
 
 	if [[ $ACTIVESLOT == "a" ]]; then
 		local EMPTYSLOT=b
@@ -1844,10 +2113,10 @@ inc_dynamic_compress() {
 		if [[ $ACTIVESLOT != "" ]]; then
 			echo "# Remove all existing dynamic partitions and groups before applying full OTA" > $dynamic_part_op_list
 			echo "remove_all_groups" >>  $dynamic_part_op_list
-			echo "# Add group ${GROUPTABLE}_${ACTIVESLOT} with maximum size ${SUPERSIZE}" >> $dynamic_part_op_list
-			echo "add_group ${GROUPTABLE}_${ACTIVESLOT} ${SUPERSIZE}" >> $dynamic_part_op_list
-			echo "# Add group ${GROUPTABLE}_${EMPTYSLOT} with maximum size ${SUPERSIZE}" >> $dynamic_part_op_list
-			echo "add_group q${GROUPTABLE}_${EMPTYSLOT} ${SUPERSIZE}" >> $dynamic_part_op_list
+			echo "# Add group ${GROUPTABLE}_${ACTIVESLOT} with maximum size ${GROUPTABLESIZE}" >> $dynamic_part_op_list
+			echo "add_group ${GROUPTABLE}_${ACTIVESLOT} ${GROUPTABLESIZE}" >> $dynamic_part_op_list
+			echo "# Add group ${GROUPTABLE}_${EMPTYSLOT} with maximum size ${GROUPTABLESIZE}" >> $dynamic_part_op_list
+			echo "add_group ${GROUPTABLE}_${EMPTYSLOT} ${GROUPTABLESIZE}" >> $dynamic_part_op_list
 			
 			for partition in $(echo $inc_dynamic_imgs); do
 			   if [[ -f $DIRIN/$partition.img ]]; then
@@ -1867,8 +2136,8 @@ inc_dynamic_compress() {
 		else
 			echo "# Remove all existing dynamic partitions and groups before applying full OTA" > $dynamic_part_op_list
 			echo "remove_all_groups" >>  $dynamic_part_op_list
-			echo "# Add group ${GROUPTABLE} with maximum size ${SUPERSIZE}" >>  $dynamic_part_op_list
-			echo "add_group ${GROUPTABLE} ${SUPERSIZE}" >>  $dynamic_part_op_list
+			echo "# Add group ${GROUPTABLE} with maximum size ${GROUPTABLESIZE}" >>  $dynamic_part_op_list
+			echo "add_group ${GROUPTABLE} ${GROUPTABLESIZE}" >>  $dynamic_part_op_list
 			
 			for partition in $(echo $inc_dynamic_imgs); do
 			   if [[ -f $DIRIN/$partition.img ]]; then
@@ -3085,10 +3354,10 @@ payload_main() {
 	while true; do
 	    banner
 	    echo " "
-	    echo "put your payload.bin in $DIRIN"
-	    echo " "
 	    echo "1. Unpack all partitions in payload.bin"
 	    echo "2. Unpack specific partition from payload.bin"
+		echo "3. Compile payload.bin from raw images"
+		echo "4. Compile payload.bin OTA.zip from raw images"
 	    echo "x. Back to main menu"
 	    
 	    read -p "" choose
@@ -3100,6 +3369,14 @@ payload_main() {
 
 		2 ) 
 	payload_s_part
+	restart_tool;;
+
+		3 ) 
+	payload_compile
+	restart_tool;;
+
+		4 ) 
+	payload_compile_ota
 	restart_tool;;
 
 		x ) 
@@ -3124,7 +3401,7 @@ start_tools() {
 	    echo "6. Rebuild EXT4 Images (removes avb)"
 	    echo "7. Mount or Umount raw imgs"
 	    echo "8. Sparsechunk tools"
-	    echo "9. Unpack payload.bin"
+	    echo "9. payload.bin tools"
 	    echo "10. Custom Scripts"
 	    echo "11. Merge fs context and config to system"
 	    echo "12. Zstd Tools"

@@ -3,3 +3,5 @@ patch/*
 bin/py/__pycache__
 enableLogs
 incremental_dynamic.conf
+bin/payloadRepackTool/bin/__pycache__
+bin/payloadRepackTool/venv
