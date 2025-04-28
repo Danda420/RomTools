@@ -2918,22 +2918,22 @@ install_proprietary() {
 				restart_tool;;
 			
 			"dnf" )
-				sudo dnf install -y android-tools erofs-utils gawk brotli cpio zstd
+				sudo dnf install -y android-tools erofs-utils gawk brotli cpio zstd python3-venv
 				install_dtc
 				restart_tool;;
 
 			"yum" )
-				sudo yum install -y android-tools erofs-utils gawk brotli cpio zstd
+				sudo yum install -y android-tools erofs-utils gawk brotli cpio zstd python3-venv
 				install_dtc
 				restart_tool;;
 
 			"apt" )
-				sudo apt install -y android-sdk-libsparse-utils erofs-utils gawk brotli cpio zstd
+				sudo apt install -y android-sdk-libsparse-utils erofs-utils gawk brotli cpio zstd python3-venv
 				install_dtc
 				install_lptools
 				restart_tool;;
 			"zypper" )
-				sudo zypper install -y android-tools erofs-utils gawk brotli cpio zstd
+				sudo zypper install -y android-tools erofs-utils gawk brotli cpio zstd python3-virtualenv
 				install_dtc
 				install_lptools
 				restart_tool;;
