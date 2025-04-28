@@ -3085,8 +3085,12 @@ umount_main() {
 }
 
 mount_umount_main() {
+	banner
+	if grep -qEi "(Microsoft|WSL)" /proc/version; then
+		echo "WSL doesn't support image mounting!"
+		restart_tool
+	fi
 	while true; do
-	    banner
 	    echo " "
 	    echo "1. Mount images"
 	    echo "2. Umount Images"
