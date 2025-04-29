@@ -1737,11 +1737,15 @@ payload_compile() {
 		esac
 	done
 
+	mkdir -p $BIN/payloadRepackTool/IMAGES \
+		$BIN/payloadRepackTool/META \
+		$BIN/payloadRepackTool/output
+
 	local firmwareimages=$(cat $DIRSCRIPTS/common_firmware_images)
 
 	if grep -qEi "(Microsoft|WSL)" /proc/version; then
 		echo ""
-		echo "Since you're running this tool WSL, and WSL doesn't support mounting images"
+		echo "Since you're running this tool on WSL, and WSL doesn't support mounting images"
 		echo "you need to input the name of partition that has checkpoint_gc binary. for ex: vendor (dont add any extension like: vendor.img)"
 		read
 		local postinstall_partition=$REPLY
@@ -1808,7 +1812,7 @@ payload_compile() {
 		mv $BIN/payloadRepackTool/output/payload_properties.txt $DIROUT/payload_properties.txt
 		echo ""
 		echo "Cleaning..."
-		rm -rf $BIN/payloadRepackTool/IMAGES/* $BIN/payloadRepackTool/output/* $BIN/payloadRepackTool/META/*
+		rm -rf $BIN/payloadRepackTool/IMAGES $BIN/payloadRepackTool/output $BIN/payloadRepackTool/META
 		echo ""
 		echo -e "${G}payload.bin build completed successfully! "
 		echo "Output:"
@@ -1818,7 +1822,7 @@ payload_compile() {
 	else
 		echo ""
 		mv $BIN/payloadRepackTool/IMAGES/*.img $DIRIN/
-		rm -rf $BIN/payloadRepackTool/output/* $BIN/payloadRepackTool/META/*
+		rm -rf $BIN/payloadRepackTool/output $BIN/payloadRepackTool/META $BIN/payloadRepackTool/IMAGES
 		echo -e "${R}payload.bin build failed! ${NC}"
 	fi
 }
@@ -1851,6 +1855,11 @@ payload_compile_ota() {
 		esac
 	done
 
+	mkdir -p $BIN/payloadRepackTool/IMAGES \
+		$BIN/payloadRepackTool/META \
+		$BIN/payloadRepackTool/SYSTEM \
+		$BIN/payloadRepackTool/output
+
 	local firmwareimages=$(cat $DIRSCRIPTS/common_firmware_images)
 
 	if grep -qEi "(Microsoft|WSL)" /proc/version && [[ ! -f $DIRIN/build.prop ]]; then
@@ -1861,7 +1870,7 @@ payload_compile_ota() {
 	fi
 	if grep -qEi "(Microsoft|WSL)" /proc/version; then
 		echo ""
-		echo "Since you're running this tool WSL, and WSL doesn't support mounting images"
+		echo "Since you're running this tool on WSL, and WSL doesn't support mounting images"
 		echo "you need to input the name of partition that has checkpoint_gc binary. for ex: vendor (dont add any extension like: vendor.img)"
 		read
 		local postinstall_partition=$REPLY
@@ -1970,13 +1979,13 @@ payload_compile_ota() {
 		mv $BIN/payloadRepackTool/output/OTA.zip $DIROUT/OTA.zip
 		echo ""
 		echo "Cleaning..."
-		rm -rf $BIN/payloadRepackTool/IMAGES/* $BIN/payloadRepackTool/output/* $BIN/payloadRepackTool/META/* $BIN/payloadRepackTool/SYSTEM/*
+		rm -rf $BIN/payloadRepackTool/IMAGES $BIN/payloadRepackTool/output $BIN/payloadRepackTool/META $BIN/payloadRepackTool/SYSTEM
 		echo ""
 		echo -e "${G}OTA build completed successfully! Output: $DIROUT/OTA.zip ${NC}"
 	else
 		echo ""
 		mv $BIN/payloadRepackTool/IMAGES/*.img $DIRIN/
-		rm -rf $BIN/payloadRepackTool/output/* $BIN/payloadRepackTool/META/* $BIN/payloadRepackTool/SYSTEM/*
+		rm -rf $BIN/payloadRepackTool/output $BIN/payloadRepackTool/META $BIN/payloadRepackTool/SYSTEM $BIN/payloadRepackTool/IMAGES
 		echo -e "${R}OTA build failed! ${NC}"
 	fi
 	
@@ -2913,27 +2922,27 @@ install_proprietary() {
 		if [[ "$yn" =~ ^[Yy] ]]; then
 			case $PKGMAN in
 			"pacman" ) 
-				sudo pacman -Sy --noconfirm android-tools erofs-utils gawk brotli cpio zstd
+				sudo pacman -Sy --noconfirm android-tools erofs-utils gawk brotli cpio zstd base-devel jdk-openjdk
 				install_dtc
 				restart_tool;;
 			
 			"dnf" )
-				sudo dnf install -y android-tools erofs-utils gawk brotli cpio zstd python3-venv
+				sudo dnf install -y android-tools erofs-utils gawk brotli cpio zstd python3-venv python3-devel @development-tools java-latest-openjdk
 				install_dtc
 				restart_tool;;
 
 			"yum" )
-				sudo yum install -y android-tools erofs-utils gawk brotli cpio zstd python3-venv
+				sudo yum install -y android-tools erofs-utils gawk brotli cpio zstd python3-venv python3-devel @development-tools java-17-openjdk
 				install_dtc
 				restart_tool;;
 
 			"apt" )
-				sudo apt install -y android-sdk-libsparse-utils erofs-utils gawk brotli cpio zstd python3-venv
+				sudo apt install -y android-sdk-libsparse-utils erofs-utils gawk brotli cpio zstd python3-venv python3-dev build-essential openjdk-17-jre-headless
 				install_dtc
 				install_lptools
 				restart_tool;;
 			"zypper" )
-				sudo zypper install -y android-tools erofs-utils gawk brotli cpio zstd python3-virtualenv
+				sudo zypper install -y android-tools erofs-utils gawk brotli cpio zstd python3-virtualenv python3-devel patterns-devel-base-devel_basis java-latest-openjdk
 				install_dtc
 				install_lptools
 				restart_tool;;
