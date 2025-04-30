@@ -1801,7 +1801,7 @@ payload_compile() {
 	echo "Generating postinstall_config"
 	echo "RUN_POSTINSTALL_${postinstall_partition}=true" > $BIN/payloadRepackTool/META/postinstall_config.txt
 	echo "POSTINSTALL_PATH_${postinstall_partition}=bin/checkpoint_gc" >> $BIN/payloadRepackTool/META/postinstall_config.txt
-	echo "#FILESYSTEM_TYPE_${postinstall_partition}=ext4" >> $BIN/payloadRepackTool/META/postinstall_config.txt
+	echo "FILESYSTEM_TYPE_${postinstall_partition}=$(blkid -o value -s TYPE $BIN/payloadRepackTool/IMAGES/${postinstall_partition}.img)" >> $BIN/payloadRepackTool/META/postinstall_config.txt
 	echo "#POSTINSTALL_OPTIONAL_${postinstall_partition}=true" >> $BIN/payloadRepackTool/META/postinstall_config.txt
 
 	echo ""
@@ -1928,6 +1928,7 @@ payload_compile_ota() {
 		sed -i '/ro.product.device=/d' $BIN/payloadRepackTool/SYSTEM/build.prop
 		echo "ro.product.device=$supported_devices" >> $BIN/payloadRepackTool/SYSTEM/build.prop
 	fi
+	sed -i '/import/d' $BIN/payloadRepackTool/SYSTEM/build.prop
 
 	echo ""
 	echo "Reading configurations from $DIRSCRIPTS/dynamic_partitions.conf..."
@@ -1969,7 +1970,7 @@ payload_compile_ota() {
 	echo "Generating postinstall_config"
 	echo "RUN_POSTINSTALL_${postinstall_partition}=true" > $BIN/payloadRepackTool/META/postinstall_config.txt
 	echo "POSTINSTALL_PATH_${postinstall_partition}=bin/checkpoint_gc" >> $BIN/payloadRepackTool/META/postinstall_config.txt
-	echo "#FILESYSTEM_TYPE_${postinstall_partition}=ext4" >> $BIN/payloadRepackTool/META/postinstall_config.txt
+	echo "FILESYSTEM_TYPE_${postinstall_partition}=$(blkid -o value -s TYPE $BIN/payloadRepackTool/IMAGES/${postinstall_partition}.img)" >> $BIN/payloadRepackTool/META/postinstall_config.txt
 	echo "#POSTINSTALL_OPTIONAL_${postinstall_partition}=true" >> $BIN/payloadRepackTool/META/postinstall_config.txt
 
 	echo ""
