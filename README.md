@@ -25,7 +25,7 @@ Those folders are auto generated after starting the tool
   - erofs to ext4, erofs to f2fs, ext4 to erofs, ext4 to f2fs, f2fs to ext4, f2fs to erofs
   - raw to dat.br & dat.br to raw
   - and so on...
-- Auto generate missing fs_config (file perms depends on the location)
+- Auto generate missing fs_config & file_contexts (file perms/context depends on the location)
 - Mount and umount images
 - Custom Scripts (put your scripts into tool/custom_scripts, you can use functions from tool)
 - Zstd unpacking and repacking
