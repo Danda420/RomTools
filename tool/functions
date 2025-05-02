@@ -2664,21 +2664,15 @@ super_r() {
 			echo "Compiling super : $imgname.img (raw)..."
 			
 			echo "#!/bin/bash" > $DIRSCRIPTS/build_super
-			echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot --device=super:$size_super:$first_sector --group=$group_table:$max_size_super '\'" >> $DIRSCRIPTS/build_super
+			echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot --device=super:$size_super:$first_sector --group=$group_table:$max_size_super \\" >> $DIRSCRIPTS/build_super
 
 			for partition in $part_list; do
 				local partition_size=$(ls -nl $superdir/$partition.img | awk '{print $5}')
-				echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$superdir/$partition.img '\'" >> $DIRSCRIPTS/build_super
+				echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$superdir/$partition.img \\" >> $DIRSCRIPTS/build_super
 			done
 
 			echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super
-			echo "exit" >> $DIRSCRIPTS/build_super
-			
-			sed -i "s/[']//g" $DIRSCRIPTS/build_super
-			chmod 755 $DIRSCRIPTS/build_super
-			$DIRSCRIPTS/build_super
-			
-			rm -rf $DIRSCRIPTS/build_super
+			echo "exit 0" >> $DIRSCRIPTS/build_super
 		fi
 	elif [[ $meta_slot == 3 ]]; then
 		echo " "
@@ -2727,38 +2721,37 @@ super_r() {
 			
 			echo "#!/bin/bash" > $DIRSCRIPTS/build_super
 			if [[ $group_table2 != "" ]]; then
-				echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super --group=$group_table2:$max_size_super2 '\'" >> $DIRSCRIPTS/build_super
+				echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super --group=$group_table2:$max_size_super2 \\" >> $DIRSCRIPTS/build_super
 			else
-				echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super '\'" >> $DIRSCRIPTS/build_super
+				echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super \\" >> $DIRSCRIPTS/build_super
 			fi
 			
 			for partition in $ab_part_list; do
 				local partition_size=$(ls -nl $superdir/$partition.img | awk '{print $5}')
-				echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$superdir/$partition.img '\'" >> $DIRSCRIPTS/build_super
+				echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$superdir/$partition.img \\" >> $DIRSCRIPTS/build_super
 			done
-			echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super
-			
 			if [[ $group_table2 != "" ]]; then
-				echo "touch $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super
-				for emptypartition in $ab_part_list_empty; do
-				echo "lpadd $DIRIN/$imgname.img $emptypartition $group_table2 $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super
+				for partition in $ab_part_list_empty; do
+					local partition_size=$(ls -nl $superdir/$partition.img | awk '{print $5}')
+					echo "--partition=$partition:none:0:$group_table2 \\" >> $DIRSCRIPTS/build_super
 				done
-				echo "rm -rf $DIRIN/tmp.img" >> $DIRSCRIPTS/build_super
 			fi
-			echo "exit" >> $DIRSCRIPTS/build_super
-			
-			sed -i "s/[']//g" $DIRSCRIPTS/build_super
-			chmod 755 $DIRSCRIPTS/build_super
-			$DIRSCRIPTS/build_super
-			
-			rm -rf $DIRSCRIPTS/build_super
+			echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super
+			echo "exit 0" >> $DIRSCRIPTS/build_super
 		fi
 	else
 		echo -e "${R}Meta slot $meta_slot is not supported! ${NC}"
 	fi
-	
+
+	chmod 755 $DIRSCRIPTS/build_super
+	$DIRSCRIPTS/build_super
+	rm -rf $DIRSCRIPTS/build_super
 	if [[ -f $DIRIN/$imgname.img ]]; then
 		rm -rf $superdir
+	else
+		echo ""
+		echo -e "${R}Build Failed! ${NC}"
+		restart_tool
 	fi
 	
 	case $COMPRESSION in

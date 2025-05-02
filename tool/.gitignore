@@ -2,6 +2,7 @@ custom_scripts/*
 patch/*
 bin/py/__pycache__
 enableLogs
-incremental_dynamic.conf
+dynamic_partitions.conf
+common_firmware_images
 bin/payloadRepackTool/bin/__pycache__
 bin/payloadRepackTool/venv
