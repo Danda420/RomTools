@@ -2873,7 +2873,7 @@ androidbooteditor() {
 
 install_proprietary() {
 	install_dtc() {
-		curl https://android.googlesource.com/platform/prebuilts/misc/+archive/refs/heads/android11-release/linux-x86/dtc.tar.gz -o $DIRTOOLS/dtc.tar.gz
+		wget -O $DIRTOOLS/dtc.tar.gz https://android.googlesource.com/platform/prebuilts/misc/+archive/refs/heads/android11-release/linux-x86/dtc.tar.gz
 		tar -xf $DIRTOOLS/dtc.tar.gz
 		rm -rf $DIRTOOLS/PREBUILT
 		chmod 777 $DIRTOOLS/dtc
