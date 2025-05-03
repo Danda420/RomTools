@@ -816,7 +816,7 @@ repack_ext4_cmd() {
 	else
 		local mountpoint=$partition
 	fi
-	sudo $BIN/make_ext4fs -J -T -1 \
+	$BIN/make_ext4fs -J -T -1 \
 		-S "$ext4dir/config/$partition/${partition}_file_contexts" \
 		-C "$ext4dir/config/$partition/${partition}_fs_config" \
 		-l "$SIZE" \
@@ -895,7 +895,7 @@ repack_erofs_as_ext4_cmd() {
 	else
 		local mountpoint=$partition
 	fi
-	sudo $BIN/make_ext4fs -J -T -1 \
+	$BIN/make_ext4fs -J -T -1 \
 		-S "$erofsdir/config/${partition}_file_contexts" \
 		-C "$erofsdir/config/${partition}_fs_config" \
 		-l "$SIZE" \
@@ -942,7 +942,7 @@ repack_f2fs_as_ext4_cmd() {
 	else
 		local mountpoint=$partition
 	fi
-	sudo $BIN/make_ext4fs -J -T -1 \
+	$BIN/make_ext4fs -J -T -1 \
 		-S "$f2fsdir/config/${partition}_file_contexts" \
 		-C "$f2fsdir/config/${partition}_fs_config" \
 		-l "$SIZE" \
