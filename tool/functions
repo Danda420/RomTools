@@ -386,7 +386,7 @@ convert_ext4_erofs() {
 		rm -rf $ext4dir/$image $ext4dir/config/$image
 	fi
 	sudo $PYSCRIPTS/imgextractor.py $DIRIN/$image.img $ext4dir > /dev/null 2>&1
-	sudo chown -R $USER:$USER $WORKDIR/EXT4
+	sudo chown -R $USER:$USER $ext4dir
 
 	echo "- Rebuilding $image as erofs image..."
 	if repack_ext4_as_erofs_cmd $image $compression $legacy > /dev/null 2>&1; then
@@ -408,7 +408,7 @@ convert_ext4_f2fs() {
 		rm -rf $ext4dir/$image $ext4dir/config/$image
 	fi
 	sudo $PYSCRIPTS/imgextractor.py $DIRIN/$image.img $ext4dir > /dev/null 2>&1
-	sudo chown -R $USER:$USER $WORKDIR/EXT4
+	sudo chown -R $USER:$USER $ext4dir
 
 	echo "- Rebuilding $image as erofs image..."
 	if repack_ext4_as_f2fs_cmd $image > /dev/null 2>&1; then
@@ -756,8 +756,8 @@ unpack_ext4() {
 		rm -rf $ext4dir/config/$image
 	fi
 	echo ""
-	if sudo $PYSCRIPTS/imgextractor.py $DIRIN/$image.img $WORKDIR/EXT4; then
-		sudo chown -R $USER:$USER $WORKDIR/EXT4
+	if sudo $PYSCRIPTS/imgextractor.py $DIRIN/$image.img $ext4dir; then
+		sudo chown -R $USER:$USER $ext4dir
 		echo ""
 		echo -e "${G}Output : $ext4dir/$image ${NC}"
 		rm -rf $DIRIN/$image.img
@@ -1051,7 +1051,7 @@ repack_ext4_img_foldersize() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	extracted_partition_selector $WORKDIR/EXT4 "Repack all images shown"
+	extracted_partition_selector $ext4dir "Repack all images shown"
 	for image in $FOLDER; do
 	   if [[ -d $ext4dir/$image ]]; then
 		echo ""
@@ -1081,7 +1081,7 @@ repack_ext4_img_freespace() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	extracted_partition_selector $WORKDIR/EXT4
+	extracted_partition_selector $ext4dir
 	local image=$FOLDER
 	if [[ -d $ext4dir/$image ]]; then
 		echo " "
@@ -1114,7 +1114,7 @@ repack_ext4_img_samesize() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	extracted_partition_selector $WORKDIR/EXT4 "Repack all images shown"
+	extracted_partition_selector $ext4dir "Repack all images shown"
 	for image in $FOLDER; do
 	   if [[ -d $ext4dir/$image ]]; then
 		echo ""
@@ -1142,7 +1142,7 @@ repack_ext4_img_inputsize() {
 	echo " "
 	echo "choose which partition you wanted to repack"
 	echo " "
-	extracted_partition_selector $WORKDIR/EXT4
+	extracted_partition_selector $ext4dir
 	local image=$FOLDER
 	if [[ -d $ext4dir/$image ]]; then
 		echo " "
@@ -3151,7 +3151,7 @@ super_main() {
 	while true; do
 	    banner
 	    echo " "
-	    echo "1. Repack Super (raw, sparse, .dat, .br, zstd)"
+	    echo "1. Repack Super (raw/sparse/sparsechunk/.dat/.br/zstd)"
 	    echo "2. Unpack Super (dat.br)"
 	    echo "3. Unpack Super (zstd)"
 	    echo "4. Unpack Super (sparse)"
