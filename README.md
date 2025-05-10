@@ -27,7 +27,7 @@ Those folders are auto generated after starting the tool
   - and so on...
 - Auto generate missing fs_config & file_contexts (file perms/context depends on the location)
 - Mount and umount images
-- Custom Scripts (put your scripts into tool/custom_scripts, you can use functions from tool)
+- Custom Scripts (put your scripts into tool/custom_scripts, you can use functions from tool.. check README.md on tool/custom_scripts/ for functions/scripts/bins usages and desc)
 - Zstd unpacking and repacking
 
 | Supported Image Types                   |
