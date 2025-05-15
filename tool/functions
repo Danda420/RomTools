@@ -305,13 +305,9 @@ convert_ext4_erofs() {
 	while true; do
 	    read -p "Compiling erofs image for old kernel? (Y/N)" yn
 	    case $yn in
-		[Yy]* ) 
-		local legacy=1 
-		break;;
-		[Nn]* ) 
-		local legacy=0 
-		break;;
-		* ) echo "Please answer yes or no.";;
+			[Yy]* ) local legacy=1; break;;
+			[Nn]* ) local legacy=0;break;;
+			* ) echo "Please answer yes or no.";;
 	    esac
 	done
 		
@@ -326,46 +322,20 @@ convert_ext4_erofs() {
 			    
 	   read -p "" choose
 	   case $choose in
-			    
-		1 ) 
-		local compressor=lz4
-		break;;
-
-		2 ) 
-		local compressor=lz4hc
-		break;;
-			
-		3 )
-		local compressor=lzma
-		break;;
-			
-		4 ) 
-		local compressor=deflate
-		break;;
-
-		* ) echo "please choose one!";;
+			1 ) local compressor=lz4; break;;
+			2 ) local compressor=lz4hc; break;;
+			3 ) local compressor=lzma; break;;
+			4 ) local compressor=deflate; break;;
+			* ) echo "please choose one!";;
 	   esac
 	done
 	
 	case $compressor in
-	   "lz4" )
-	      local compression=lz4
-	   ;;
-	   
-	   "lz4hc" )
-	      echo ""
-	      echo "Input erofs compression level (0-12, default is 9)"
-	   ;;
-	   
-	   "lzma" )
-	      echo ""
-	      echo "Input erofs compression level (0-9,100-109. 0-9=normal, 100-109=extreme, default is 6)"
-	   ;;
-		   
-	   "deflate" )
-	      echo ""
-	      echo "Input erofs compression level (0-9, default is 1)"
-	   ;;
+	   "lz4" ) local compression=lz4;;
+	   "lz4hc" ) echo ""; echo "Input erofs compression level (0-12, default is 9)";;
+	   "lzma" ) echo ""; echo "Input erofs compression level (0-9,100-109. 0-9=normal, 100-109=extreme, default is 6)";;
+	   "deflate" ) echo ""; echo "Input erofs compression level (0-9, default is 1)";;
+		* ) local compression=lz4;;
 	esac
 		
 	if [[ $compressor != "lz4" ]]; then
@@ -500,13 +470,9 @@ convert_f2fs_erofs() {
 	while true; do
 	    read -p "Compiling erofs image for old kernel? (Y/N)" yn
 	    case $yn in
-		[Yy]* ) 
-		local legacy=1 
-		break;;
-		[Nn]* ) 
-		local legacy=0 
-		break;;
-		* ) echo "Please answer yes or no.";;
+			[Yy]* ) local legacy=1; break;;
+			[Nn]* ) local legacy=0;break;;
+			* ) echo "Please answer yes or no.";;
 	    esac
 	done
 		
@@ -521,46 +487,20 @@ convert_f2fs_erofs() {
 			    
 	   read -p "" choose
 	   case $choose in
-			    
-		1 ) 
-		local compressor=lz4
-		break;;
-
-		2 ) 
-		local compressor=lz4hc
-		break;;
-			
-		3 )
-		local compressor=lzma
-		break;;
-			
-		4 ) 
-		local compressor=deflate
-		break;;
-
-		* ) echo "please choose one!";;
+			1 ) local compressor=lz4; break;;
+			2 ) local compressor=lz4hc; break;;
+			3 ) local compressor=lzma; break;;
+			4 ) local compressor=deflate; break;;
+			* ) echo "please choose one!";;
 	   esac
 	done
 	
 	case $compressor in
-	   "lz4" )
-	      local compression=lz4
-	   ;;
-	   
-	   "lz4hc" )
-	      echo ""
-	      echo "Input erofs compression level (0-12, default is 9)"
-	   ;;
-	   
-	   "lzma" )
-	      echo ""
-	      echo "Input erofs compression level (0-9,100-109. 0-9=normal, 100-109=extreme, default is 6)"
-	   ;;
-		   
-	   "deflate" )
-	      echo ""
-	      echo "Input erofs compression level (0-9, default is 1)"
-	   ;;
+	   "lz4" ) local compression=lz4;;
+	   "lz4hc" ) echo ""; echo "Input erofs compression level (0-12, default is 9)";;
+	   "lzma" ) echo ""; echo "Input erofs compression level (0-9,100-109. 0-9=normal, 100-109=extreme, default is 6)";;
+	   "deflate" ) echo ""; echo "Input erofs compression level (0-9, default is 1)";;
+		* ) local compression=lz4;;
 	esac
 		
 	if [[ $compressor != "lz4" ]]; then
@@ -1176,69 +1116,39 @@ repack_erofs() {
 	local image=$FOLDER
 	if [[ -d $erofsdir/$image ]]; then
 		while true; do
-		    read -p "Compiling erofs image for old kernel? (Y/N)" yn
-		    case $yn in
-			[Yy]* ) 
-			local legacy=1 
-			break;;
-			[Nn]* ) 
-			local legacy=0 
-			break;;
-			* ) echo "Please answer yes or no.";;
-		    esac
+			read -p "Compiling erofs image for old kernel? (Y/N)" yn
+			case $yn in
+				[Yy]* ) local legacy=1; break;;
+				[Nn]* ) local legacy=0;break;;
+				* ) echo "Please answer yes or no.";;
+			esac
 		done
-		
+			
 		while true; do
-		   echo " "
-		   echo "Choose compressor : "
-		   echo " "
-		   echo "1. lz4"
-		   echo "2. lz4hc"
-		   echo "3. lzma"
-		   echo "4. deflate"
-			    
-		   read -p "" choose
-		   case $choose in
-			    
-			1 ) 
-			local compressor=lz4
-			break;;
-
-			2 ) 
-			local compressor=lz4hc
-			break;;
-			
-			3 )
-			local compressor=lzma
-			break;;
-			
-			4 ) 
-			local compressor=deflate
-			break;;
-
-			* ) echo "please choose one!";;
-		   esac
+		echo " "
+		echo "Choose compressor : "
+		echo " "
+		echo "1. lz4"
+		echo "2. lz4hc"
+		echo "3. lzma"
+		echo "4. deflate"
+					
+		read -p "" choose
+		case $choose in
+				1 ) local compressor=lz4; break;;
+				2 ) local compressor=lz4hc; break;;
+				3 ) local compressor=lzma; break;;
+				4 ) local compressor=deflate; break;;
+				* ) echo "please choose one!";;
+		esac
 		done
 		
 		case $compressor in
-		   "lz4" )
-		      local compression=lz4
-		   ;;
-		   
-		   "lz4hc" )
-		      echo ""
-		      echo "Input erofs compression level (0-12, default is 9)"
-		   ;;
-		   
-		   "lzma" )
-		      echo ""
-		      echo "Input erofs compression level (0-9,100-109. 0-9=normal, 100-109=extreme, default is 6)"
-		   ;;
-		   
-		   "deflate" )
-		      echo ""
-		      echo "Input erofs compression level (0-9, default is 1)"
-		   ;;
+		"lz4" ) local compression=lz4;;
+		"lz4hc" ) echo ""; echo "Input erofs compression level (0-12, default is 9)";;
+		"lzma" ) echo ""; echo "Input erofs compression level (0-9,100-109. 0-9=normal, 100-109=extreme, default is 6)";;
+		"deflate" ) echo ""; echo "Input erofs compression level (0-9, default is 1)";;
+			* ) local compression=lz4;;
 		esac
 		
 		if [[ $compressor != "lz4" ]]; then
@@ -1725,18 +1635,16 @@ payload_compile() {
 		restart_tool
 	fi
 	while true; do
-	echo "Make sure you have already put the partitions you want to compile into payload.bin"
-	echo "and remove/move partitions that you dont want to compile from input folder"
-	echo "If the partitions you're trying to compile has complete firmware images"
-	echo "add it to $DIRSCRIPTS/common_firmware_images"
-	echo "Type y/Y to continue, x/X to go back"
-	read -p "" yn
-	case $yn in
-		[Yy]* ) 
-		break;;
-		[Xx]* ) 
-		start_tools;;   
-		* ) echo "please choose y or x";;
+		echo "Make sure you have already put the partitions you want to compile into payload.bin"
+		echo "and remove/move partitions that you dont want to compile from input folder"
+		echo "If the partitions you're trying to compile has complete firmware images"
+		echo "add it to $DIRSCRIPTS/common_firmware_images"
+		echo "Type y/Y to continue, x/X to go back"
+		read -p "" yn
+		case $yn in
+			[Yy]* ) break;;
+			[Xx]* ) start_tools;;   
+			* ) echo "please choose y or x";;
 		esac
 	done
 
@@ -1843,18 +1751,16 @@ payload_compile_ota() {
 		clear
 	fi
 	while true; do
-	echo "Make sure you have already put the partitions you want to compile into payload.bin"
-	echo "and remove/move partitions that you dont want to compile from input folder"
-	echo "If the partitions you're trying to compile has complete firmware images"
-	echo "add it to $DIRSCRIPTS/common_firmware_images"
-	echo "Type y/Y to continue, x/X to go back"
-	read -p "" yn
-	case $yn in
-		[Yy]* ) 
-		break;;
-		[Xx]* ) 
-		start_tools;;   
-		* ) echo "please choose y or x";;
+		echo "Make sure you have already put the partitions you want to compile into payload.bin"
+		echo "and remove/move partitions that you dont want to compile from input folder"
+		echo "If the partitions you're trying to compile has complete firmware images"
+		echo "add it to $DIRSCRIPTS/common_firmware_images"
+		echo "Type y/Y to continue, x/X to go back"
+		read -p "" yn
+		case $yn in
+			[Yy]* ) break;;
+			[Xx]* ) start_tools;;   
+			* ) echo "please choose y or x";;
 		esac
 	done
 
@@ -2082,16 +1988,14 @@ raw_datbr() {
 inc_dynamic_compress() {
 	clear
 	while true; do
-	echo "Make sure you have already put the partitions you want to compress to input folder"
-	echo "and remove/move partitions that you dont want to compress from input folder"
-	echo "Type y/Y to continue, x/X to go back"
-	read -p "" yn
-	case $yn in
-		[Yy]* ) 
-		break;;
-		[Xx]* ) 
-		start_tools;;   
-		* ) echo "please choose y or x";;
+		echo "Make sure you have already put the partitions you want to compress to input folder"
+		echo "and remove/move partitions that you dont want to compress from input folder"
+		echo "Type y/Y to continue, x/X to go back"
+		read -p "" yn
+		case $yn in
+			[Yy]* ) break;;
+			[Xx]* ) start_tools;;   
+			* ) echo "please choose y or x";;
 		esac
 	done
 
@@ -2559,15 +2463,6 @@ super_r() {
 	echo "Input Raw Super image name :"
 	read
 	local imgname=$REPLY
-	echo " "
-	while true; do
-	    read -p "Your super raw img name is : $imgname is that correct? (Y/N)" yn
-	    case $yn in
-		[Yy]* ) break;;
-		[Nn]* ) restart_tool;;
-		* ) echo "Please answer yes or no.";;
-	    esac
-	done
 	
 	while true; do
 	   echo ""
@@ -2580,55 +2475,48 @@ super_r() {
 	   echo "6. zstd"
 	   read -p "" choose
 	   case $choose in
-		[1]* ) 
-		local COMPRESSION=raw
-		break;;
-		[2]* )
-		local COMPRESSION=sparse
-		break;;
+		[1]* ) local COMPRESSION=raw; break;;
+		[2]* ) local COMPRESSION=sparse; break;;
 		[3]* )
-		local COMPRESSION=sparsechunk
-		echo ""
-		echo "Input output file name/pattern for sparsechunk (default is "${imgname}.img_sparsechunk" if you leave this empty) :"
-		read
-		local CHUNKOUTPATTERN=$REPLY
-		if [[ $CHUNKOUTPATTERN == "" ]]; then
-			local CHUNKOUTPATTERN=${imgname}.img_sparsechunk
-		fi
-		echo "Input chunk size in MiB (default is 512 if you leave this empty):"
-		read
-		local CHUNKSIZE=$REPLY
-		if [[ $CHUNKSIZE == "" ]]; then
-			local CHUNKSIZE=512
-		fi
-		break;;
-		[4]* )
-		local COMPRESSION=dat
-		break;;
+			local COMPRESSION=sparsechunk
+			echo ""
+			echo "Input output file name/pattern for sparsechunk (default is "${imgname}.img_sparsechunk" if you leave this empty) :"
+			read
+			local CHUNKOUTPATTERN=$REPLY
+			if [[ $CHUNKOUTPATTERN == "" ]]; then
+				local CHUNKOUTPATTERN=${imgname}.img_sparsechunk
+			fi
+			echo "Input chunk size in MiB (default is 512 if you leave this empty):"
+			read
+			local CHUNKSIZE=$REPLY
+			if [[ $CHUNKSIZE == "" ]]; then
+				local CHUNKSIZE=512
+			fi
+			break;;
+		[4]* ) local COMPRESSION=dat; break;;
 		[5]* )
-		local COMPRESSION=br
-		echo " "
-		echo "Input Brotli compression level (0-11) :"
-		read
-		local COMPLVL=$REPLY
-		break;;
+			local COMPRESSION=br
+			echo " "
+			echo "Input Brotli compression level (0-11) :"
+			read
+			local COMPLVL=$REPLY
+			break;;
 		[6]* )
-		local COMPRESSION=zstd
-		echo " "
-		echo "Input zstd suffix (leave it empty if you want .zst) :"
-		read
-		local ZSTDSUFFIX=.$REPLY
-		if [[ $ZSTDSUFFIX == "." ]]; then
-			local ZSTDSUFFIX=.zst
-		elif [[ $ZSTDSUFFIX == ". " ]]; then
-			local ZSTDSUFFIX=""
-		fi
-		echo " "
-		echo "Input zstd compression lvl (1-19) :"
-		read
-		local ZSTDLVL=$REPLY
-		break;;
-			
+			local COMPRESSION=zstd
+			echo " "
+			echo "Input zstd suffix (leave it empty if you want .zst) :"
+			read
+			local ZSTDSUFFIX=.$REPLY
+			if [[ $ZSTDSUFFIX == "." ]]; then
+				local ZSTDSUFFIX=.zst
+			elif [[ $ZSTDSUFFIX == ". " ]]; then
+				local ZSTDSUFFIX=""
+			fi
+			echo " "
+			echo "Input zstd compression lvl (1-19) :"
+			read
+			local ZSTDLVL=$REPLY
+			break;;
 		* ) echo "Please answer with one of the above selections.";;
 	   esac
 	done
@@ -2842,32 +2730,20 @@ super_r() {
 }
 
 androidbooteditor() {
-	while true; do
-	    booteditor_banner
-	    echo " "
-	    echo "1. Repack Image"
-	    echo "2. Unpack Image"
-	    echo "c. Clean up"
-	    echo "x. Back to main menu"
+	booteditor_banner
+	echo " "
+	echo "1. Repack Image"
+	echo "2. Unpack Image"
+	echo "c. Clean up"
+	echo "x. Back to main menu"
 	    
-	    read -p "" choose
-	    case $choose in
-	    
-		1 ) 
-
-	repack_bootimg
-	restart_tool;;
-
-		2 ) 
-	   
-	unpack_bootimg
-	restart_tool;;
-
-		x )  
-	start_tools;;
+	read -p "" choose
+	case $choose in
+		1 ) repack_bootimg; restart_tool;;
+		2 ) unpack_bootimg; restart_tool;;
+		x ) start_tools;;
 		* ) androidbooteditor;;
-	    esac
-	done
+	esac
 }
 
 install_proprietary() {
@@ -2889,49 +2765,45 @@ install_proprietary() {
 		sudo mv $DIRSCRIPTS/lptools-bins/* /usr/bin/
 		rm -rf $DIRSCRIPTS/lptools-bins
 	}
-	while true; do
-	    banner
-		if command -v dnf >/dev/null 2>&1; then
-			local PKGMAN=dnf
-		elif command -v yum >/dev/null 2>&1; then
-			local PKGMAN=yum
-		elif command -v apt >/dev/null 2>&1; then
-			local PKGMAN=apt
-		elif command -v pacman >/dev/null 2>&1; then
-			local PKGMAN=pacman
-		elif command -v zypper >/dev/null 2>&1; then
-			local PKGMAN=zypper
-		else
-			local PKGMAN="Error! Unknown Package Manager!"
-		fi
-		echo "Distro Base: $(grep -E "^ID_LIKE|^ID" /etc/os-release | cut -d'=' -f2 | tr -d '"')"
-		echo "Package Manager: $PKGMAN"
+	banner
+	if command -v dnf >/dev/null 2>&1; then
+		local PKGMAN=dnf
+	elif command -v yum >/dev/null 2>&1; then
+		local PKGMAN=yum
+	elif command -v apt >/dev/null 2>&1; then
+		local PKGMAN=apt
+	elif command -v pacman >/dev/null 2>&1; then
+		local PKGMAN=pacman
+	elif command -v zypper >/dev/null 2>&1; then
+		local PKGMAN=zypper
+	else
+		local PKGMAN="Error! Unknown Package Manager!"
+	fi
+	echo "Distro Base: $(grep -E "^ID_LIKE|^ID" /etc/os-release | cut -d'=' -f2 | tr -d '"')"
+	echo "Package Manager: $PKGMAN"
 
-		if [[ $PKGMAN == "Error! Unknown Package Manager!" ]]; then
-		   echo -e "${R}Unknown package manager! exiting tool!${NC}"
-		   exit 0
-		fi
+	if [[ $PKGMAN == "Error! Unknown Package Manager!" ]]; then
+	   echo -e "${R}Unknown package manager! exiting tool!${NC}"
+	   exit 0
+	fi
 
-	    	echo ""
-	    	echo "Install proprietary packages? (Y/N)"
-	    	read -p "" yn
-		if [[ "$yn" =~ ^[Yy] ]]; then
-			case $PKGMAN in
+	echo ""
+	echo "Install proprietary packages? (Y/N)"
+	read -p "" yn
+	if [[ "$yn" =~ ^[Yy] ]]; then
+		case $PKGMAN in
 			"pacman" ) 
 				sudo pacman -Sy --noconfirm android-tools erofs-utils gawk brotli cpio zstd base-devel jdk-openjdk
 				install_dtc
 				restart_tool;;
-			
 			"dnf" )
 				sudo dnf install -y android-tools erofs-utils gawk brotli cpio zstd python3-venv python3-devel @development-tools java-latest-openjdk
 				install_dtc
 				restart_tool;;
-
 			"yum" )
 				sudo yum install -y android-tools erofs-utils gawk brotli cpio zstd python3-venv python3-devel @development-tools java-17-openjdk
 				install_dtc
 				restart_tool;;
-
 			"apt" )
 				sudo apt install -y android-sdk-libsparse-utils erofs-utils gawk brotli cpio zstd python3-venv python3-dev build-essential openjdk-17-jre-headless
 				install_dtc
@@ -2942,151 +2814,88 @@ install_proprietary() {
 				install_dtc
 				install_lptools
 				restart_tool;;
-			esac
-		elif [[ "$yn" =~ ^[Nn] ]]; then
+		esac
+	elif [[ "$yn" =~ ^[Nn] ]]; then
 			start_tools
-		fi
-	done
+	fi
 }
 
 merge_main() {
-	while true; do
-	    banner
-	    echo " "
-	    echo "1. Merge OPLUS my_* partition to system"
-	    echo "2. Merge product and system_ext to system"
-	    echo "x. Back to main menu"
+	banner
+	echo " "
+	echo "1. Merge OPLUS my_* partition to system"
+	echo "2. Merge product and system_ext to system"
+	echo "x. Back to main menu"
 	    
-	    read -p "" choose
-	    case $choose in
-	    
-		1 ) 
-	merge_oplus
-	restart_tool;;
-
-		2 ) 
-	merge_non_dynamic
-	restart_tool;;
-
-		x ) 
-	start_tools;;
-
+	read -p "" choose
+	case $choose in
+		1 ) merge_oplus; restart_tool;;
+		2 ) merge_non_dynamic; restart_tool;;
+		x ) start_tools;;
 		* ) merge_main;;
-	    esac
-	done
+	esac
 }
 
 mount_main() {
-	while true; do
-	    banner
-	    echo " "
-	    echo "put your images in $WORKDIR"
-	    echo " "
-	    echo "1. Mount raw image and resize"
-	    echo "2. Mount without resizing"
-	    echo "3. Mount read only"
-	    echo "x. Back to main menu"
+	banner
+	echo " "
+	echo "put your images in $WORKDIR"
+	echo " "
+	echo "1. Mount raw image and resize"
+	echo "2. Mount without resizing"
+	echo "3. Mount read only"
+	echo "x. Back to main menu"
 	    
-	    read -p "" choose
-	    case $choose in
-	    
-		1 ) 
-	mount_resize
-	restart_tool;;
-
-		2 ) 
-	mount_imgs "loop"
-	restart_tool;;
-
-		3 ) 
-	mount_imgs "ro,nosuid,nodev,relatime,uhelper=udisks2,loop"
-	restart_tool;;
-
-		x ) 
-	start_tools;;
-
+	read -p "" choose
+	case $choose in
+		1 ) mount_resize; restart_tool;;
+		2 ) mount_imgs "loop"; restart_tool;;
+		3 ) mount_imgs "ro,nosuid,nodev,relatime,uhelper=udisks2,loop"; restart_tool;;
+		x ) start_tools;;
 		* ) mount_main;;
-	    esac
-	done
+	esac
 }
 
 convert_images_main() {
-	while true; do
-	    banner
-	    echo " "
-	    echo "1. EXT4 to EROFS"
-	    echo "2. EXT4 to F2FS"
-	    echo "3. F2FS to EXT4"
-	    echo "4. F2FS to EROFS"
-	    echo "5. EROFS to EXT4"
-	    echo "6. EROFS to F2FS"
-	    echo "x. Back to main menu"
+	banner
+	echo " "
+	echo "1. EXT4 to EROFS"
+	echo "2. EXT4 to F2FS"
+	echo "3. F2FS to EXT4"
+	echo "4. F2FS to EROFS"
+	echo "5. EROFS to EXT4"
+	echo "6. EROFS to F2FS"
+	echo "x. Back to main menu"
 	    
-	    read -p "" choose
-	    case $choose in
-	    
-		1 ) 
-	convert_ext4_erofs_s
-	restart_tool;;
-
-		2 ) 
-	convert_ext4_f2fs_s
-	restart_tool;;
-
-		3 ) 
-	convert_f2fs_ext4_s
-	restart_tool;;
-
-		4 ) 
-	convert_f2fs_erofs_s
-	restart_tool;;
-
-		5 ) 
-	convert_erofs_ext4_s
-	restart_tool;;
-
-		6 ) 
-	convert_erofs_f2fs_s
-	restart_tool;;
-
-		x ) 
-	start_tools;;
-
+	read -p "" choose
+	case $choose in
+		1 ) convert_ext4_erofs_s; restart_tool;;
+		2 ) convert_ext4_f2fs_s; restart_tool;;
+		3 ) convert_f2fs_ext4_s; restart_tool;;
+		4 ) convert_f2fs_erofs_s; restart_tool;;
+		5 ) convert_erofs_ext4_s; restart_tool;;
+		6 ) convert_erofs_f2fs_s; restart_tool;;
+		x ) start_tools;;
 		* ) convert_images_main;;
-	    esac
-	done
+	esac
 }
 
 umount_main() {
-	while true; do
-	    banner
-	    echo " "
-	    echo "1. Umount raw image and resize to smallest size"
-	    echo "2. Umount raw image and resize with free space "
-	    echo "3. Umount without resizing"
-	    echo "x. Back to main menu"
+	banner
+	echo " "
+	echo "1. Umount raw image and resize to smallest size"
+	echo "2. Umount raw image and resize with free space "
+	echo "3. Umount without resizing"
+	echo "x. Back to main menu"
 	    
-	    read -p "" choose
-	    case $choose in
-	    
-		1 ) 
-	umount_resize
-	restart_tool;;
-
-		2 ) 
-	umount_resize_freespace
-	restart_tool;;
-
-		3 ) 
-	umount_normal
-	restart_tool;;
-
-		x ) 
-	start_tools;;
-
+	read -p "" choose
+	case $choose in
+		1 ) umount_resize; restart_tool;;
+		2 ) umount_resize_freespace; restart_tool;;
+		3 ) umount_normal; restart_tool;;
+		x ) start_tools;;
 		* ) umount_main;;
-	    esac
-	done
+	esac
 }
 
 mount_umount_main() {
@@ -3095,396 +2904,211 @@ mount_umount_main() {
 		echo "WSL doesn't support image mounting!"
 		restart_tool
 	fi
-	while true; do
-	    echo " "
-	    echo "1. Mount images"
-	    echo "2. Umount Images"
-	    echo "x. Back to main menu"
+	echo " "
+	echo "1. Mount images"
+	echo "2. Umount Images"
+	echo "x. Back to main menu"
 	    
-	    read -p "" choose
-	    case $choose in
-	    
-		1 ) 
-	mount_main
-	restart_tool;;
-
-		2 ) 
-	umount_main
-	restart_tool;;
-	
-		x ) 
-	start_tools;;
-
+	read -p "" choose
+	case $choose in
+		1 ) mount_main; restart_tool;;
+		2 ) umount_main; restart_tool;;
+		x ) start_tools;;
 		* ) mount_umount_main;;
-	    esac
-	done
+	esac
 }
 
 inc_dynamic_main() {
-	while true; do
-	    banner
-	    echo " "
-	    echo "1. Repack (raw to dat.br)"
-	    echo "2. Unpack"
-	    echo "x. Back to main menu"
+	banner
+	echo " "
+	echo "1. Repack (raw to dat.br)"
+	echo "2. Unpack"
+	echo "x. Back to main menu"
 	    
-	    read -p "" choose
-	    case $choose in
-	    
-		1 ) 
-	inc_dynamic_compress
-	restart_tool;;
-
-		2 ) 
-	inc_dynamic_decompress
-	restart_tool;;
-
-		x ) 
-	start_tools;;
-
+	read -p "" choose
+	case $choose in
+		1 ) inc_dynamic_compress; restart_tool;;
+		2 ) inc_dynamic_decompress; restart_tool;;
+		x ) start_tools;;
 		* ) inc_dynamic_main;;
-	    esac
-	done
+	esac
 }
 
 super_main() {
-	while true; do
-	    banner
-	    echo " "
-	    echo "1. Repack Super (raw/sparse/sparsechunk/.dat/.br/zstd)"
-	    echo "2. Unpack Super (dat.br)"
-	    echo "3. Unpack Super (zstd)"
-	    echo "4. Unpack Super (sparse)"
-	    echo "5. Unpack Super (sparsechunk)"
-	    echo "6. Unpack Super (raw)"
-	    echo "x. Back to main menu"
+	banner
+	echo " "
+	echo "1. Repack Super (raw/sparse/sparsechunk/.dat/.br/zstd)"
+	echo "2. Unpack Super (dat.br)"
+	echo "3. Unpack Super (zstd)"
+	echo "4. Unpack Super (sparse)"
+	echo "5. Unpack Super (sparsechunk)"
+	echo "6. Unpack Super (raw)"
+	echo "x. Back to main menu"
 	    
-	    read -p "" choose
-	    case $choose in
-	    
-		1 ) 
-	super_r
-	restart_tool;;
-
-		2 ) 
-	super_u_datbr
-	restart_tool;;
-
-		3 ) 
-	super_u_zstd
-	restart_tool;;
-
-		4 ) 
-	super_u_sparse
-	restart_tool;;
-
-		5 ) 
-	super_u_sparsechunk
-	restart_tool;;
-	
-		6 ) 
-	super_u_raw
-	restart_tool;;
-
-		x ) 
-	start_tools;;
-
+	read -p "" choose
+	case $choose in
+		1 ) super_r; restart_tool;;
+		2 ) super_u_datbr; restart_tool;;
+		3 ) super_u_zstd; restart_tool;;
+		4 ) super_u_sparse; restart_tool;;
+		5 ) super_u_sparsechunk; restart_tool;;
+		6 ) super_u_raw; restart_tool;;
+		x ) start_tools;;
 		* ) super_main;;
-	    esac
-	done
+	esac
 }
 
 repack_ext4_erofs_f2fs() {
-	while true; do
-	    banner
-	    echo " "
-	    echo "1. Repack EXT4 image with old image size"
-	    echo "2. Repack EXT4 image with folder size"
-	    echo "3. Repack EXT4 image with free space"
-	    echo "4. Repack EXT4 image and manually input size"
-	    echo "5. Repack EROFS image"
-	    echo "6. Repack F2FS image"
-	    echo "x. Back to main menu"
+	banner
+	echo " "
+	echo "1. Repack EXT4 image with old image size"
+	echo "2. Repack EXT4 image with folder size"
+	echo "3. Repack EXT4 image with free space"
+	echo "4. Repack EXT4 image and manually input size"
+	echo "5. Repack EROFS image"
+	echo "6. Repack F2FS image"
+	echo "x. Back to main menu"
 	    
-	    read -p "" choose
-	    case $choose in
-	    
-		1 ) 
-	repack_ext4_img_samesize
-	restart_tool;;
-
-		2 ) 
-	repack_ext4_img_foldersize
-	restart_tool;;
-	
-		3 )
-	repack_ext4_img_freespace
-	restart_tool;;
-	
-		4 ) 
-	repack_ext4_img_inputsize
-	restart_tool;;
-	
-		5 )
-	repack_erofs
-	restart_tool;;
-
-		6 )
-	repack_f2fs
-	restart_tool;;
-	
-		x ) 
-	start_tools;;
-
+	read -p "" choose
+	case $choose in
+		1 ) repack_ext4_img_samesize; restart_tool;;
+		2 ) repack_ext4_img_foldersize; restart_tool;;
+		3 ) repack_ext4_img_freespace; restart_tool;;
+		4 ) repack_ext4_img_inputsize; restart_tool;;
+		5 ) repack_erofs; restart_tool;;
+		6 ) repack_f2fs; restart_tool;;
+		x ) start_tools;;
 		* ) repack_ext4_erofs_f2fs;;
-	    esac
-	done
+	esac
 }
 
 unpack_repack_main() {
-	while true; do
-	    banner
-	    echo " "
-	    echo "1. Repack EXT4/F2FS/EROFS image"
-	    echo "2. Unpack EXT4/F2FS/EROFS image"
-	    echo "x. Back to main menu"
-	    
-	    read -p "" choose
-	    case $choose in
-	    
-		1 ) 
-	repack_ext4_erofs_f2fs
-	restart_tool;;
-
-		2 ) 
-	unpack_ext4_erofs_f2fs_img
-	restart_tool;;
+	banner
+	echo " "
+	echo "1. Repack EXT4/F2FS/EROFS image"
+	echo "2. Unpack EXT4/F2FS/EROFS image"
+	echo "x. Back to main menu"
 	
-		x ) 
-	start_tools;;
-
+	read -p "" choose
+	case $choose in
+		1 ) repack_ext4_erofs_f2fs; restart_tool;;
+		2 ) unpack_ext4_erofs_f2fs_img; restart_tool;;
+		x ) start_tools;;
 		* ) unpack_repack_main;;
-	    esac
-	done
+	esac
 }
 
 cd_cv_main() {
-	while true; do
-	    banner
-	    echo " "
-	    echo "1. Convert dat.br to raw img"
-	    echo "2. Convert raw .img to dat.br"
-	    echo "3. Convert raw to sparse"
-	    echo "4. Convert sparse to raw"
-	    echo "x. Back to main menu"
+	banner
+	echo " "
+	echo "1. Convert dat.br to raw img"
+	echo "2. Convert raw .img to dat.br"
+	echo "3. Convert raw to sparse"
+	echo "4. Convert sparse to raw"
+	echo "x. Back to main menu"
 	    
-	    read -p "" choose
-	    case $choose in
-	    
-		1 ) 
-	datbr_raw
-	restart_tool;;
-
-		2 ) 
-	raw_datbr
-	restart_tool;;
-
-		3 ) 
-	raw_sparse
-	restart_tool;;
-	
-		4 )
-	sparse_raw
-	restart_tool;;
-
-		x ) 
-	start_tools;;
-
+	read -p "" choose
+	case $choose in
+		1 ) datbr_raw; restart_tool;;
+		2 ) raw_datbr; restart_tool;;
+		3 ) raw_sparse; restart_tool;;
+		4 ) sparse_raw; restart_tool;;
+		x ) start_tools;;
 		* ) cd_cv_main;;
-	    esac
-	done
+	esac
 }
 
 zstd_main() {
-	while true; do
-	    banner
-	    echo " "
-	    echo "1. Compress zstd"
-	    echo "2. Decompress zstd"
-	    echo "x. Back to main menu"
+	banner
+	echo " "
+	echo "1. Compress zstd"
+	echo "2. Decompress zstd"
+	echo "x. Back to main menu"
 	    
-	    read -p "" choose
-	    case $choose in
-	    
-		1 ) 
-	compress_zstd
-	restart_tool;;
-
-		2 ) 
-	decompress_zstd
-	restart_tool;;
-
-		x ) 
-	start_tools;;
-
+	read -p "" choose
+	case $choose in
+		1 ) compress_zstd; restart_tool;;
+		2 ) decompress_zstd; restart_tool;;
+		x ) start_tools;;
 		* ) zstd_main;;
-	    esac
-	done
+	esac
 }
 
 sparsechunk_main() {
-	while true; do
-	    banner
-	    echo " "
-	    echo "1. Convert raw image into sparsechunk"
-	    echo "2. Convert sparsechunk into raw image"
-	    echo "x. Back to main menu"
+	banner
+	echo " "
+	echo "1. Convert raw image into sparsechunk"
+	echo "2. Convert sparsechunk into raw image"
+	echo "x. Back to main menu"
 	    
-	    read -p "" choose
-	    case $choose in
-	    
-		1 ) 
-	sparsechunk_comp
-	restart_tool;;
-
-		2 ) 
-	sparsechunk_decomp
-	restart_tool;;
-
-		x ) 
-	start_tools;;
-
+	read -p "" choose
+	case $choose in
+		1 ) sparsechunk_comp; restart_tool;;
+		2 ) sparsechunk_decomp; restart_tool;;
+		x ) start_tools;;
 		* ) sparsechunk_main;;
-	    esac
-	done
+	esac
 }
 
 payload_main() {
-	while true; do
-	    banner
-	    echo " "
-	    echo "1. Unpack all partitions in payload.bin"
-	    echo "2. Unpack specific partition from payload.bin"
-	    echo "3. Compile payload.bin from raw images"
-	    echo "4. Compile payload.bin OTA.zip from raw images"
-	    echo "x. Back to main menu"
+	banner
+	echo " "
+	echo "1. Unpack all partitions in payload.bin"
+	echo "2. Unpack specific partition from payload.bin"
+	echo "3. Compile payload.bin from raw images"
+	echo "4. Compile payload.bin OTA.zip from raw images"
+	echo "x. Back to main menu"
 	    
-	    read -p "" choose
-	    case $choose in
-	    
-		1 ) 
-	payload_all
-	restart_tool;;
-
-		2 ) 
-	payload_s_part
-	restart_tool;;
-
-		3 ) 
-	payload_compile
-	restart_tool;;
-
-		4 ) 
-	payload_compile_ota
-	restart_tool;;
-
-		x ) 
-	start_tools;;
-
+	read -p "" choose
+	case $choose in
+		1 ) payload_all; restart_tool;;
+		2 ) payload_s_part; restart_tool;;
+		3 ) payload_compile; restart_tool;;
+		4 ) payload_compile_ota; restart_tool;;
+		x ) start_tools;;
 		* ) payload_main;;
-	    esac
-	done
+	esac
 }
 
 start_tools() {
 	setup
-	while true; do
-	    banner
-	    echo " "
-	    echo "0. Android Boot Image Editor"
-	    echo "1. Super partition tools"
-	    echo "2. Incremental dynamic partition tools"
-	    echo "3. Convert or compress images"
-	    echo "4. Unpack or repack images"
-	    echo "5. Convert image types (ext4/f2fs/erofs)"
-	    echo "6. Rebuild EXT4 Images (removes avb)"
-	    echo "7. Mount or Umount raw imgs"
-	    echo "8. Sparsechunk tools"
-	    echo "9. payload.bin tools"
-	    echo "10. Custom Scripts"
-	    echo "11. Merge fs context and config to system"
-	    echo "12. Zstd Tools"
-	    echo "c. Clean up folders"
-	    echo "i. Install proprietary packages"
-	    echo "x. Exit tool"
+	banner
+	echo " "
+	echo "0. Android Boot Image Editor"
+	echo "1. Super partition tools"
+	echo "2. Incremental dynamic partition tools"
+	echo "3. Convert or compress images"
+	echo "4. Unpack or repack images"
+	echo "5. Convert image types (ext4/f2fs/erofs)"
+	echo "6. Rebuild EXT4 Images (removes avb)"
+	echo "7. Mount or Umount raw imgs"
+	echo "8. Sparsechunk tools"
+	echo "9. payload.bin tools"
+	echo "10. Custom Scripts"
+	echo "11. Merge fs context and config to system"
+	echo "12. Zstd Tools"
+	echo "c. Clean up folders"
+	echo "i. Install proprietary packages"
+	echo "x. Exit tool"
 	    
-	    read -p "" choose
-	    case $choose in
-	    
-		0 ) 
-	androidbooteditor
-	restart_tool;;
-
-		1 ) 
-	super_main
-	restart_tool;;
-
-		2 ) 
-	inc_dynamic_main
-	restart_tool;;
-
-		3 ) 
-	cd_cv_main
-	restart_tool;;
-
-		4 ) 
-	unpack_repack_main
-	restart_tool;;
-
-		5 ) 
-	convert_images_main
-	restart_tool;;
-
-		6 ) 
-	rebuild_ext4_single
-	restart_tool;;
-
-		7 ) 
-	mount_umount_main
-	restart_tool;;
-	
-		8 )
-	sparsechunk_main
-	restart_tool;;
-
-		9 ) 
-	payload_main
-	restart_tool;;
-
-		10 ) 
-	custom_scripts
-	restart_tool;;
-
-		11 ) 
-	merge_main
-	restart_tool;;
-	
-		12 ) 
-	zstd_main
-	restart_tool;;
-	
-		i ) 
-	install_proprietary
-	restart_tool;;
-
-		c ) 
-	clean
-	restart_tool;;
-
-		x )  
-	clear	
-	exit;;
+	read -p "" choose
+	case $choose in
+		0 ) androidbooteditor; restart_tool;;
+		1 ) super_main; restart_tool;;
+		2 ) inc_dynamic_main; restart_tool;;
+		3 ) cd_cv_main; restart_tool;;
+		4 ) unpack_repack_main; restart_tool;;
+		5 ) convert_images_main; restart_tool;;
+		6 ) rebuild_ext4_single; restart_tool;;
+		7 ) mount_umount_main; restart_tool;;
+		8 ) sparsechunk_main; restart_tool;;
+		9 ) payload_main; restart_tool;;
+		10 ) custom_scripts; restart_tool;;
+		11 ) merge_main; restart_tool;;
+		12 ) zstd_main; restart_tool;;
+		i ) install_proprietary; restart_tool;;
+		c ) clean; restart_tool;;
+		x ) clear; exit 0;;
 		* ) start_tools;;
-	    esac
-	done
+	esac
 }
