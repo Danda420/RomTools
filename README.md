@@ -1,5 +1,4 @@
 # CLI ROM Tools for Linux
-## Android Kitchen written in bash
 ### Setup ###
 - Clone this repository or download code zip then extract (where you cloned or extracted this tool will detemine the tool directory after you're done setting up)
 - Open terminal on RomTools folder
@@ -19,7 +18,7 @@ Those folders are auto generated after starting the tool
 
 ***
 ### Features ###
-- Unpack and repack super, payload.bin, ext4, f2fs, erofs, boot images (like boot, vendor boot, etc) and others.
+- Unpack and repack super, payload.bin/OTA.zip, ext4, f2fs, erofs, boot images (like boot, vendor boot, etc) and others.
 - Converting images
   - sparse to raw & raw to sparse (sparsechunk also supported)
   - erofs to ext4, erofs to f2fs, ext4 to erofs, ext4 to f2fs, f2fs to ext4, f2fs to erofs
@@ -27,8 +26,8 @@ Those folders are auto generated after starting the tool
   - and so on...
 - Auto generate missing fs_config & file_contexts (file perms/context depends on the location)
 - Mount and umount images
-- Custom Scripts (put your scripts into tool/custom_scripts, you can use functions from tool)
-- Zstd unpacking and repacking
+- Custom Scripts (put your scripts into tool/custom_scripts, you can use functions from tool.. check README.md on tool/custom_scripts/ for functions/scripts/bins usages and desc)
+- Zstd compressing and decompressing
 
 | Supported Image Types                   |
 |-----------------------------------------|
