@@ -1717,7 +1717,7 @@ payload_compile() {
 
 	echo ""
 	echo "Building payload.bin"
-	$BIN/payloadRepackTool/payloadRepackTool -p
+	$BIN/payloadRepackTool/payloadRepackTool -p dpart
 	if [[ -f $BIN/payloadRepackTool/output/payload.bin ]] && [[ -f $BIN/payloadRepackTool/output/payload_properties.txt ]]; then
 		mv $BIN/payloadRepackTool/output/payload.bin $DIROUT/payload.bin
 		mv $BIN/payloadRepackTool/output/payload_properties.txt $DIROUT/payload_properties.txt
@@ -1884,7 +1884,7 @@ payload_compile_ota() {
 
 	echo ""
 	echo "Building OTA.zip"
-	$BIN/payloadRepackTool/payloadRepackTool -p-ota
+	$BIN/payloadRepackTool/payloadRepackTool -o
 	if [[ -f $BIN/payloadRepackTool/output/OTA.zip ]]; then
 		mv $BIN/payloadRepackTool/output/OTA.zip $DIROUT/OTA.zip
 		echo ""
