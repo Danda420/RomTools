@@ -750,7 +750,7 @@ repack_ext4_cmd() {
 	local partition=$1
 	local SIZE=$2
 	$BIN/gen_fsconfig -t $(nproc --all) -p $ext4dir/$partition -c $ext4dir/config/$partition/${partition}_fs_config $3
-	$BIN/gen_filecontexts -t $(nproc --all) -b -f ext4 -p $ext4dir/$partition -c $ext4dir/config/$partition/${partition}_file_contexts $3
+	$BIN/gen_filecontexts -t $(nproc --all) -a -f ext4 -p $ext4dir/$partition -c $ext4dir/config/$partition/${partition}_file_contexts $3
 	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
 		local mountpoint=""
 	else
@@ -780,6 +780,7 @@ repack_ext4_as_erofs_cmd() {
 	sed -i "1i / $context\n/$partition $context\n/$partition/ $context" $ext4dir/config/$partition/${partition}_file_contexts
 	sed -i "1i / 0 0 0755\n${partition}/ 0 0 0755" $ext4dir/config/$partition/${partition}_fs_config
 	$BIN/gen_fsconfig -t $(nproc --all) -p $ext4dir/$partition -c $ext4dir/config/$partition/${partition}_fs_config -q
+	$BIN/gen_filecontexts -t $(nproc --all) -a -f erofs -p $ext4dir/$partition -c $ext4dir/config/$partition/${partition}_file_contexts -q
 	$BIN/mkfs.erofs${other} \
 	   -z${compression} \
 	   -T $(date +%s) \
@@ -805,6 +806,7 @@ repack_ext4_as_f2fs_cmd() {
 	sed -i "1i / $context\n/${partition}(/.*)? $context" $ext4dir/config/$partition/${partition}_file_contexts
 	sed -i "1i / 0 0 0755\n${partition}/ 0 0 0755" $ext4dir/config/$partition/${partition}_fs_config
 	$BIN/gen_fsconfig -t $(nproc --all) -p $ext4dir/$partition -c $ext4dir/config/$partition/${partition}_fs_config -q
+	$BIN/gen_filecontexts -t $(nproc --all) -a -f f2fs -p $ext4dir/$partition -c $ext4dir/config/$partition/${partition}_file_contexts -q
 	cp $BIN/f2fs_tmp $DIROUT/$partition.f2fs.img
 	truncate -s $SIZE $DIROUT/$partition.f2fs.img
 	$BIN/mkfs.f2fs $DIROUT/$partition.f2fs.img \
@@ -830,6 +832,7 @@ repack_erofs_as_ext4_cmd() {
 	local partition=$1
 	local SIZE=$2
 	$BIN/gen_fsconfig -t $(nproc --all) -p $erofsdir/$partition -c $erofsdir/config/${partition}_fs_config -q
+	$BIN/gen_filecontexts -t $(nproc --all) -a -f ext4 -p $erofsdir/$partition -c $erofsdir/config/${partition}_file_contexts -q
 	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
 		local mountpoint=""
 	else
@@ -850,6 +853,7 @@ repack_erofs_as_f2fs_cmd() {
 	sed -i "/[/]${partition}[/] /d" $erofsdir/config/${partition}_file_contexts
 	sed -i "s#/${partition} #/${partition}(/.*) #g" $erofsdir/config/${partition}_file_contexts
 	$BIN/gen_fsconfig -t $(nproc --all) -p $erofsdir/$partition -c $erofsdir/config/${partition}_fs_config -q
+	$BIN/gen_filecontexts -t $(nproc --all) -a -f f2fs -p $erofsdir/$partition -c $erofsdir/config/${partition}_file_contexts -q
 	cp $BIN/f2fs_tmp $DIROUT/$partition.f2fs.img
 	truncate -s $SIZE $DIROUT/$partition.f2fs.img
 	$BIN/mkfs.f2fs $DIROUT/$partition.f2fs.img \
@@ -877,6 +881,7 @@ repack_f2fs_as_ext4_cmd() {
 	local partition=$1
 	local SIZE=$2
 	$BIN/gen_fsconfig -t $(nproc --all) -p $f2fsdir/$partition -c $f2fsdir/config/${partition}_fs_config -q
+	$BIN/gen_filecontexts -t $(nproc --all) -a -f ext4 -p $f2fsdir/$partition -c $f2fsdir/config/${partition}_file_contexts -q
 	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
 		local mountpoint=""
 	else
@@ -906,6 +911,7 @@ repack_f2fs_as_erofs_cmd() {
 	sed -i "/[/] $context/d" $f2fsdir/config/${partition}_file_contexts
 	sed -i "1i / $context\n/$partition $context\n/$partition/ $context" $f2fsdir/config/${partition}_file_contexts
 	$BIN/gen_fsconfig -t $(nproc --all) -p $f2fsdir/$partition -c $f2fsdir/config/${partition}_fs_config -q
+	$BIN/gen_filecontexts -t $(nproc --all) -a -f erofs -p $f2fsdir/$partition -c $f2fsdir/config/${partition}_file_contexts -q
 	$BIN/mkfs.erofs${other} \
 	   -z${compression} \
 	   -T $(date +%s) \
@@ -927,7 +933,7 @@ repack_erofs_cmd() {
 	fi
 	
 	$BIN/gen_fsconfig -t $(nproc --all) -p $erofsdir/$partition -c $erofsdir/config/${partition}_fs_config $4
-	$BIN/gen_filecontexts -t $(nproc --all) -b -f erofs -p $erofsdir/$partition -c $erofsdir/config/${partition}_file_contexts $4
+	$BIN/gen_filecontexts -t $(nproc --all) -a -f erofs -p $erofsdir/$partition -c $erofsdir/config/${partition}_file_contexts $4
 	$BIN/mkfs.erofs${other} \
 	   -z${compression} \
 	   -T $(date +%s) \
@@ -942,7 +948,7 @@ repack_f2fs_cmd() {
 	local partition=$1
 	local SIZE=$(( ((54 * 1024 * 1024) + $(du -sb "$f2fsdir/$partition" | awk '{print $1}') ) * 115 / 100 + 1))
 	$BIN/gen_fsconfig -t $(nproc --all) -p $f2fsdir/$partition -c $f2fsdir/config/${partition}_fs_config $2
-	$BIN/gen_filecontexts -t $(nproc --all) -b -f f2fs -p $f2fsdir/$partition -c $f2fsdir/config/${partition}_file_contexts $2
+	$BIN/gen_filecontexts -t $(nproc --all) -a -f f2fs -p $f2fsdir/$partition -c $f2fsdir/config/${partition}_file_contexts $2
 	truncate -s $SIZE $f2fsdir/config/tmp/$partition.img
 	$BIN/mkfs.f2fs $f2fsdir/config/tmp/$partition.img \
 		-O extra_attr \
