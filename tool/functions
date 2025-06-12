@@ -1922,6 +1922,9 @@ custom_scripts() {
 	   custom_scripts
 	else
 	   SCRIPT=$(ls -1 $DIRSCRIPTS/custom_scripts | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
+	   if [[ $(ls -l $DIRSCRIPTS/custom_scripts/$SCRIPT | awk '{print $1}') != "-rwxrwxrwx" ]]; then
+	      chmod 777 $DIRSCRIPTS/custom_scripts/$SCRIPT
+	   fi
 	   exec $DIRSCRIPTS/custom_scripts/$SCRIPT
 	fi
 }
