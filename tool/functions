@@ -116,8 +116,13 @@ file_selector() {
 	local selected_dir=$1
 	local file_extension=$2
 	local message=$3
-	if ls -1 $selected_dir/*$file_extension > /dev/null 2>&1 ; then
-	   ls -1 $selected_dir/*$file_extension | sed 's:.*/::' | awk '{print NR ".", $0}'
+	if [[ $file_extension != "" ]]; then
+		local showfilescmd="ls -1 $selected_dir/*$file_extension"
+	else
+		local showfilescmd="ls -1 $selected_dir/"
+	fi
+	if $showfilescmd > /dev/null 2>&1 ; then
+	   $showfilescmd | sed 's:.*/::' | awk '{print NR ".", $0}'
 	   local nofilesfound=0
 	else
 	   if [[ $file_extension == "" ]]; then
