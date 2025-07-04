@@ -3,5 +3,6 @@ patch/*
 bin/py/__pycache__
 dynamic_partitions.conf
 common_firmware_images
+allocated_threads
 bin/payloadRepackTool/bin/__pycache__
 bin/payloadRepackTool/venv
