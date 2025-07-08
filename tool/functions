@@ -697,6 +697,7 @@ decompress_zstd() {
 }
 
 unpack_ext4() {
+	local image=$1
 	mkdir -p $ext4dir
 	if [[ -d $ext4dir/$image ]]; then
 		echo "Folder named $image in $ext4dir exists, it will be deleted!"
@@ -718,6 +719,7 @@ unpack_ext4() {
 }
 
 unpack_erofs() {
+	local image=$1
 	mkdir -p $erofsdir
 	if [[ -d $erofsdir/$image ]]; then
 		echo "Folder named $image in $erofsdir exists, it will be deleted!"
@@ -738,6 +740,7 @@ unpack_erofs() {
 }
 
 unpack_f2fs(){
+	local image=$1
 	if [[ -d $f2fsdir/$image ]]; then
 		echo "Folder named $image in $f2fsdir exists, it will be deleted!"
 		echo "Move it somewhere first if its important"
@@ -990,11 +993,11 @@ unpack_ext4_erofs_f2fs_img() {
 	file_selector $DIRIN ".img" "Unpack all .img shown above"
 	for image in $FILE; do
 	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
-	       unpack_ext4
+	       unpack_ext4 $image
 	   elif [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
-	       unpack_erofs
+	       unpack_erofs $image
 	   elif [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == f2fs ]]; then
-	       unpack_f2fs
+	       unpack_f2fs $image
 	   else
 	       echo ""
 	       echo -e "${R}$image.img fs type is not ext4/f2fs/erofs! ${NC}"
