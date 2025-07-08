@@ -40,9 +40,9 @@ Those folders are auto generated after starting the tool
 | Sparsechunk                             |
 | Payload                                 |
 ***
-### Available on ###
-- Linux x86_64 (Arch, Debian, RedHat, OpenSUSE base supported)
-- Windows WSL (features like image mounting and unmounting is unavailable)
+### System compatibility ###
+- Linux x86_64 (distributions based on Arch, Debian, RedHat, and OpenSUSE are supported)
+- Windows WSL (features like image mounting and unmounting are unavailable)
 ***
 
 ### Credits ###
