@@ -2604,8 +2604,8 @@ super_r() {
 			local emptyslot=_a
 		fi
 
-		local ab_part_list=$(cat $superdir/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }' | grep ${slot})
-		local ab_part_list_empty=$(cat $superdir/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }' | grep ${emptyslot})
+		local ab_part_list=$(cat $superdir/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }' | grep -E "${slot}$")
+		local ab_part_list_empty=$(cat $superdir/config/super_config.txt | awk '/Partition table:/,/Super partition layout:/ {if ($1=="Name:") print $2 }' | grep -E "${emptyslot}$")
 		local missing_imgs=()
 
 		for partition in $ab_part_list; do
