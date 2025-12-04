@@ -410,7 +410,7 @@ convert_erofs_ext4(){
 	if [[ -d $erofsdir/$image ]]; then
 		rm -rf $erofsdir/$image $erofsdir/config/${image}_*
 	fi
-	$BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x > /dev/null 2>&1
+	$BIN/extract.erofs -T${usable_threads} -i $DIRIN/$image.img -o $erofsdir -x > /dev/null 2>&1
 	        
 	echo "- Rebuilding $image as ext4 image..."
 	local foldersize=$(du -s -B1 $erofsdir/$image | awk '{print $1}')
@@ -437,7 +437,7 @@ convert_erofs_f2fs(){
 	if [[ -d $erofsdir/$image ]]; then
 		rm -rf $erofsdir/$image $erofsdir/config/${image}_*
 	fi
-	$BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x > /dev/null 2>&1
+	$BIN/extract.erofs -T${usable_threads} -i $DIRIN/$image.img -o $erofsdir -x > /dev/null 2>&1
 	        
 	echo "- Rebuilding $image as f2fs image..."
 	if repack_erofs_as_f2fs_cmd $image > /dev/null 2>&1; then
@@ -730,7 +730,7 @@ unpack_erofs() {
 		rm -rf $erofsdir/config/${image}_*
 	fi
 	echo ""
-	if $BIN/erofs.unpack -i $DIRIN/$image.img -o $erofsdir -x; then
+	if $BIN/extract.erofs -T${usable_threads} -i $DIRIN/$image.img -o $erofsdir -x; then
 		echo ""
 		echo -e "${G}Output : $erofsdir/$image ${NC}"
 		rm -rf $DIRIN/$image.img
@@ -2780,9 +2780,9 @@ threads_allocation_popup() {
 		echo "Allocating more threads will speed up the following tasks:"
 		echo "  - Compressing with zstd"
 		echo "  - Decompiling payload.bin"
-		echo "  - Compiling EROFS"
-		echo "  - Checking and generating fs_config"
-		echo "  - Checking and generating file_contexts"
+		echo "  - Compiling & Decompiling EROFS"
+		echo "  - Checking and generating missing fs_config"
+		echo "  - Checking and generating missing file_contexts"
 		echo " "
 		echo "1. All (${all_threads})"
 		echo "2. Half (${half_threads})"
