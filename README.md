@@ -51,6 +51,10 @@ Those folders are auto generated after starting the tool
 
 [cyberphantom52](https://github.com/cyberphantom52/payload-dumper-rs)
 
+[sekaiacg](https://github.com/sekaiacg/erofs-utils)
+
+[snowwolf725](https://github.com/snowwolf725/Payload_Repack_Tool)
+
 [xpirt-sdat2img](https://github.com/xpirt/sdat2img)
 
 [xpirt-img2sdat](https://github.com/xpirt/img2sdat)
@@ -58,5 +62,3 @@ Those folders are auto generated after starting the tool
 [althafvly-imgextractor](https://github.com/althafvly/AmlogicKitchen/blob/master/bin/imgextractor.py)
 
 [dlenski-PySIMG](https://github.com/dlenski/PySIMG)
-
-[snowwolf725](https://github.com/snowwolf725/Payload_Repack_Tool)
