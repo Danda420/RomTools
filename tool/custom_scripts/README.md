@@ -1,24 +1,26 @@
 
 # Function & Binaries Lists and Usages
 
+**Note on Projects:** With the introduction of multi-project support, custom scripts should use the `$PRJDIR` environment variable instead of hardcoding `ROM_WORKDIR` or `$WORKDIR`. `$PRJDIR` automatically points to the currently active project folder (`ROM_WORKDIR/<project_name>`).
+
 ---
 
 ## Unpack Images Functions
 
 ### `unpack_ext4`
-Unpacks ext4 image into `ROM_WORKDIR/EXT4`.
+Unpacks ext4 image into `$PRJDIR/EXT4`.
 ```shell
 usage: unpack_ext4 [image]  # no file extension needed
 ```
 
 ### `unpack_erofs`
-Unpacks EROFS image into `ROM_WORKDIR/erofs`.
+Unpacks EROFS image into `$PRJDIR/erofs`.
 ```shell
 usage: unpack_erofs [image]  # no file extension needed
 ```
 
 ### `unpack_f2fs`
-Unpacks F2FS image into `ROM_WORKDIR/F2FS`.
+Unpacks F2FS image into `$PRJDIR/F2FS`.
 ```shell
 usage: unpack_f2fs [image]  # no file extension needed
 ```
@@ -202,7 +204,7 @@ usage: resize_img [image] [smallest|freespace]
 Resize image file size.
 
 ### `mount_imgs`
-Mounts images from `ROM_WORKDIR` to `ROM_WORKDIR/$image`.
+Mounts images from `$PRJDIR` to `$PRJDIR/$image`.
 ```shell
 usage: mount_imgs [options]
 # Examples: 

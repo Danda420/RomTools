@@ -1,23 +1,27 @@
 # CLI ROM Tools for Linux
 ### Setup ###
-- Clone this repository or download code zip then extract (where you cloned or extracted this tool will detemine the tool directory after you're done setting up)
-- Open terminal on RomTools folder
-- Run this on terminal
+1. Clone this repository or download code zip then extract (where you cloned or extracted this tool will detemine the tool directory after you're done setting up)
+2. Open terminal on RomTools folder
+3. Run this on terminal
 ```` shell
 bash start
 # or
 ./start
 ````
-- Choose "Install proprietary packages" option (it will auto detect your linux distribution base)
+4. Choose "Install proprietary packages" option (it will auto detect your linux distribution base)
 
 After setting up, you can just type `romtools` in terminal to start it.
 
-To use the tool, put files you desire to "input" folder, output files are located on "output" folder, while decompiled partitions are extracted to "ROM_WORKDIR" folder inside RomTools folder.
-
-Those folders are auto generated after starting the tool
+***
+### Workspace & Usage ###
+- The tool uses a Project System. Upon starting, you will be prompted to create a new project or open an existing one.
+- Put the files you want to unpack or modify into the input folder.
+- Repacked output files are generated in the output folder.
+- Decompiled partitions are extracted to your specific project directory located at ROM_WORKDIR/<project_name>
 
 ***
 ### Features ###
+- Project Management: Create, switch, and delete isolated workspaces for different ROMs.
 - Unpack and repack super, payload.bin/OTA.zip, ext4, f2fs, erofs, boot images (like boot, vendor boot, etc) and others.
 - Converting images
   - sparse to raw & raw to sparse (sparsechunk also supported)
