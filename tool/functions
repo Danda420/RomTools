@@ -8,12 +8,13 @@ ABIEBIN=$BIN/booteditor
 DIRIN=$DIRTOOLS/input
 DIROUT=$DIRTOOLS/output
 WORKDIR=$DIRTOOLS/ROM_WORKDIR
-PRJDIR=none
-superdir=none
-ext4dir=none
-erofsdir=none
-f2fsdir=none
-u_bootdir=none
+export PRJDIR=${PRJDIR:-none}
+export superdir=${superdir:-none}
+export ext4dir=${ext4dir:-none}
+export erofsdir=${erofsdir:-none}
+export f2fsdir=${f2fsdir:-none}
+export u_bootdir=${u_bootdir:-none}
+export usable_threads=${usable_threads:-1}
 partitions="system vendor odm product system_ext"
 oplus_partitions="my_bigball my_carrier my_company my_engineering my_heytap my_manifest my_preload my_product my_region my_stock"
 G='\033[1;32m'
@@ -1937,6 +1938,9 @@ custom_scripts() {
 	   custom_scripts
 	else
 	   SCRIPT=$(ls -1 $DIRSCRIPTS/custom_scripts | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
+	   if [[ $SCRIPT == "" ]]; then
+		  custom_scripts
+	   fi
 	   if [[ $(ls -l $DIRSCRIPTS/custom_scripts/$SCRIPT | awk '{print $1}') != "-rwxrwxrwx" ]]; then
 	      chmod 777 $DIRSCRIPTS/custom_scripts/$SCRIPT
 	   fi
@@ -2812,10 +2816,10 @@ threads_allocation_popup() {
 
 set_usable_threads() {
 	if [[ $(getvalue allocated_threads $ROMTOOLSCONF) != "none" ]]; then
-		usable_threads=$(getvalue allocated_threads $ROMTOOLSCONF)
+		export usable_threads=$(getvalue allocated_threads $ROMTOOLSCONF)
 	else
 		threads_allocation_popup
-		usable_threads=$(getvalue allocated_threads $ROMTOOLSCONF)
+		export usable_threads=$(getvalue allocated_threads $ROMTOOLSCONF)
 	fi
 }
 
@@ -3254,10 +3258,10 @@ prj_selector() {
 	   prj_selector
 	else
 	   PRJNAME=$(find $WORKDIR -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
-	   prj_open $PRJNAME
 	   if [[ $PRJNAME == "" ]]; then
 	      prj_selector
 	   fi
+	   prj_open $PRJNAME
 	fi
 }
 

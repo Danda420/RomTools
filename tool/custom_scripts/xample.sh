@@ -11,12 +11,16 @@ clear
 
 echo $PWD
 echo $WORKDIR
+echo $PRJDIR
+echo $erofsdir
+echo $ext4dir
+echo $f2fsdir
+echo $superdir
+echo $u_bootdir
 echo $DIRSCRIPTS
 echo $TOOLDIR
 echo $PYSCRIPTS
 echo $DIRIN
-echo $DIROUT
-echo $WORKDIR
 echo Hello
 
 #################################################
