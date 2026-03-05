@@ -1,27 +1,25 @@
 #!/bin/bash
 DIRTOOLS="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")")"
 DIRSCRIPTS=$DIRTOOLS/tool
+ROMTOOLSCONF=$DIRSCRIPTS/romtools.conf
 BIN=$DIRSCRIPTS/bin
 PYSCRIPTS=$BIN/py
 ABIEBIN=$BIN/booteditor
 DIRIN=$DIRTOOLS/input
 DIROUT=$DIRTOOLS/output
 WORKDIR=$DIRTOOLS/ROM_WORKDIR
-superdir=$WORKDIR/super
-ext4dir=$WORKDIR/EXT4
-erofsdir=$WORKDIR/erofs
-f2fsdir=$WORKDIR/F2FS
-u_bootdir=$WORKDIR/boot
+PRJDIR=none
+superdir=none
+ext4dir=none
+erofsdir=none
+f2fsdir=none
+u_bootdir=none
 partitions="system vendor odm product system_ext"
 oplus_partitions="my_bigball my_carrier my_company my_engineering my_heytap my_manifest my_preload my_product my_region my_stock"
 G='\033[1;32m'
 R='\033[1;31m'
 NC='\033[0m'
 LC='\033[1;36m'
-
-if [[ -f $DIRSCRIPTS/allocated_threads ]]; then
-	usable_threads=$(cat $DIRSCRIPTS/allocated_threads)
-fi
 
 if command -v zypper >/dev/null 2>&1; then
 	export PATH=$PATH:/usr/sbin
@@ -62,28 +60,27 @@ getvalue() { grep "^$1=" "$2" 2>/dev/null | tail -n1 | cut -d= -f2-; }
 
 give_perm() {
 	local partition=$1
-	sudo chown -R $USER:$USER $WORKDIR/$partition > /dev/null 2>&1
+	sudo chown -R $USER:$USER $PRJDIR/$partition > /dev/null 2>&1
 }
 
 restore_perm() {
 	local partition=$1
 	if [[ $(echo $partition | grep "vendor") != "" ]]; then
-		sudo chown -R 0:0 $WORKDIR/$partition/
-		sudo chown -R 0:2000 $WORKDIR/$partition/bin
-		sudo chown 0:2000 $(sudo find $WORKDIR/$partition -type d)
+		sudo chown -R 0:0 $PRJDIR/$partition/
+		sudo chown -R 0:2000 $PRJDIR/$partition/bin
+		sudo chown 0:2000 $(sudo find $PRJDIR/$partition -type d)
 	elif [[ $(echo $partition | grep "system") != "" ]]; then
-		sudo chown -R 0:0 $WORKDIR/$partition
-		sudo chown -R 0:2000 $WORKDIR/$partition/system/bin
+		sudo chown -R 0:0 $PRJDIR/$partition
+		sudo chown -R 0:2000 $PRJDIR/$partition/system/bin
 	else
-		sudo chown -R 0:0 $WORKDIR/$partition
-		sudo chown -R 0:2000 $WORKDIR/$partition/bin
+		sudo chown -R 0:0 $PRJDIR/$partition
+		sudo chown -R 0:2000 $PRJDIR/$partition/bin
 	fi
 }
 
 setup() {
 	clear
-	threads_allocation_popup
-	usable_threads=$(cat $DIRSCRIPTS/allocated_threads)
+	set_usable_threads
 	if [[ ! -d $WORKDIR ]] || [[ ! -d $DIRIN ]] || [[ ! -d $DIROUT ]]; then
 		mkdir -p $DIRIN \
 		         $DIROUT \
@@ -101,6 +98,10 @@ setup() {
 		sudo rm -rf $romtools_bin
 		sudo ln -s "$startscript" $romtools_bin
 	fi
+
+	if [[ $PRJDIR == "none" ]]; then
+		prj_selector
+	fi
 }
 
 clean() {
@@ -109,7 +110,7 @@ clean() {
 
 	rm -rf $DIRIN \
 	       $DIROUT \
-	       $WORKDIR \
+	       $PRJDIR/* \
 		   $ABIEBIN/uiderrors \
 		   $ABIEBIN/*.img*
 		   
@@ -182,7 +183,7 @@ extracted_partition_selector() {
 	local selected_dir=$1
 	local message=$2
 	if ls -1 $selected_dir > /dev/null 2>&1 ; then
-	   ls -1 $selected_dir | grep -v "config" | awk '{print NR ".", $0}'
+	   find $selected_dir -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | grep -v "config" | awk '{print NR ".", $0}'
 	   local nofoldersfound=0
 	else
 	   echo -e "${R}No extracted partition(s) found! ${NC}"
@@ -206,7 +207,7 @@ extracted_partition_selector() {
 	   echo ""
 	   extracted_partition_selector $selected_dir "$message"
 	else
-	   FOLDER=$(ls -1 $selected_dir | grep -v "config" | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
+	   FOLDER=$(find $selected_dir -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | grep -v "config" | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
 	   if [[ $FOLDER != "" ]]; then
 	      clear
 	      echo "Selected: $FOLDER"
@@ -549,12 +550,12 @@ rebuild_ext4(){
 	echo "Starting rebuilding..."
 	echo ""
 	echo "- Extracting $partition"
-	mkdir -p $WORKDIR/rebuildimg
-	sudo $PYSCRIPTS/imgextractor.py $DIRIN/$partition.img $WORKDIR/rebuildimg > /dev/null 2>&1
-	local foldersize=$(sudo du -s -B1 $WORKDIR/rebuildimg/$partition | awk '{print $1}')
+	mkdir -p $PRJDIR/rebuildimg
+	sudo $PYSCRIPTS/imgextractor.py $DIRIN/$partition.img $PRJDIR/rebuildimg > /dev/null 2>&1
+	local foldersize=$(sudo du -s -B1 $PRJDIR/rebuildimg/$partition | awk '{print $1}')
 	local SIZE=$(($foldersize + $foldersize * 1/10))
 	if (( $SIZE < 1474560 )); then
-		local SIZE=`sudo du -sk $WORKDIR/rebuildimg/$partition | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+		local SIZE=`sudo du -sk $PRJDIR/rebuildimg/$partition | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 	fi
 	echo "- Rebuilding $partition..."
 	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
@@ -563,12 +564,12 @@ rebuild_ext4(){
 		local mountpoint=$partition
 	fi
 	if sudo $BIN/make_ext4fs -J -T -1 \
-		   -S "$WORKDIR/rebuildimg/config/$partition/${partition}_file_contexts" \
-		   -C "$WORKDIR/rebuildimg/config/$partition/${partition}_fs_config" \
+		   -S "$PRJDIR/rebuildimg/config/$partition/${partition}_file_contexts" \
+		   -C "$PRJDIR/rebuildimg/config/$partition/${partition}_fs_config" \
 		   -l "$SIZE" \
 		   -L "/$mountpoint" \
 		   -a "/$partition" \
-		   "$DIROUT/$partition.img" "$WORKDIR/rebuildimg/$partition" > /dev/null 2>&1; then
+		   "$DIROUT/$partition.img" "$PRJDIR/rebuildimg/$partition" > /dev/null 2>&1; then
 		resize_img $DIROUT/$partition.img smallest
 		rm -rf $DIRIN/$partition.img
 		echo ""
@@ -577,7 +578,7 @@ rebuild_ext4(){
 	else
 		echo -e "${R}Rebuild Failed! ${NC}"
 	fi
-	sudo rm -rf $WORKDIR/rebuildimg
+	sudo rm -rf $PRJDIR/rebuildimg
 }
 
 rebuild_ext4_single() {
@@ -1455,19 +1456,19 @@ merge_non_dynamic() {
 mount_imgs() {
 	local OPTIONS=$1
 	clear
-	local images=$(ls -l $WORKDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
+	local images=$(ls -l $PRJDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
 	for partition in $images; do
-		mkdir -p $WORKDIR/$partition
-		sudo mount -t ext4 -o $OPTIONS $WORKDIR/${partition}.img $WORKDIR/$partition > /dev/null 2>&1
+		mkdir -p $PRJDIR/$partition
+		sudo mount -t ext4 -o $OPTIONS $PRJDIR/${partition}.img $PRJDIR/$partition > /dev/null 2>&1
 		give_perm $partition
 	done
 }
 
 mount_resize() {
 	clear
-	local images=$(ls -l $WORKDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
+	local images=$(ls -l $PRJDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
 	resize_img_to_edit(){
-		local getsize=$(ls -nl $WORKDIR/${valset}.img | awk '{print $5}')
+		local getsize=$(ls -nl $PRJDIR/${valset}.img | awk '{print $5}')
 		local readmb=$(($getsize / 100000000))
 		local readgiga=$(($getsize / 1000000000))
 		local cval=$(($readmb - $readgiga))
@@ -1477,10 +1478,10 @@ mount_resize() {
 			local vplus=1;
 		fi
 		local sizeimg=$(($readgiga + $vplus))G
-		sudo fallocate -l $sizeimg $WORKDIR/${valset}.img
-		sudo e2fsck -yf $WORKDIR/${valset}.img
-		sudo resize2fs $WORKDIR/${valset}.img $sizeimg
-		sudo e2fsck -yf $WORKDIR/${valset}.img
+		sudo fallocate -l $sizeimg $PRJDIR/${valset}.img
+		sudo e2fsck -yf $PRJDIR/${valset}.img
+		sudo resize2fs $PRJDIR/${valset}.img $sizeimg
+		sudo e2fsck -yf $PRJDIR/${valset}.img
 	}
 
 	echo " "
@@ -1493,29 +1494,29 @@ mount_resize() {
 	echo " "
 	echo "Mounting partitions..."
 	for partition in $images; do
-		mkdir -p $WORKDIR/$partition
-		sudo mount -t ext4 -o loop $WORKDIR/${partition}.img $WORKDIR/$partition > /dev/null 2>&1
+		mkdir -p $PRJDIR/$partition
+		sudo mount -t ext4 -o loop $PRJDIR/${partition}.img $PRJDIR/$partition > /dev/null 2>&1
 		give_perm $partition
 	done
 }
 
 umount_resize_freespace() {
 	clear
-	local images=$(ls -l $WORKDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
+	local images=$(ls -l $PRJDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
 	resize_to_build(){
-		sudo e2fsck -yf $WORKDIR/${valset}.img > /dev/null 2>&1
-		sudo resize2fs -M $WORKDIR/${valset}.img > /dev/null 2>&1
-		sudo e2fsck -yf $WORKDIR/${valset}.img > /dev/null 2>&1
+		sudo e2fsck -yf $PRJDIR/${valset}.img > /dev/null 2>&1
+		sudo resize2fs -M $PRJDIR/${valset}.img > /dev/null 2>&1
+		sudo e2fsck -yf $PRJDIR/${valset}.img > /dev/null 2>&1
 				
-		vsizenow=$(ls -nl $WORKDIR/${valset}.img | awk '{print $5}')
+		vsizenow=$(ls -nl $PRJDIR/${valset}.img | awk '{print $5}')
 		sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
-		sudo resize2fs $WORKDIR/${valset}.img $sizeimg > /dev/null 2>&1
-		sudo e2fsck -yf $WORKDIR/${valset}.img > /dev/null 2>&1
+		sudo resize2fs $PRJDIR/${valset}.img $sizeimg > /dev/null 2>&1
+		sudo e2fsck -yf $PRJDIR/${valset}.img > /dev/null 2>&1
 	}
 
 	echo " "
 	echo "Input partition that you want to unmount :"
-	file_selector $WORKDIR ".img"
+	file_selector $PRJDIR ".img"
 	local PARTITION=$(echo $FILE | sed 's/\.img$//')
 		
 	echo " "
@@ -1527,8 +1528,8 @@ umount_resize_freespace() {
 	echo "Unmounting $PARTITION..."
 	echo " "
 	restore_perm $PARTITION > /dev/null 2>&1
-	sudo umount $WORKDIR/$PARTITION > /dev/null 2>&1
-	rm -rf $WORKDIR/$PARTITION
+	sudo umount $PRJDIR/$PARTITION > /dev/null 2>&1
+	rm -rf $PRJDIR/$PARTITION
 
 	echo "Resizing $PARTITION..."
 	echo " "
@@ -1538,19 +1539,19 @@ umount_resize_freespace() {
 
 umount_resize() {
 	clear
-	local images=$(ls -l $WORKDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
+	local images=$(ls -l $PRJDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
 	resize_to_build(){
-		sudo e2fsck -yf $WORKDIR/${valset}.img
-		sudo resize2fs -M $WORKDIR/${valset}.img
-		sudo e2fsck -yf $WORKDIR/${valset}.img
+		sudo e2fsck -yf $PRJDIR/${valset}.img
+		sudo resize2fs -M $PRJDIR/${valset}.img
+		sudo e2fsck -yf $PRJDIR/${valset}.img
 	}
 	echo " "
 	echo "Unmounting partitions..."
 	echo " "
 	for partition in $images; do
 	   restore_perm $partition > /dev/null 2>&1
-	   sudo umount $WORKDIR/$partition > /dev/null 2>&1
-	   rm -rf $WORKDIR/$partition
+	   sudo umount $PRJDIR/$partition > /dev/null 2>&1
+	   rm -rf $PRJDIR/$partition
 	done
 
 	echo "Resizing partitions..."
@@ -1566,11 +1567,11 @@ umount_normal() {
 	echo " "
 	echo "Unmounting partitions..."
 	echo " "
-	local images=$(ls -l $WORKDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
+	local images=$(ls -l $PRJDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
 	for partition in $images; do
 	   restore_perm $partition > /dev/null 2>&1
- 	   sudo umount $WORKDIR/$partition > /dev/null 2>&1
- 	   rm -rf $WORKDIR/$partition
+ 	   sudo umount $PRJDIR/$partition > /dev/null 2>&1
+ 	   rm -rf $PRJDIR/$partition
 	done
 }
 
@@ -2302,11 +2303,11 @@ super_u_raw() {
 		echo "Unpacking $imgname.img..."
 		mkdir -p $superdir/config
 		lpdump --slot=0 $DIRIN/$imgname.img > $superdir/config/super_config.txt
-		lpunpack $DIRIN/$imgname.img $WORKDIR/super
+		lpunpack $DIRIN/$imgname.img $PRJDIR/super
 		rm -rf $DIRIN/$imgname.*
 
 		echo " "
-		echo -e "${G}Done! Output : $WORKDIR/super ${NC}"
+		echo -e "${G}Done! Output : $PRJDIR/super ${NC}"
 	fi
 }
 
@@ -2333,11 +2334,11 @@ super_u_sparse() {
 		rm -rf $DIRIN/$imgname.img
 		mkdir -p $superdir/config
 		lpdump --slot=0 $DIRIN/${imgname}_tmp.img > $superdir/config/super_config.txt
-		lpunpack $DIRIN/${imgname}_tmp.img $WORKDIR/super
+		lpunpack $DIRIN/${imgname}_tmp.img $PRJDIR/super
 		rm -rf $DIRIN/${imgname}_tmp.img 
 
 		echo " "
-		echo -e "${G}Done! Output : $WORKDIR/super ${NC}"
+		echo -e "${G}Done! Output : $PRJDIR/super ${NC}"
 	else
 		echo " "
 		echo -e "${R}$imgname.img is not Android sparse image! aborting...${NC}"
@@ -2368,9 +2369,9 @@ super_u_sparsechunk() {
 	       rm -rf $DIRIN/$SPARSECHUNK.*
 		   mkdir -p $superdir/config
 		   lpdump --slot=0 $DIRIN/super_tmp.img> $superdir/config/super_config.txt
-		   lpunpack $DIRIN/super_tmp.img $WORKDIR/super
+		   lpunpack $DIRIN/super_tmp.img $PRJDIR/super
 		   rm -rf $DIRIN/super_tmp.img
-	       echo -e "${G}Done! Output : $WORKDIR/super ${NC}"
+	       echo -e "${G}Done! Output : $PRJDIR/super ${NC}"
 	   else
 	       echo -e "${R}Conversion Failed! ${NC}"
 	   fi
@@ -2407,11 +2408,11 @@ super_u_zstd() {
 		echo "Unpacking super..."
 		mkdir -p $superdir/config
 		lpdump --slot=0 $DIRIN/super.img > $superdir/config/super_config.txt
-		lpunpack $DIRIN/super.img $WORKDIR/super
+		lpunpack $DIRIN/super.img $PRJDIR/super
 		rm -rf $DIRIN/super.img
 
 		echo " "
-		echo -e "${G}Done! Output : $WORKDIR/super ${NC}"
+		echo -e "${G}Done! Output : $PRJDIR/super ${NC}"
 	else
 		echo " "
 		echo -e "${R}File type is not Zstandard! aborting...${NC}"
@@ -2448,19 +2449,25 @@ super_u_datbr() {
 		echo "Unpacking $imgname.img..."
 		mkdir -p $superdir/config
 		lpdump --slot=0 $DIROUT/$imgname.img > $superdir/config/super_config.txt
-		lpunpack $DIROUT/$imgname.img $WORKDIR/super
+		lpunpack $DIROUT/$imgname.img $PRJDIR/super
 		rm -rf $DIROUT/$imgname.*
 
 		echo " "
-		echo -e "${G}Done! Output : $WORKDIR/super ${NC}"
+		echo -e "${G}Done! Output : $PRJDIR/super ${NC}"
 	fi
 }
 
 super_r() {
-	if [[ $(ls $superdir ) == "" ]]; then
+	if [[ $(ls $superdir) == "" ]]; then
 	    banner
 	    echo ""
 	    echo -e "${R}No super extracted!${NC}"
+	    restart_tool
+	fi
+	if [[ $(cat $superdir/config/super_config.txt) == "" ]]; then
+		banner
+	    echo ""
+	    echo -e "${R}super_config.txt is not accessible or is empty!${NC}"
 	    restart_tool
 	fi
 	local meta_size=$(cat $superdir/config/super_config.txt | awk '/Metadata max size:/ { print $4 }')
@@ -2772,35 +2779,43 @@ threads_allocation_popup() {
 	local all_threads=$(nproc --all)
 	local half_threads=$(($(nproc --all) / 2 ))
 	local allocated_threads=""
-	if [[ ! -f $DIRSCRIPTS/allocated_threads ]]; then
-		banner
-		echo ""
-		echo "How many threads do you want to allocate for this tool?"
-		echo ""
-		echo "Allocating more threads will speed up the following tasks:"
-		echo "  - Compressing with zstd"
-		echo "  - Decompiling payload.bin"
-		echo "  - Compiling & Decompiling EROFS"
-		echo "  - Checking and generating missing fs_config"
-		echo "  - Checking and generating missing file_contexts"
-		echo " "
-		echo "1. All (${all_threads})"
-		echo "2. Half (${half_threads})"
-		echo "3. input manually "
+
+	banner
+	echo ""
+	echo "How many threads do you want to allocate for this tool?"
+	echo ""
+	echo "Allocating more threads will speed up the following tasks:"
+	echo "  - Compressing with zstd"
+	echo "  - Decompiling payload.bin"
+	echo "  - Compiling & Decompiling EROFS"
+	echo "  - Checking and generating missing fs_config"
+	echo "  - Checking and generating missing file_contexts"
+	echo " "
+	echo "1. All (${all_threads})"
+	echo "2. Half (${half_threads})"
+	echo "3. input manually "
 			
-		read -p "" choose
-		case $choose in
-			1 ) local allocated_threads=$all_threads;;
-			2 ) local allocated_threads=$half_threads;;
-			3 ) 
-				clear
-				echo "input how many threads you wanna allocate:"
-				read
-				local allocated_threads=$REPLY;;
-			* ) threads_allocation_popup;;
-		esac
+	read -p "" choose
+	case $choose in
+		1 ) local allocated_threads=$all_threads;;
+		2 ) local allocated_threads=$half_threads;;
+		3 ) 
+			clear
+			echo "input how many threads you wanna allocate:"
+			read
+			local allocated_threads=$REPLY;;
+		* ) threads_allocation_popup;;
+	esac
 		
-		echo "$allocated_threads" > $DIRSCRIPTS/allocated_threads
+	sed -i "s/allocated_threads=none/allocated_threads=${allocated_threads}/g" $ROMTOOLSCONF
+}
+
+set_usable_threads() {
+	if [[ $(getvalue allocated_threads $ROMTOOLSCONF) != "none" ]]; then
+		usable_threads=$(getvalue allocated_threads $ROMTOOLSCONF)
+	else
+		threads_allocation_popup
+		usable_threads=$(getvalue allocated_threads $ROMTOOLSCONF)
 	fi
 }
 
@@ -2897,7 +2912,7 @@ merge_main() {
 mount_main() {
 	banner
 	echo " "
-	echo "put your images in $WORKDIR"
+	echo "put your images in $PRJDIR"
 	echo " "
 	echo "1. Mount raw image and resize"
 	echo "2. Mount without resizing"
@@ -3128,9 +3143,121 @@ payload_main() {
 	esac
 }
 
+prj_setenv() {
+	export PRJDIR=$1
+	export superdir=$PRJDIR/super
+	export ext4dir=$PRJDIR/EXT4
+	export erofsdir=$PRJDIR/erofs
+	export f2fsdir=$PRJDIR/F2FS
+	export u_bootdir=$PRJDIR/boot
+}
+
+prj_open() {
+	prjname=$1
+	sed -i "s/^last_prj=.*/last_prj=${prjname}/" $ROMTOOLSCONF
+	prj_setenv $WORKDIR/$prjname
+	start_tools
+}
+
+prj_create() {
+	echo ""
+	while true; do
+        read -p "Input project name: " prjname
+        if [[ "$prjname" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+			if [[ ! -d $WORKDIR/$prjname ]]; then
+				break
+			else
+				echo -e "${R}Project named $prjname already exists!${NC}"
+			fi
+        else
+            echo -e "${R}Invalid name! Please use only letters, numbers, hyphens (-), and underscores (_)."
+            echo -e "No spaces or special characters are allowed.${NC}"
+        fi
+    done
+	mkdir -p $WORKDIR/$prjname
+	prj_open $prjname
+}
+
+prj_delete() {
+	banner
+	echo ""
+	if ls -l $WORKDIR | grep '^d' > /dev/null 2>&1 ; then
+	   echo "Select project that you want to delete:"
+	   find $WORKDIR -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | awk '{print NR ".", $0}'
+	fi
+	echo "a. Delete all projects"
+	echo "x. Go back"
+	read
+	local CHOOSE=$REPLY
+	if [[ $CHOOSE == "a" ]]; then
+	   banner
+	   echo ""
+	   echo "Deleting all projects..."
+	   rm -rf $WORKDIR/*
+	   sed -i "s/^last_prj=.*/last_prj=none/" $ROMTOOLSCONF
+	   PRJDIR=none
+	   echo -e "${G}Done!${NC}"
+	   restart_tool
+	elif [[ $CHOOSE == "x" ]]; then
+	   prj_selector
+	elif [[ $CHOOSE == "" ]]; then
+	   prj_delete
+	else
+	   PRJNAME=$(find $WORKDIR -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
+	   rm -rf $WORKDIR/$PRJNAME
+	   sed -i "s/last_prj=${PRJNAME}/last_prj=none/g" $ROMTOOLSCONF
+	   if [[ $PRJDIR == $PRJNAME ]]; then
+		  PRJDIR=none
+	   fi
+	   prj_selector
+	   if [[ $PRJNAME == "" ]]; then
+	      prj_delete
+	   fi
+	fi
+}
+
+prj_selector() {
+	banner
+	echo ""
+	if ls -l $WORKDIR | grep '^d' > /dev/null 2>&1 ; then
+	   echo "Select project:"
+	   find $WORKDIR -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | awk '{print NR ".", $0}'
+	else
+	   echo -e "${R}No existing project(s) found! Create a project first!${NC}"
+	   prj_create
+	fi
+	echo ""
+	echo "c. Create new project"
+	echo "o. Open last opened project"
+	echo "d. Delete project(s)"
+	echo "x. Exit tool"
+	read
+	local CHOOSE=$REPLY
+	if [[ $CHOOSE == "c" ]]; then
+	   banner
+	   prj_create
+	elif [[ $CHOOSE == "o" ]]; then
+	   prj_open $(getvalue last_prj $ROMTOOLSCONF)
+	elif [[ $CHOOSE == "d" ]]; then
+	   prj_delete
+	elif [[ $CHOOSE == "x" ]]; then
+	   clear
+	   exit 0
+	elif [[ $CHOOSE == "" ]]; then
+	   prj_selector
+	else
+	   PRJNAME=$(find $WORKDIR -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | awk '{print NR ".", $0}' | grep -E "\b${CHOOSE}.(\s|$)" | awk '{print $2}')
+	   prj_open $PRJNAME
+	   if [[ $PRJNAME == "" ]]; then
+	      prj_selector
+	   fi
+	fi
+}
+
 start_tools() {
 	setup
 	banner
+	echo -e "${LC}Project: $(getvalue last_prj $ROMTOOLSCONF)${NC}"
 	echo " "
 	echo "0. Android Boot Image Editor"
 	echo "1. Super partition tools"
@@ -3145,6 +3272,7 @@ start_tools() {
 	echo "10. Custom Scripts"
 	echo "11. Merge fs context and config to system"
 	echo "12. Zstd Tools"
+	echo "p. Switch project"
 	echo "c. Clean up folders"
 	echo "i. Install proprietary packages"
 	echo "x. Exit tool"
@@ -3164,8 +3292,9 @@ start_tools() {
 		10 ) custom_scripts; restart_tool;;
 		11 ) merge_main; restart_tool;;
 		12 ) zstd_main; restart_tool;;
-		i ) install_proprietary; restart_tool;;
+		p ) prj_selector;;
 		c ) clean; restart_tool;;
+		i ) install_proprietary; restart_tool;;
 		x ) clear; exit 0;;
 		* ) start_tools;;
 	esac
