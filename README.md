@@ -43,12 +43,22 @@ After setting up, you can just type `romtools` in terminal to start it.
 | Erofs                                   |
 | Sparsechunk                             |
 | Payload                                 |
+
+***
+### Uninstallation ###
+To completely remove the tool from your system, run the start script with the uninstall flag:
+```shell
+romtools --uninstall
+# or
+romtools -u
+```
+
 ***
 ### System compatibility ###
 - Linux x86_64 (distributions based on Arch, Debian, RedHat, and OpenSUSE are supported)
 - Windows WSL (features like image mounting and unmounting are unavailable)
-***
 
+***
 ### Credits ###
 
 [cfig](https://github.com/cfig/Android_boot_image_editor)

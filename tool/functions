@@ -3143,6 +3143,13 @@ payload_main() {
 	esac
 }
 
+uninstall_tool() {
+	echo "Uninstalling..."
+	sudo rm -rf $DIRTOOLS /bin/romtools
+	echo -e "${G}Done!${NC}"
+	exit 0
+}
+
 prj_setenv() {
 	export PRJDIR=$1
 	export superdir=$PRJDIR/super

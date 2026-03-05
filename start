@@ -2,4 +2,8 @@
 script_dir=$(dirname "$(realpath "$0")")
 source $script_dir/tool/functions
 
+if [[ $1 == "-u" ]] || [[ $1 == "--uninstall" ]]; then
+    uninstall_tool
+fi
+
 start_tools
