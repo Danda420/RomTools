@@ -8,6 +8,7 @@ ABIEBIN=$BIN/booteditor
 DIRIN=$DIRTOOLS/input
 DIROUT=$DIRTOOLS/output
 WORKDIR=$DIRTOOLS/ROM_WORKDIR
+TMPDIR=$DIRSCRIPTS/tmp
 export PRJDIR=${PRJDIR:-none}
 export superdir=${superdir:-none}
 export ext4dir=${ext4dir:-none}
@@ -59,6 +60,8 @@ booteditor_banner() {
 
 getvalue() { grep "^$1=" "$2" 2>/dev/null | tail -n1 | cut -d= -f2-; }
 
+gen_randomstring() { tr -dc 'a-zA-Z0-9' < /dev/urandom | head -c 16; }
+
 give_perm() {
 	local partition=$1
 	sudo chown -R $USER:$USER $PRJDIR/$partition > /dev/null 2>&1
@@ -82,10 +85,14 @@ restore_perm() {
 setup() {
 	clear
 	set_usable_threads
-	if [[ ! -d $WORKDIR ]] || [[ ! -d $DIRIN ]] || [[ ! -d $DIROUT ]]; then
+	if [[ ! -d $WORKDIR ]] ||
+	[[ ! -d $DIRIN ]] ||
+	[[ ! -d $DIROUT ]] ||
+	[[ ! -d $TMPDIR ]]; then
 		mkdir -p $DIRIN \
 		         $DIROUT \
-		         $WORKDIR
+		         $WORKDIR \
+				 $TMPDIR
 	fi
 
 	local romtools_bin=/bin/romtools
@@ -112,6 +119,7 @@ clean() {
 	rm -rf $DIRIN \
 	       $DIROUT \
 	       $PRJDIR/* \
+		   $TMPDIR \
 		   $ABIEBIN/uiderrors \
 		   $ABIEBIN/*.img*
 		   
@@ -1341,7 +1349,7 @@ sparsechunk_comp() {
 	echo "Input output file name/pattern (default is "${FILE}.img_sparsechunk" if you leave this empty):"
 	read
 	local outpattern=$REPLY
-	if [[ $outpattern == "" ]]; then
+	if [[ $outpattern == "" ]] || [[ $outpattern == " " ]]; then
 		local outpattern=${FILE}.img_sparsechunk
 	fi
 	echo "Input chunk size in MiB (default is 512 if you leave this empty):"
@@ -1460,7 +1468,7 @@ mount_imgs() {
 	local images=$(ls -l $PRJDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
 	for partition in $images; do
 		mkdir -p $PRJDIR/$partition
-		sudo mount -t ext4 -o $OPTIONS $PRJDIR/${partition}.img $PRJDIR/$partition > /dev/null 2>&1
+		sudo mount -t auto -o $OPTIONS $PRJDIR/${partition}.img $PRJDIR/$partition > /dev/null 2>&1
 		give_perm $partition
 	done
 }
@@ -1676,14 +1684,6 @@ payload_compile() {
 
 	local firmwareimages=$(cat $DIRSCRIPTS/common_firmware_images)
 
-	if grep -qEi "(Microsoft|WSL)" /proc/version; then
-		echo ""
-		echo "Since you're running this tool on WSL, and WSL doesn't support mounting images"
-		echo "you need to input the name of partition that has checkpoint_gc binary. for ex: vendor (dont add any extension like: vendor.img)"
-		read
-		local postinstall_partition=$REPLY
-	fi
-
 	echo ""
 	echo "Collecting required files and values from files provided..."
 
@@ -1691,24 +1691,22 @@ payload_compile() {
 
 	local dp_part=$(find $BIN/payloadRepackTool/IMAGES/ -maxdepth 1 -name "*.img" | sed 's#.*/##' | grep -v -x -f <(echo "$firmwareimages") | sed 's/.img//g' | tr '\n' ' ')
 
-	if ! grep -qEi "(Microsoft|WSL)" /proc/version; then
-		local partlist=$(find $BIN/payloadRepackTool/IMAGES/ -maxdepth 1 -name "*.img" | sed 's#.*/##' | grep -v -x -f <(echo "$firmwareimages") | tr '\n' ' ')
-		for partition in $(echo $partlist); do                        
-			mkdir -p $BIN/payloadRepackTool/IMAGES/${partition}_mnt
-			sudo mount -t auto -o loop $BIN/payloadRepackTool/IMAGES/$partition $BIN/payloadRepackTool/IMAGES/${partition}_mnt
-		done
-		for part in $(echo $dp_part); do
-			if [[ $(sudo find $BIN/payloadRepackTool/IMAGES/ -type f -name "checkpoint_gc" | grep "${part}.img_mnt") != "" ]]; then
-				echo "Found checkpoint_gc at $part"
-				local postinstall_partition=$part
-				break
-			fi
-		done
-		for partition in $(echo $partlist); do
-			sudo umount $BIN/payloadRepackTool/IMAGES/${partition}_mnt
-			rm -rf $BIN/payloadRepackTool/IMAGES/${partition}_mnt
-		done
-	fi
+	local partlist=$(find $BIN/payloadRepackTool/IMAGES/ -maxdepth 1 -name "*.img" | sed 's#.*/##' | grep -v -x -f <(echo "$firmwareimages") | tr '\n' ' ')
+	for partition in $(echo $partlist); do                        
+		mkdir -p $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+		sudo mount -t auto -o loop $BIN/payloadRepackTool/IMAGES/$partition $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+	done
+	for part in $(echo $dp_part); do
+		if [[ $(sudo find $BIN/payloadRepackTool/IMAGES/ -type f -name "checkpoint_gc" | grep "${part}.img_mnt") != "" ]]; then
+			echo "Found checkpoint_gc at $part"
+			local postinstall_partition=$part
+			break
+		fi
+	done
+	for partition in $(echo $partlist); do
+		sudo umount $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+		rm -rf $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+	done
 
 	echo ""
 	echo "Reading configurations from $DIRSCRIPTS/dynamic_partitions.conf..."
@@ -1793,19 +1791,6 @@ payload_compile_ota() {
 
 	local firmwareimages=$(cat $DIRSCRIPTS/common_firmware_images)
 
-	if grep -qEi "(Microsoft|WSL)" /proc/version && [[ ! -f $DIRIN/build.prop ]]; then
-		echo ""
-		echo "Since WSL doesn't support mounting images, you can unpack your system.img, take system build.prop"
-		echo "then put your system build.prop into $DIRIN then try compiling again."
-		restart_tool
-	fi
-	if grep -qEi "(Microsoft|WSL)" /proc/version; then
-		echo ""
-		echo "Since you're running this tool on WSL, and WSL doesn't support mounting images"
-		echo "you need to input the name of partition that has checkpoint_gc binary. for ex: vendor (dont add any extension like: vendor.img)"
-		read
-		local postinstall_partition=$REPLY
-	fi
 	echo ""
 	echo "Input your supported devices codename (if more than one, separate it with a comma. like this: alioth,aliothin)"
 	read
@@ -1819,28 +1804,24 @@ payload_compile_ota() {
 	local dp_part=$(find $BIN/payloadRepackTool/IMAGES/ -maxdepth 1 -name "*.img" | sed 's#.*/##' | grep -v -x -f <(echo "$firmwareimages") | sed 's/.img//g' | tr '\n' ' ')
 	local ab_part=$(find $BIN/payloadRepackTool/IMAGES/ -maxdepth 1 -name "*.img" | grep -v -x -f <(echo "$firmwareimages") | sed 's#.*/##; s/.img//g')
 
-	if grep -qEi "(Microsoft|WSL)" /proc/version; then
-		mv $DIRIN/build.prop $BIN/payloadRepackTool/SYSTEM/build.prop
-	else
-		local partlist=$(find $BIN/payloadRepackTool/IMAGES/ -maxdepth 1 -name "*.img" | sed 's#.*/##' | grep -v -x -f <(echo "$firmwareimages") | tr '\n' ' ')
-		for partition in $(echo $partlist); do                        
-			mkdir -p $BIN/payloadRepackTool/IMAGES/${partition}_mnt
-			sudo mount -t auto -o loop $BIN/payloadRepackTool/IMAGES/$partition $BIN/payloadRepackTool/IMAGES/${partition}_mnt
-		done
-		for part in $(echo $dp_part); do
-			if [[ $(sudo find $BIN/payloadRepackTool/IMAGES/ -type f -name "checkpoint_gc" | grep "${part}.img_mnt") != "" ]]; then
-				echo "Found checkpoint_gc at $part"
-				local postinstall_partition=$part
-				break
-			fi
-		done
-		sudo cp $BIN/payloadRepackTool/IMAGES/system.img_mnt/system/build.prop $BIN/payloadRepackTool/SYSTEM/build.prop
-		sudo chown $USER:$USER $BIN/payloadRepackTool/SYSTEM/build.prop
-		for partition in $(echo $partlist); do
-			sudo umount $BIN/payloadRepackTool/IMAGES/${partition}_mnt
-			rm -rf $BIN/payloadRepackTool/IMAGES/${partition}_mnt
-		done
-	fi
+	local partlist=$(find $BIN/payloadRepackTool/IMAGES/ -maxdepth 1 -name "*.img" | sed 's#.*/##' | grep -v -x -f <(echo "$firmwareimages") | tr '\n' ' ')
+	for partition in $(echo $partlist); do                        
+		mkdir -p $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+		sudo mount -t auto -o loop $BIN/payloadRepackTool/IMAGES/$partition $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+	done
+	for part in $(echo $dp_part); do
+		if [[ $(sudo find $BIN/payloadRepackTool/IMAGES/ -type f -name "checkpoint_gc" | grep "${part}.img_mnt") != "" ]]; then
+			echo "Found checkpoint_gc at $part"
+			local postinstall_partition=$part
+			break
+		fi
+	done
+	sudo cp $BIN/payloadRepackTool/IMAGES/system.img_mnt/system/build.prop $BIN/payloadRepackTool/SYSTEM/build.prop
+	sudo chown $USER:$USER $BIN/payloadRepackTool/SYSTEM/build.prop
+	for partition in $(echo $partlist); do
+		sudo umount $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+		rm -rf $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+	done
 
 	if [[ $(getvalue "ro.build.fingerprint" $BIN/payloadRepackTool/SYSTEM/build.prop) == "" ]]; then
 		local fp_prop=$(getvalue ro.system.build.fingerprint $BIN/payloadRepackTool/SYSTEM/build.prop)
@@ -2334,12 +2315,15 @@ super_u_sparse() {
 		fi
 		echo " "
 		echo "Unpacking $imgname.img..."
-		simg2img $DIRIN/$imgname.img $DIRIN/${imgname}_tmp.img
+
+	   	local supertmp=$(gen_randomstring)
+
+		simg2img $DIRIN/$imgname.img $TMPDIR/${supertmp}.img
 		rm -rf $DIRIN/$imgname.img
 		mkdir -p $superdir/config
-		lpdump --slot=0 $DIRIN/${imgname}_tmp.img > $superdir/config/super_config.txt
-		lpunpack $DIRIN/${imgname}_tmp.img $PRJDIR/super
-		rm -rf $DIRIN/${imgname}_tmp.img 
+		lpdump --slot=0 $TMPDIR/${supertmp}.img > $superdir/config/super_config.txt
+		lpunpack $TMPDIR/${supertmp}.img $PRJDIR/super
+		rm -rf $TMPDIR/${supertmp}.img 
 
 		echo " "
 		echo -e "${G}Done! Output : $PRJDIR/super ${NC}"
@@ -2368,13 +2352,15 @@ super_u_sparsechunk() {
 	   fi
 	   echo ""
 	   echo "Converting sparsechunk into raw image"
+
+	   local supertmp=$(gen_randomstring)
 	   
-	   if simg2img $DIRIN/$SPARSECHUNK.* $DIRIN/super_tmp.img; then
+	   if simg2img $DIRIN/$SPARSECHUNK.* $TMPDIR/${supertmp}.img; then
 	       rm -rf $DIRIN/$SPARSECHUNK.*
 		   mkdir -p $superdir/config
-		   lpdump --slot=0 $DIRIN/super_tmp.img> $superdir/config/super_config.txt
-		   lpunpack $DIRIN/super_tmp.img $PRJDIR/super
-		   rm -rf $DIRIN/super_tmp.img
+		   lpdump --slot=0 $TMPDIR/${supertmp}.img > $superdir/config/super_config.txt
+		   lpunpack $TMPDIR/${supertmp}.img $PRJDIR/super
+		   rm -rf $TMPDIR/${supertmp}.img
 	       echo -e "${G}Done! Output : $PRJDIR/super ${NC}"
 	   else
 	       echo -e "${R}Conversion Failed! ${NC}"
@@ -2402,18 +2388,20 @@ super_u_zstd() {
 			rm -rf $superdir
 		fi
 		mv $DIRIN/$filename $DIRIN/$filename.zst
+
+	   local supertmp=$(gen_randomstring)
 		
 		echo " "
 		echo "Decompressing $filename (zstd)"
-		zstd -d $DIRIN/$filename.zst -o $DIRIN/super.img
+		zstd -d $DIRIN/$filename.zst -o $TMPDIR/${supertmp}.img
 		rm -rf $DIRIN/$filename.*
 
 		echo " "
 		echo "Unpacking super..."
 		mkdir -p $superdir/config
-		lpdump --slot=0 $DIRIN/super.img > $superdir/config/super_config.txt
-		lpunpack $DIRIN/super.img $PRJDIR/super
-		rm -rf $DIRIN/super.img
+		lpdump --slot=0 $TMPDIR/${supertmp}.img > $superdir/config/super_config.txt
+		lpunpack $TMPDIR/${supertmp}.img $PRJDIR/super
+		rm -rf $TMPDIR/${supertmp}.img
 
 		echo " "
 		echo -e "${G}Done! Output : $PRJDIR/super ${NC}"
@@ -2555,6 +2543,9 @@ super_r() {
 	   esac
 	done
 
+	local supertmp=$(gen_randomstring)
+	local superbuildscript=$(gen_randomstring)
+
 	if [[ $meta_slot == 1 ]] || [[ $meta_slot == 2 ]]; then
 		echo " "
 		echo "A only detected..."
@@ -2585,16 +2576,16 @@ super_r() {
 			echo ""
 			echo "Compiling super : $imgname.img (raw)..."
 			
-			echo "#!/bin/bash" > $DIRSCRIPTS/build_super
-			echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot --device=super:$size_super:$first_sector --group=$group_table:$max_size_super \\" >> $DIRSCRIPTS/build_super
+			echo "#!/bin/bash" > $TMPDIR/${superbuildscript}.sh
+			echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot --device=super:$size_super:$first_sector --group=$group_table:$max_size_super \\" >> $TMPDIR/${superbuildscript}.sh
 
 			for partition in $part_list; do
 				local partition_size=$(ls -nl $superdir/$partition.img | awk '{print $5}')
-				echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$superdir/$partition.img \\" >> $DIRSCRIPTS/build_super
+				echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$superdir/$partition.img \\" >> $TMPDIR/${superbuildscript}.sh
 			done
 
-			echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super
-			echo "exit 0" >> $DIRSCRIPTS/build_super
+			echo "--output=$TMPDIR/${supertmp}.img" >> $TMPDIR/${superbuildscript}.sh
+			echo "exit 0" >> $TMPDIR/${superbuildscript}.sh
 		fi
 	elif [[ $meta_slot == 3 ]]; then
 		echo " "
@@ -2641,33 +2632,33 @@ super_r() {
 			echo ""
 			echo "Compiling super : $imgname.img (raw)..."
 			
-			echo "#!/bin/bash" > $DIRSCRIPTS/build_super
+			echo "#!/bin/bash" > $TMPDIR/${superbuildscript}.sh
 			if [[ $group_table2 != "" ]]; then
-				echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super --group=$group_table2:$max_size_super2 \\" >> $DIRSCRIPTS/build_super
+				echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super --group=$group_table2:$max_size_super2 \\" >> $TMPDIR/${superbuildscript}.sh
 			else
-				echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super \\" >> $DIRSCRIPTS/build_super
+				echo "lpmake --metadata-size=$meta_size --super-name=super --metadata-slots=$meta_slot ${virtualABOption}--device=super:$size_super:$first_sector --group=$group_table:$max_size_super \\" >> $TMPDIR/${superbuildscript}.sh
 			fi
 			
 			for partition in $ab_part_list; do
 				local partition_size=$(ls -nl $superdir/$partition.img | awk '{print $5}')
-				echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$superdir/$partition.img \\" >> $DIRSCRIPTS/build_super
+				echo "--partition=$partition:none:$partition_size:$group_table --image=$partition=$superdir/$partition.img \\" >> $TMPDIR/${superbuildscript}.sh
 			done
 			if [[ $group_table2 != "" ]]; then
 				for partition in $ab_part_list_empty; do
-					echo "--partition=$partition:none:0:$group_table2 \\" >> $DIRSCRIPTS/build_super
+					echo "--partition=$partition:none:0:$group_table2 \\" >> $TMPDIR/${superbuildscript}.sh
 				done
 			fi
-			echo "--output=$DIRIN/$imgname.img" >> $DIRSCRIPTS/build_super
-			echo "exit 0" >> $DIRSCRIPTS/build_super
+			echo "--output=$TMPDIR/${supertmp}.img" >> $TMPDIR/${superbuildscript}.sh
+			echo "exit 0" >> $TMPDIR/${superbuildscript}.sh
 		fi
 	else
 		echo -e "${R}Meta slot $meta_slot is not supported! ${NC}"
 	fi
 
-	chmod 755 $DIRSCRIPTS/build_super
-	$DIRSCRIPTS/build_super
-	rm -rf $DIRSCRIPTS/build_super
-	if [[ -f $DIRIN/$imgname.img ]]; then
+	chmod 755 $TMPDIR/${superbuildscript}.sh
+	$TMPDIR/${superbuildscript}.sh
+	rm -rf $TMPDIR/${superbuildscript}.sh
+	if [[ -f $TMPDIR/${supertmp}.img ]]; then
 		rm -rf $superdir
 	else
 		echo ""
@@ -2678,7 +2669,7 @@ super_r() {
 	case $COMPRESSION in
 	   "raw" )
 		echo " "
-		mv $DIRIN/$imgname.img $DIROUT/$imgname.img
+		mv $TMPDIR/${supertmp}.img $DIROUT/$imgname.img
 		if [[ -f $DIROUT/$imgname.img ]] && [[ $(ls -l $DIROUT/$imgname.img | awk '{print $5}') != "0" ]]; then
 		   echo -e "${G}super build done! Output : $DIROUT/$imgname.img ${NC}"
 		else
@@ -2688,9 +2679,9 @@ super_r() {
 		
 	   "sparse" )
 		echo " "
-		echo "Converting raw $imgname.img to sparse..."
-		if python3 $PYSCRIPTS/img2simg.py $DIRIN/$imgname.img -o $DIROUT/$imgname.sparse.img > /dev/null 2>&1; then
-		   rm -rf $DIRIN/$imgname.img
+		echo "Converting raw super to sparse..."
+		if python3 $PYSCRIPTS/img2simg.py $TMPDIR/${supertmp}.img -o $DIROUT/$imgname.sparse.img > /dev/null 2>&1; then
+		   rm -rf $TMPDIR/${supertmp}.img
 		   echo -e "${G}super build done! Output : $DIROUT/$imgname.sparse.img ${NC}"
 		else
 		   echo -e "${R}Build Failed! ${NC}"
@@ -2699,9 +2690,9 @@ super_r() {
 
 	   "sparsechunk" )
 	    echo " "
-	    echo "Converting raw $imgname.img to sparsechunk..."
-	    if python3 $PYSCRIPTS/img2simg.py $DIRIN/$imgname.img -S $CHUNKSIZE -o $DIROUT/$CHUNKOUTPATTERN; then
-	       rm -rf $DIRIN/$imgname.img
+	    echo "Converting raw super to sparsechunk..."
+	    if python3 $PYSCRIPTS/img2simg.py $TMPDIR/${supertmp}.img -S $CHUNKSIZE -o $DIROUT/$CHUNKOUTPATTERN; then
+	       rm -rf $TMPDIR/${supertmp}.img
 	       echo -e "${G}super build done! Output : $DIROUT/$CHUNKOUTPATTERN.* ${NC}"
 	    else
 	       echo -e "${R}Build Failed! ${NC}"
@@ -2710,12 +2701,12 @@ super_r() {
 		
 	   "dat" )
 		echo " "
-		echo "Converting raw $imgname.img to sparse..."
-		python3 $PYSCRIPTS/img2simg.py $DIRIN/$imgname.img -o $DIRIN/$imgname.sparse.img > /dev/null 2>&1
-		rm -rf $DIRIN/$imgname.img
+		echo "Converting raw super to sparse..."
+		python3 $PYSCRIPTS/img2simg.py $TMPDIR/${supertmp}.img -o $DIRIN/$imgname.sparse.img > /dev/null 2>&1
+		rm -rf $TMPDIR/${supertmp}.img
 		
 		echo " "
-		echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
+		echo "Converting super (sparse) to $imgname.new.dat..."
 		python3 $PYSCRIPTS/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIROUT/ -v 4 -p $imgname > /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.sparse.img
 		if [[ -f $DIROUT/$imgname.new.dat ]] && [[ $(ls -l $DIROUT/$imgname.new.dat | awk '{print $5}') != "0" ]]; then
@@ -2727,12 +2718,12 @@ super_r() {
 	   
 	   "br" )
 		echo " "
-		echo "Converting raw $imgname.img to sparse..."
-		python3 $PYSCRIPTS/img2simg.py $DIRIN/$imgname.img -o $DIRIN/$imgname.sparse.img > /dev/null 2>&1
-		rm -rf $DIRIN/$imgname.img
+		echo "Converting raw super to sparse..."
+		python3 $PYSCRIPTS/img2simg.py $TMPDIR/${supertmp}.img -o $DIRIN/$imgname.sparse.img > /dev/null 2>&1
+		rm -rf $TMPDIR/${supertmp}.img
 		
 		echo " "
-		echo "Converting $imgname.img (sparse) to $imgname.new.dat..."
+		echo "Converting super (sparse) to $imgname.new.dat..."
 		python3 $PYSCRIPTS/img2sdat.py $DIRIN/$imgname.sparse.img -o $DIROUT/ -v 4 -p $imgname > /dev/null 2>&1
 		rm -rf $DIRIN/$imgname.sparse.img 
 		
@@ -2750,9 +2741,9 @@ super_r() {
 	   
 	   "zstd" )
 		echo " "
-		echo "Compressing $imgname.img to ${imgname}$ZSTDSUFFIX (zstd)"
-		if zstd -${ZSTDLVL} -T${usable_threads} $DIRIN/$imgname.img -o $DIROUT/${imgname}$ZSTDSUFFIX; then
-		   rm -rf $DIRIN/$imgname.img
+		echo "Compressing raw super to ${imgname}$ZSTDSUFFIX (zstd)"
+		if zstd -${ZSTDLVL} -T${usable_threads} $TMPDIR/${supertmp}.img -o $DIROUT/${imgname}$ZSTDSUFFIX; then
+		   rm -rf $TMPDIR/${supertmp}.img
 		   echo " "
 		   echo -e "${G}super build done! Output : $DIROUT/${imgname}$ZSTDSUFFIX ${NC}"
 		else
@@ -2919,15 +2910,13 @@ mount_main() {
 	echo "put your images in $PRJDIR"
 	echo " "
 	echo "1. Mount raw image and resize"
-	echo "2. Mount without resizing"
-	echo "3. Mount read only"
+	echo "2. Mount without resizing (readonly if ext4 with avb/erofs)"
 	echo "x. Back to main menu"
 	    
 	read -p "" choose
 	case $choose in
 		1 ) mount_resize; restart_tool;;
 		2 ) mount_imgs "loop"; restart_tool;;
-		3 ) mount_imgs "ro,nosuid,nodev,relatime,uhelper=udisks2,loop"; restart_tool;;
 		x ) start_tools;;
 		* ) mount_main;;
 	esac
