@@ -567,10 +567,10 @@ rebuild_ext4(){
 		local SIZE=`sudo du -sk $PRJDIR/rebuildimg/$partition | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 	fi
 	echo "- Rebuilding $partition..."
-	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
-		local mountpoint=""
-	else
-		local mountpoint=$partition
+
+	local mountpoint="$partition"
+	if [[ "$partition" =~ ^system(_[ab])?$ ]]; then
+		mountpoint=""
 	fi
 	if sudo $BIN/make_ext4fs -J -T -1 \
 		   -S "$PRJDIR/rebuildimg/config/$partition/${partition}_file_contexts" \
@@ -775,10 +775,10 @@ repack_ext4_cmd() {
 	local SIZE=$2
 	$BIN/gen_fs-config -t ${usable_threads} -p $ext4dir/$partition -c $ext4dir/config/$partition/${partition}_fs_config $3
 	$BIN/gen_file-contexts -t ${usable_threads} -a -f ext4 -p $ext4dir/$partition -c $ext4dir/config/$partition/${partition}_file_contexts $3
-	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
-		local mountpoint=""
-	else
-		local mountpoint=$partition
+
+	local mountpoint="$partition"
+	if [[ "$partition" =~ ^system(_[ab])?$ ]]; then
+		mountpoint=""
 	fi
 	$BIN/make_ext4fs -J -T -1 \
 		-S "$ext4dir/config/$partition/${partition}_file_contexts" \
@@ -819,12 +819,10 @@ repack_ext4_as_f2fs_cmd() {
 	local partition=$1
 	local SIZE=$(( ((54 * 1024 * 1024) + $(du -sb "$ext4dir/$partition" | awk '{print $1}') ) * 115 / 100 + 1))
 
-	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
-		local mountpoint=""
-	else
-		local mountpoint=$partition
+	local mountpoint="$partition"
+	if [[ "$partition" =~ ^system(_[ab])?$ ]]; then
+		mountpoint=""
 	fi
-
 	local context=$(head -n 1 $ext4dir/config/$partition/${partition}_file_contexts | awk '{print $2}') 
 	sed -i "/([/].*)? /d" $ext4dir/config/$partition/${partition}_file_contexts
 	sed -i "1i / $context\n/${partition}(/.*)? $context" $ext4dir/config/$partition/${partition}_file_contexts
@@ -839,11 +837,6 @@ repack_ext4_as_f2fs_cmd() {
 		-O sb_checksum \
 		-O compression -f
 
-	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
-		local mountpoint=""
-	else
-		local mountpoint=$partition
-	fi
 	$BIN/sload.f2fs -f "$ext4dir/$partition" \
 		-C "$ext4dir/config/$partition/${partition}_fs_config" \
 		-s "$ext4dir/config/$partition/${partition}_file_contexts" \
@@ -857,10 +850,10 @@ repack_erofs_as_ext4_cmd() {
 	local SIZE=$2
 	$BIN/gen_fs-config -t ${usable_threads} -p $erofsdir/$partition -c $erofsdir/config/${partition}_fs_config -q
 	$BIN/gen_file-contexts -t ${usable_threads} -a -f ext4 -p $erofsdir/$partition -c $erofsdir/config/${partition}_file_contexts -q
-	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
-		local mountpoint=""
-	else
-		local mountpoint=$partition
+
+	local mountpoint="$partition"
+	if [[ "$partition" =~ ^system(_[ab])?$ ]]; then
+		mountpoint=""
 	fi
 	$BIN/make_ext4fs -J -T -1 \
 		-S "$erofsdir/config/${partition}_file_contexts" \
@@ -886,10 +879,9 @@ repack_erofs_as_f2fs_cmd() {
 		-O sb_checksum \
 		-O compression -f
 
-	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
-		local mountpoint=""
-	else
-		local mountpoint=$partition
+	local mountpoint="$partition"
+	if [[ "$partition" =~ ^system(_[ab])?$ ]]; then
+		mountpoint=""
 	fi
 	if ! $BIN/sload.f2fs -f "$erofsdir/$partition" \
 		-C "$erofsdir/config/${partition}_fs_config" \
@@ -906,10 +898,10 @@ repack_f2fs_as_ext4_cmd() {
 	local SIZE=$2
 	$BIN/gen_fs-config -t ${usable_threads} -p $f2fsdir/$partition -c $f2fsdir/config/${partition}_fs_config -q
 	$BIN/gen_file-contexts -t ${usable_threads} -a -f ext4 -p $f2fsdir/$partition -c $f2fsdir/config/${partition}_file_contexts -q
-	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
-		local mountpoint=""
-	else
-		local mountpoint=$partition
+
+	local mountpoint="$partition"
+	if [[ "$partition" =~ ^system(_[ab])?$ ]]; then
+		mountpoint=""
 	fi
 	$BIN/make_ext4fs -J -T -1 \
 		-S "$f2fsdir/config/${partition}_file_contexts" \
@@ -980,10 +972,9 @@ repack_f2fs_cmd() {
 		-O sb_checksum \
 		-O compression -f
 
-	if [[ $partition == system ]] || [[ $partition == system_a ]] || [[ $partition == system_b ]]; then
-		local mountpoint=""
-	else
-		local mountpoint=$partition
+	local mountpoint="$partition"
+	if [[ "$partition" =~ ^system(_[ab])?$ ]]; then
+		mountpoint=""
 	fi
 	$BIN/sload.f2fs -f "$f2fsdir/$partition" \
 		-C "$f2fsdir/config/${partition}_fs_config" \
@@ -2505,7 +2496,7 @@ super_r() {
 			echo "Input output file name/pattern for sparsechunk (default is "${imgname}.img_sparsechunk" if you leave this empty) :"
 			read
 			local CHUNKOUTPATTERN=$REPLY
-			if [[ $CHUNKOUTPATTERN == "" ]]; then
+			if [[ $CHUNKOUTPATTERN == "" ]] || [[ $outpattern == " " ]]; then
 				local CHUNKOUTPATTERN=${imgname}.img_sparsechunk
 			fi
 			echo "Input chunk size in MiB (default is 512 if you leave this empty):"
