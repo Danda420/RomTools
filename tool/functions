@@ -610,11 +610,11 @@ rebuild_ext4_single() {
 	echo " "
 	file_selector $DIRIN ".img" "Rebuild all ext4 image shown above"
 	for partition in $FILE; do
-		if [[ $(blkid -o value -s TYPE $DIRIN/$partition.img) == ext4 ]]; then
+		if [[ $($sudo_cmd blkid -o value -s TYPE $DIRIN/$partition.img) == ext4 ]]; then
 		  rebuild_ext4
 		else
 		   echo ""
-		   echo -e "${R}$partition.img fs type is $(blkid -o value -s TYPE $DIRIN/$partition.img), aborting... ${NC}"
+		   echo -e "${R}$partition.img fs type is $($sudo_cmd blkid -o value -s TYPE $DIRIN/$partition.img), aborting... ${NC}"
 		fi
 	done
 }
@@ -1005,11 +1005,11 @@ unpack_ext4_erofs_f2fs_img() {
 	echo " "
 	file_selector $DIRIN ".img" "Unpack all .img shown above"
 	for image in $FILE; do
-	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
+	   if [[ $($sudo_cmd blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
 	       unpack_ext4 $image
-	   elif [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
+	   elif [[ $($sudo_cmd blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
 	       unpack_erofs $image
-	   elif [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == f2fs ]]; then
+	   elif [[ $($sudo_cmd blkid -o value -s TYPE $DIRIN/$image.img) == f2fs ]]; then
 	       unpack_f2fs $image
 	   else
 	       echo ""
@@ -1240,11 +1240,11 @@ convert_ext4_erofs_s() {
 	echo " "
 	file_selector $DIRIN ".img"
 	for image in $FILE; do
-	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
+	   if [[ $($sudo_cmd blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
 	      convert_ext4_erofs
 	   else
 	      echo ""
-	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
+	      echo -e "${R}$image.img fs type is $($sudo_cmd blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
 	   fi
 	done
 	restart_tool
@@ -1258,11 +1258,11 @@ convert_ext4_f2fs_s() {
 	echo " "
 	file_selector $DIRIN ".img" "Convert all image shown above to f2fs"
 	for image in $FILE; do
-	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
+	   if [[ $($sudo_cmd blkid -o value -s TYPE $DIRIN/$image.img) == ext4 ]]; then
 	      convert_ext4_f2fs
 	   else
 	      echo ""
-	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
+	      echo -e "${R}$image.img fs type is $($sudo_cmd blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
 	   fi
 	done
 	restart_tool
@@ -1277,11 +1277,11 @@ convert_erofs_ext4_s() {
 	echo " "
 	file_selector $DIRIN ".img" "Convert all image shown above to ext4"
 	for image in $FILE; do
-	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
+	   if [[ $($sudo_cmd blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
 	      convert_erofs_ext4
 	   else
 	      echo ""
-	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
+	      echo -e "${R}$image.img fs type is $($sudo_cmd blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
 	   fi
 	done
 	restart_tool
@@ -1295,11 +1295,11 @@ convert_erofs_f2fs_s() {
 	echo " "
 	file_selector $DIRIN ".img" "Convert all image shown above to f2fs"
 	for image in $FILE; do
-	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
+	   if [[ $($sudo_cmd blkid -o value -s TYPE $DIRIN/$image.img) == erofs ]]; then
 	      convert_erofs_f2fs
 	   else
 	      echo ""
-	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
+	      echo -e "${R}$image.img fs type is $($sudo_cmd blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
 	   fi
 	done
 	restart_tool
@@ -1313,11 +1313,11 @@ convert_f2fs_ext4_s() {
 	echo " "
 	file_selector $DIRIN ".img" "Convert all image shown above to ext4"
 	for image in $FILE; do
-	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == f2fs ]]; then
+	   if [[ $($sudo_cmd blkid -o value -s TYPE $DIRIN/$image.img) == f2fs ]]; then
 	      convert_f2fs_ext4
 	   else
 	      echo ""
-	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
+	      echo -e "${R}$image.img fs type is $($sudo_cmd blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
 	   fi
 	done
 	restart_tool
@@ -1331,11 +1331,11 @@ convert_f2fs_erofs_s() {
 	echo " "
 	file_selector $DIRIN ".img"
 	for image in $FILE; do
-	   if [[ $(blkid -o value -s TYPE $DIRIN/$image.img) == f2fs ]]; then
+	   if [[ $($sudo_cmd blkid -o value -s TYPE $DIRIN/$image.img) == f2fs ]]; then
 	      convert_f2fs_erofs
 	   else
 	      echo ""
-	      echo -e "${R}$image.img fs type is $(blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
+	      echo -e "${R}$image.img fs type is $($sudo_cmd blkid -o value -s TYPE $DIRIN/$image.img), aborting... ${NC}"
 	   fi
 	done
 	restart_tool
@@ -1735,7 +1735,7 @@ payload_compile() {
 	echo "Generating postinstall_config"
 	echo "RUN_POSTINSTALL_${postinstall_partition}=true" > $BIN/payloadRepackTool/META/postinstall_config.txt
 	echo "POSTINSTALL_PATH_${postinstall_partition}=bin/checkpoint_gc" >> $BIN/payloadRepackTool/META/postinstall_config.txt
-	echo "FILESYSTEM_TYPE_${postinstall_partition}=$(blkid -o value -s TYPE $BIN/payloadRepackTool/IMAGES/${postinstall_partition}.img)" >> $BIN/payloadRepackTool/META/postinstall_config.txt
+	echo "FILESYSTEM_TYPE_${postinstall_partition}=$($sudo_cmd blkid -o value -s TYPE $BIN/payloadRepackTool/IMAGES/${postinstall_partition}.img)" >> $BIN/payloadRepackTool/META/postinstall_config.txt
 	echo "#POSTINSTALL_OPTIONAL_${postinstall_partition}=true" >> $BIN/payloadRepackTool/META/postinstall_config.txt
 
 	echo ""
@@ -1885,7 +1885,7 @@ payload_compile_ota() {
 	echo "Generating postinstall_config"
 	echo "RUN_POSTINSTALL_${postinstall_partition}=true" > $BIN/payloadRepackTool/META/postinstall_config.txt
 	echo "POSTINSTALL_PATH_${postinstall_partition}=bin/checkpoint_gc" >> $BIN/payloadRepackTool/META/postinstall_config.txt
-	echo "FILESYSTEM_TYPE_${postinstall_partition}=$(blkid -o value -s TYPE $BIN/payloadRepackTool/IMAGES/${postinstall_partition}.img)" >> $BIN/payloadRepackTool/META/postinstall_config.txt
+	echo "FILESYSTEM_TYPE_${postinstall_partition}=$($sudo_cmd blkid -o value -s TYPE $BIN/payloadRepackTool/IMAGES/${postinstall_partition}.img)" >> $BIN/payloadRepackTool/META/postinstall_config.txt
 	echo "#POSTINSTALL_OPTIONAL_${postinstall_partition}=true" >> $BIN/payloadRepackTool/META/postinstall_config.txt
 
 	echo ""
