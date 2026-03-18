@@ -2883,7 +2883,13 @@ install_proprietary() {
 				restart_tool;;
 			"apt" )
 				for package in android-sdk-libsparse-utils erofs-utils gawk brotli cpio zstd python3-venv python3-dev build-essential openjdk-17-jre-headless; do
-					$sudo_cmd apt install -y "${package}"
+					if ! $sudo_cmd apt install -y "${package}" > /dev/null 2>&1; then
+						case ${package} in
+							openjdk-17-jre-headless)
+								$sudo_cmd apt install -y openjdk-21-jre-headless > /dev/null 2>&1
+							;;
+						esac
+					fi
 				done
 				install_dtc
 				install_lptools
