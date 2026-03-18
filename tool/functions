@@ -27,6 +27,18 @@ if command -v zypper >/dev/null 2>&1; then
 	export PATH=$PATH:/usr/sbin
 fi
 
+# Determine which command to use for privilege escalation
+if [[ $EUID -eq 0 ]]; then
+    sudo_cmd=""
+elif command -v $sudo_cmd > /dev/null 2>&1; then
+    sudo_cmd="sudo"
+elif command -v doas > /dev/null 2>&1; then
+    sudo_cmd="doas"
+else
+    echo "Run this script as root or install sudo/doas."
+    exit 1
+fi
+
 restart_tool() {
 	echo " "
 	while true; do
@@ -64,21 +76,21 @@ gen_randomstring() { tr -dc 'a-zA-Z0-9' < /dev/urandom | head -c 16; }
 
 give_perm() {
 	local partition=$1
-	sudo chown -R $USER:$USER $PRJDIR/$partition > /dev/null 2>&1
+	$sudo_cmd chown -R $USER:$USER $PRJDIR/$partition > /dev/null 2>&1
 }
 
 restore_perm() {
 	local partition=$1
 	if [[ $(echo $partition | grep "vendor") != "" ]]; then
-		sudo chown -R 0:0 $PRJDIR/$partition/
-		sudo chown -R 0:2000 $PRJDIR/$partition/bin
-		sudo chown 0:2000 $(sudo find $PRJDIR/$partition -type d)
+		$sudo_cmd chown -R 0:0 $PRJDIR/$partition/
+		$sudo_cmd chown -R 0:2000 $PRJDIR/$partition/bin
+		$sudo_cmd chown 0:2000 $($sudo_cmd find $PRJDIR/$partition -type d)
 	elif [[ $(echo $partition | grep "system") != "" ]]; then
-		sudo chown -R 0:0 $PRJDIR/$partition
-		sudo chown -R 0:2000 $PRJDIR/$partition/system/bin
+		$sudo_cmd chown -R 0:0 $PRJDIR/$partition
+		$sudo_cmd chown -R 0:2000 $PRJDIR/$partition/system/bin
 	else
-		sudo chown -R 0:0 $PRJDIR/$partition
-		sudo chown -R 0:2000 $PRJDIR/$partition/bin
+		$sudo_cmd chown -R 0:0 $PRJDIR/$partition
+		$sudo_cmd chown -R 0:2000 $PRJDIR/$partition/bin
 	fi
 }
 
@@ -99,12 +111,12 @@ setup() {
 	local startscript=$DIRTOOLS/start
 	if [[ -L $romtools_bin ]]; then
     	if [[ ! -e $romtools_bin || ! -f $romtools_bin ]]; then
-			sudo rm -rf $romtools_bin
-			sudo ln -s "$startscript" $romtools_bin
+			$sudo_cmd rm -rf $romtools_bin
+			$sudo_cmd ln -s "$startscript" $romtools_bin
 		fi
 	else
-		sudo rm -rf $romtools_bin
-		sudo ln -s "$startscript" $romtools_bin
+		$sudo_cmd rm -rf $romtools_bin
+		$sudo_cmd ln -s "$startscript" $romtools_bin
 	fi
 
 	if [[ $PRJDIR == "none" ]]; then
@@ -123,7 +135,7 @@ clean() {
 		   $ABIEBIN/uiderrors \
 		   $ABIEBIN/*.img*
 		   
-	sudo find $DIRSCRIPTS/ -name "__pycache__" -type d -exec rm -rf {} +
+	$sudo_cmd find $DIRSCRIPTS/ -name "__pycache__" -type d -exec rm -rf {} +
 
 	echo -e "${G}Done!${NC}"
 }
@@ -232,17 +244,17 @@ extracted_partition_selector() {
 resize_img(){
 	local DIRIMG_RESIZE=$1
 	if [[ $2 == "smallest" ]]; then
-		sudo e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
-		sudo resize2fs -M $DIRIMG_RESIZE > /dev/null 2>&1
-		sudo e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
+		$sudo_cmd e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
+		$sudo_cmd resize2fs -M $DIRIMG_RESIZE > /dev/null 2>&1
+		$sudo_cmd e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
 	elif [[ $2 == "freespace" ]]; then
-		sudo e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
-		sudo resize2fs -M $DIRIMG_RESIZE > /dev/null 2>&1
-		sudo e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
+		$sudo_cmd e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
+		$sudo_cmd resize2fs -M $DIRIMG_RESIZE > /dev/null 2>&1
+		$sudo_cmd e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
 		local vsizenow=$(ls -nl $DIRIMG_RESIZE | awk '{print $5}')
 		local sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
-		sudo resize2fs $DIRIMG_RESIZE $sizeimg > /dev/null 2>&1
-		sudo e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
+		$sudo_cmd resize2fs $DIRIMG_RESIZE $sizeimg > /dev/null 2>&1
+		$sudo_cmd e2fsck -yf $DIRIMG_RESIZE > /dev/null 2>&1
 	fi
 }
 
@@ -376,8 +388,8 @@ convert_ext4_erofs() {
 	if [[ -d $ext4dir/$image ]]; then
 		rm -rf $ext4dir/$image $ext4dir/config/$image
 	fi
-	sudo $PYSCRIPTS/imgextractor.py $DIRIN/$image.img $ext4dir > /dev/null 2>&1
-	sudo chown -R $USER:$USER $ext4dir
+	$sudo_cmd $PYSCRIPTS/imgextractor.py $DIRIN/$image.img $ext4dir > /dev/null 2>&1
+	$sudo_cmd chown -R $USER:$USER $ext4dir
 
 	echo "- Rebuilding $image as erofs image..."
 	if repack_ext4_as_erofs_cmd $image $compression $legacy > /dev/null 2>&1; then
@@ -398,8 +410,8 @@ convert_ext4_f2fs() {
 	if [[ -d $ext4dir/$image ]]; then
 		rm -rf $ext4dir/$image $ext4dir/config/$image
 	fi
-	sudo $PYSCRIPTS/imgextractor.py $DIRIN/$image.img $ext4dir > /dev/null 2>&1
-	sudo chown -R $USER:$USER $ext4dir
+	$sudo_cmd $PYSCRIPTS/imgextractor.py $DIRIN/$image.img $ext4dir > /dev/null 2>&1
+	$sudo_cmd chown -R $USER:$USER $ext4dir
 
 	echo "- Rebuilding $image as erofs image..."
 	if repack_ext4_as_f2fs_cmd $image > /dev/null 2>&1; then
@@ -426,7 +438,7 @@ convert_erofs_ext4(){
 	local foldersize=$(du -s -B1 $erofsdir/$image | awk '{print $1}')
 	local SIZE=$(($foldersize + $foldersize * 1/10))
 	if (( $SIZE < 1474560 )); then
-	    local SIZE=`sudo du -sk $erofsdir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+	    local SIZE=`$sudo_cmd du -sk $erofsdir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 	fi
 	if repack_erofs_as_ext4_cmd $image $SIZE > /dev/null 2>&1; then
 	   resize_img $DIROUT/$image.ext4.img smallest
@@ -474,7 +486,7 @@ convert_f2fs_ext4() {
 	local foldersize=$(du -s -B1 $f2fsdir/$image | awk '{print $1}')
 	local SIZE=$(($foldersize + $foldersize * 1/10))
 	if (( $SIZE < 1474560 )); then
-	    local SIZE=`sudo du -sk $f2fsdir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+	    local SIZE=`$sudo_cmd du -sk $f2fsdir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 	fi
 	if repack_f2fs_as_ext4_cmd $image $SIZE > /dev/null 2>&1; then
 	   resize_img $DIROUT/$image.ext4.img smallest
@@ -560,11 +572,11 @@ rebuild_ext4(){
 	echo ""
 	echo "- Extracting $partition"
 	mkdir -p $PRJDIR/rebuildimg
-	sudo $PYSCRIPTS/imgextractor.py $DIRIN/$partition.img $PRJDIR/rebuildimg > /dev/null 2>&1
-	local foldersize=$(sudo du -s -B1 $PRJDIR/rebuildimg/$partition | awk '{print $1}')
+	$sudo_cmd $PYSCRIPTS/imgextractor.py $DIRIN/$partition.img $PRJDIR/rebuildimg > /dev/null 2>&1
+	local foldersize=$($sudo_cmd du -s -B1 $PRJDIR/rebuildimg/$partition | awk '{print $1}')
 	local SIZE=$(($foldersize + $foldersize * 1/10))
 	if (( $SIZE < 1474560 )); then
-		local SIZE=`sudo du -sk $PRJDIR/rebuildimg/$partition | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+		local SIZE=`$sudo_cmd du -sk $PRJDIR/rebuildimg/$partition | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 	fi
 	echo "- Rebuilding $partition..."
 
@@ -572,7 +584,7 @@ rebuild_ext4(){
 	if [[ "$partition" =~ ^system(_[ab])?$ ]]; then
 		mountpoint=""
 	fi
-	if sudo $BIN/make_ext4fs -J -T -1 \
+	if $sudo_cmd $BIN/make_ext4fs -J -T -1 \
 		   -S "$PRJDIR/rebuildimg/config/$partition/${partition}_file_contexts" \
 		   -C "$PRJDIR/rebuildimg/config/$partition/${partition}_fs_config" \
 		   -l "$SIZE" \
@@ -587,7 +599,7 @@ rebuild_ext4(){
 	else
 		echo -e "${R}Rebuild Failed! ${NC}"
 	fi
-	sudo rm -rf $PRJDIR/rebuildimg
+	$sudo_cmd rm -rf $PRJDIR/rebuildimg
 }
 
 rebuild_ext4_single() {
@@ -718,8 +730,8 @@ unpack_ext4() {
 		rm -rf $ext4dir/config/$image
 	fi
 	echo ""
-	if sudo $PYSCRIPTS/imgextractor.py $DIRIN/$image.img $ext4dir; then
-		sudo chown -R $USER:$USER $ext4dir
+	if $sudo_cmd $PYSCRIPTS/imgextractor.py $DIRIN/$image.img $ext4dir; then
+		$sudo_cmd chown -R $USER:$USER $ext4dir
 		echo ""
 		echo -e "${G}Output : $ext4dir/$image ${NC}"
 		rm -rf $DIRIN/$image.img
@@ -1018,10 +1030,10 @@ repack_ext4_img_foldersize() {
 		echo ""
 		echo "- Repacking $image..."
 		echo ""
-		local foldersize=$(sudo du -s -B1 $ext4dir/$image | awk '{print $1}')
+		local foldersize=$($sudo_cmd du -s -B1 $ext4dir/$image | awk '{print $1}')
 		local SIZE=$(($foldersize + $foldersize * 1/10))
 		if (( $SIZE < 1474560 )); then
-		    local SIZE=`sudo du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+		    local SIZE=`$sudo_cmd du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
 		if repack_ext4_cmd $image $SIZE; then
 		   resize_img $DIROUT/$image.ext4.img smallest
@@ -1052,10 +1064,10 @@ repack_ext4_img_freespace() {
 		echo ""
 		echo "- Repacking $image..."
 		echo ""
-		local foldersize=$(sudo du -s -B1 $ext4dir/$image | awk '{print $1}')
+		local foldersize=$($sudo_cmd du -s -B1 $ext4dir/$image | awk '{print $1}')
 		local SIZE=$(($foldersize + $foldersize * 1/10))
 		if (( $SIZE < 1474560 )); then
-		    local SIZE=`sudo du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+		    local SIZE=`$sudo_cmd du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
 		if repack_ext4_cmd $image $SIZE; then
 		   resize_img $DIROUT/$image.ext4.img freespace
@@ -1083,7 +1095,7 @@ repack_ext4_img_samesize() {
 		echo ""
 		local SIZE=$(cat $ext4dir/config/$image/${image}_size.txt)
 		if (( $SIZE < 1474560 )); then
-		    local SIZE=`sudo du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+		    local SIZE=`$sudo_cmd du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
 		if repack_ext4_cmd $image $SIZE; then
 		   echo ""
@@ -1111,7 +1123,7 @@ repack_ext4_img_inputsize() {
 		read
 		local SIZE=$REPLY
 		if (( $SIZE < 1474560 )); then
-		    local SIZE=`sudo du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
+		    local SIZE=`$sudo_cmd du -sk $ext4dir/$image | awk '{$1*=1024;$1=int($1*8);printf $1}'`
 		fi
 		echo ""
 		echo "- Repacking $image..."
@@ -1459,7 +1471,7 @@ mount_imgs() {
 	local images=$(ls -l $PRJDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
 	for partition in $images; do
 		mkdir -p $PRJDIR/$partition
-		sudo mount -t auto -o $OPTIONS $PRJDIR/${partition}.img $PRJDIR/$partition > /dev/null 2>&1
+		$sudo_cmd mount -t auto -o $OPTIONS $PRJDIR/${partition}.img $PRJDIR/$partition > /dev/null 2>&1
 		give_perm $partition
 	done
 }
@@ -1478,10 +1490,10 @@ mount_resize() {
 			local vplus=1;
 		fi
 		local sizeimg=$(($readgiga + $vplus))G
-		sudo fallocate -l $sizeimg $PRJDIR/${valset}.img
-		sudo e2fsck -yf $PRJDIR/${valset}.img
-		sudo resize2fs $PRJDIR/${valset}.img $sizeimg
-		sudo e2fsck -yf $PRJDIR/${valset}.img
+		$sudo_cmd fallocate -l $sizeimg $PRJDIR/${valset}.img
+		$sudo_cmd e2fsck -yf $PRJDIR/${valset}.img
+		$sudo_cmd resize2fs $PRJDIR/${valset}.img $sizeimg
+		$sudo_cmd e2fsck -yf $PRJDIR/${valset}.img
 	}
 
 	echo " "
@@ -1495,7 +1507,7 @@ mount_resize() {
 	echo "Mounting partitions..."
 	for partition in $images; do
 		mkdir -p $PRJDIR/$partition
-		sudo mount -t ext4 -o loop $PRJDIR/${partition}.img $PRJDIR/$partition > /dev/null 2>&1
+		$sudo_cmd mount -t ext4 -o loop $PRJDIR/${partition}.img $PRJDIR/$partition > /dev/null 2>&1
 		give_perm $partition
 	done
 }
@@ -1504,14 +1516,14 @@ umount_resize_freespace() {
 	clear
 	local images=$(ls -l $PRJDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
 	resize_to_build(){
-		sudo e2fsck -yf $PRJDIR/${valset}.img > /dev/null 2>&1
-		sudo resize2fs -M $PRJDIR/${valset}.img > /dev/null 2>&1
-		sudo e2fsck -yf $PRJDIR/${valset}.img > /dev/null 2>&1
+		$sudo_cmd e2fsck -yf $PRJDIR/${valset}.img > /dev/null 2>&1
+		$sudo_cmd resize2fs -M $PRJDIR/${valset}.img > /dev/null 2>&1
+		$sudo_cmd e2fsck -yf $PRJDIR/${valset}.img > /dev/null 2>&1
 				
 		vsizenow=$(ls -nl $PRJDIR/${valset}.img | awk '{print $5}')
 		sizeimg=$((($vsizenow + ${FREESPACE}000000)/1000))K
-		sudo resize2fs $PRJDIR/${valset}.img $sizeimg > /dev/null 2>&1
-		sudo e2fsck -yf $PRJDIR/${valset}.img > /dev/null 2>&1
+		$sudo_cmd resize2fs $PRJDIR/${valset}.img $sizeimg > /dev/null 2>&1
+		$sudo_cmd e2fsck -yf $PRJDIR/${valset}.img > /dev/null 2>&1
 	}
 
 	echo " "
@@ -1528,7 +1540,7 @@ umount_resize_freespace() {
 	echo "Unmounting $PARTITION..."
 	echo " "
 	restore_perm $PARTITION > /dev/null 2>&1
-	sudo umount $PRJDIR/$PARTITION > /dev/null 2>&1
+	$sudo_cmd umount $PRJDIR/$PARTITION > /dev/null 2>&1
 	rm -rf $PRJDIR/$PARTITION
 
 	echo "Resizing $PARTITION..."
@@ -1541,16 +1553,16 @@ umount_resize() {
 	clear
 	local images=$(ls -l $PRJDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
 	resize_to_build(){
-		sudo e2fsck -yf $PRJDIR/${valset}.img
-		sudo resize2fs -M $PRJDIR/${valset}.img
-		sudo e2fsck -yf $PRJDIR/${valset}.img
+		$sudo_cmd e2fsck -yf $PRJDIR/${valset}.img
+		$sudo_cmd resize2fs -M $PRJDIR/${valset}.img
+		$sudo_cmd e2fsck -yf $PRJDIR/${valset}.img
 	}
 	echo " "
 	echo "Unmounting partitions..."
 	echo " "
 	for partition in $images; do
 	   restore_perm $partition > /dev/null 2>&1
-	   sudo umount $PRJDIR/$partition > /dev/null 2>&1
+	   $sudo_cmd umount $PRJDIR/$partition > /dev/null 2>&1
 	   rm -rf $PRJDIR/$partition
 	done
 
@@ -1570,7 +1582,7 @@ umount_normal() {
 	local images=$(ls -l $PRJDIR | grep -v '^d' | grep .img | awk '{print $9}' | sed 's/\.img$//')
 	for partition in $images; do
 	   restore_perm $partition > /dev/null 2>&1
- 	   sudo umount $PRJDIR/$partition > /dev/null 2>&1
+ 	   $sudo_cmd umount $PRJDIR/$partition > /dev/null 2>&1
  	   rm -rf $PRJDIR/$partition
 	done
 }
@@ -1685,17 +1697,17 @@ payload_compile() {
 	local partlist=$(find $BIN/payloadRepackTool/IMAGES/ -maxdepth 1 -name "*.img" | sed 's#.*/##' | grep -v -x -f <(echo "$firmwareimages") | tr '\n' ' ')
 	for partition in $(echo $partlist); do                        
 		mkdir -p $BIN/payloadRepackTool/IMAGES/${partition}_mnt
-		sudo mount -t auto -o loop $BIN/payloadRepackTool/IMAGES/$partition $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+		$sudo_cmd mount -t auto -o loop $BIN/payloadRepackTool/IMAGES/$partition $BIN/payloadRepackTool/IMAGES/${partition}_mnt
 	done
 	for part in $(echo $dp_part); do
-		if [[ $(sudo find $BIN/payloadRepackTool/IMAGES/ -type f -name "checkpoint_gc" | grep "${part}.img_mnt") != "" ]]; then
+		if [[ $($sudo_cmd find $BIN/payloadRepackTool/IMAGES/ -type f -name "checkpoint_gc" | grep "${part}.img_mnt") != "" ]]; then
 			echo "Found checkpoint_gc at $part"
 			local postinstall_partition=$part
 			break
 		fi
 	done
 	for partition in $(echo $partlist); do
-		sudo umount $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+		$sudo_cmd umount $BIN/payloadRepackTool/IMAGES/${partition}_mnt
 		rm -rf $BIN/payloadRepackTool/IMAGES/${partition}_mnt
 	done
 
@@ -1798,19 +1810,19 @@ payload_compile_ota() {
 	local partlist=$(find $BIN/payloadRepackTool/IMAGES/ -maxdepth 1 -name "*.img" | sed 's#.*/##' | grep -v -x -f <(echo "$firmwareimages") | tr '\n' ' ')
 	for partition in $(echo $partlist); do                        
 		mkdir -p $BIN/payloadRepackTool/IMAGES/${partition}_mnt
-		sudo mount -t auto -o loop $BIN/payloadRepackTool/IMAGES/$partition $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+		$sudo_cmd mount -t auto -o loop $BIN/payloadRepackTool/IMAGES/$partition $BIN/payloadRepackTool/IMAGES/${partition}_mnt
 	done
 	for part in $(echo $dp_part); do
-		if [[ $(sudo find $BIN/payloadRepackTool/IMAGES/ -type f -name "checkpoint_gc" | grep "${part}.img_mnt") != "" ]]; then
+		if [[ $($sudo_cmd find $BIN/payloadRepackTool/IMAGES/ -type f -name "checkpoint_gc" | grep "${part}.img_mnt") != "" ]]; then
 			echo "Found checkpoint_gc at $part"
 			local postinstall_partition=$part
 			break
 		fi
 	done
-	sudo cp $BIN/payloadRepackTool/IMAGES/system.img_mnt/system/build.prop $BIN/payloadRepackTool/SYSTEM/build.prop
-	sudo chown $USER:$USER $BIN/payloadRepackTool/SYSTEM/build.prop
+	$sudo_cmd cp $BIN/payloadRepackTool/IMAGES/system.img_mnt/system/build.prop $BIN/payloadRepackTool/SYSTEM/build.prop
+	$sudo_cmd chown $USER:$USER $BIN/payloadRepackTool/SYSTEM/build.prop
 	for partition in $(echo $partlist); do
-		sudo umount $BIN/payloadRepackTool/IMAGES/${partition}_mnt
+		$sudo_cmd umount $BIN/payloadRepackTool/IMAGES/${partition}_mnt
 		rm -rf $BIN/payloadRepackTool/IMAGES/${partition}_mnt
 	done
 
@@ -2812,16 +2824,16 @@ install_proprietary() {
 		rm -rf $DIRTOOLS/PREBUILT
 		chmod 777 $DIRTOOLS/dtc
 		if [[ -f /usr/bin/dtc ]]; then
-		   sudo rm -rf /usr/bin/dtc
+		   $sudo_cmd rm -rf /usr/bin/dtc
 		fi
-		sudo mv $DIRTOOLS/dtc /usr/bin/dtc
+		$sudo_cmd mv $DIRTOOLS/dtc /usr/bin/dtc
 		rm -rf $DIRTOOLS/dtc.tar.gz
 	}
 	install_lptools() {
 		git clone https://github.com/Danda420/RomTools -b lptools-bins $DIRSCRIPTS/lptools-bins
 		rm -rf $DIRSCRIPTS/lptools-bins/.git
 		chmod 755 $DIRSCRIPTS/lptools-bins/*
-		sudo mv $DIRSCRIPTS/lptools-bins/* /usr/bin/
+		$sudo_cmd mv $DIRSCRIPTS/lptools-bins/* /usr/bin/
 		rm -rf $DIRSCRIPTS/lptools-bins
 	}
 	banner
@@ -2852,24 +2864,24 @@ install_proprietary() {
 	if [[ "$yn" =~ ^[Yy] ]]; then
 		case $PKGMAN in
 			"pacman" ) 
-				sudo pacman -Sy --noconfirm android-tools erofs-utils gawk brotli cpio zstd base-devel jdk-openjdk
+				$sudo_cmd pacman -Sy --noconfirm android-tools erofs-utils gawk brotli cpio zstd base-devel jdk-openjdk
 				install_dtc
 				restart_tool;;
 			"dnf" )
-				sudo dnf install -y android-tools erofs-utils gawk brotli cpio zstd python3-venv python3-devel @development-tools java-latest-openjdk
+				$sudo_cmd dnf install -y android-tools erofs-utils gawk brotli cpio zstd python3-venv python3-devel @development-tools java-latest-openjdk
 				install_dtc
 				restart_tool;;
 			"yum" )
-				sudo yum install -y android-tools erofs-utils gawk brotli cpio zstd python3-venv python3-devel @development-tools java-17-openjdk
+				$sudo_cmd yum install -y android-tools erofs-utils gawk brotli cpio zstd python3-venv python3-devel @development-tools java-17-openjdk
 				install_dtc
 				restart_tool;;
 			"apt" )
-				sudo apt install -y android-sdk-libsparse-utils erofs-utils gawk brotli cpio zstd python3-venv python3-dev build-essential openjdk-17-jre-headless
+				$sudo_cmd apt install -y android-sdk-libsparse-utils erofs-utils gawk brotli cpio zstd python3-venv python3-dev build-essential openjdk-17-jre-headless
 				install_dtc
 				install_lptools
 				restart_tool;;
 			"zypper" )
-				sudo zypper install -y android-tools erofs-utils gawk brotli cpio zstd python3-virtualenv python3-devel patterns-devel-base-devel_basis java-latest-openjdk
+				$sudo_cmd zypper install -y android-tools erofs-utils gawk brotli cpio zstd python3-virtualenv python3-devel patterns-devel-base-devel_basis java-latest-openjdk
 				install_dtc
 				install_lptools
 				restart_tool;;
@@ -3129,7 +3141,7 @@ payload_main() {
 
 uninstall_tool() {
 	echo "Uninstalling..."
-	sudo rm -rf $DIRTOOLS /bin/romtools
+	$sudo_cmd rm -rf $DIRTOOLS /bin/romtools
 	echo -e "${G}Done!${NC}"
 	exit 0
 }
