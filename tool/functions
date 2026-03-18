@@ -2863,25 +2863,35 @@ install_proprietary() {
 	read -p "" yn
 	if [[ "$yn" =~ ^[Yy] ]]; then
 		case $PKGMAN in
-			"pacman" ) 
-				$sudo_cmd pacman -Sy --noconfirm android-tools erofs-utils gawk brotli cpio zstd base-devel jdk-openjdk
+			"pacman" )
+				for package in android-tools erofs-utils gawk brotli cpio zstd base-devel jdk-openjdk; do
+					$sudo_cmd pacman -Sy --noconfirm "${package}"
+				done
 				install_dtc
 				restart_tool;;
 			"dnf" )
-				$sudo_cmd dnf install -y android-tools erofs-utils gawk brotli cpio zstd python3-venv python3-devel @development-tools java-latest-openjdk
+				for package in android-tools erofs-utils gawk brotli cpio zstd python3-venv python3-devel @development-tools java-latest-openjdk; do
+					$sudo_cmd dnf install -y "${package}"
+				done
 				install_dtc
 				restart_tool;;
 			"yum" )
-				$sudo_cmd yum install -y android-tools erofs-utils gawk brotli cpio zstd python3-venv python3-devel @development-tools java-17-openjdk
+				for package in android-tools erofs-utils gawk brotli cpio zstd python3-venv python3-devel @development-tools java-17-openjdk; do
+					$sudo_cmd yum install -y "${package}"
+				done
 				install_dtc
 				restart_tool;;
 			"apt" )
-				$sudo_cmd apt install -y android-sdk-libsparse-utils erofs-utils gawk brotli cpio zstd python3-venv python3-dev build-essential openjdk-17-jre-headless
+				for package in android-sdk-libsparse-utils erofs-utils gawk brotli cpio zstd python3-venv python3-dev build-essential openjdk-17-jre-headless; do
+					$sudo_cmd apt install -y "${package}"
+				done
 				install_dtc
 				install_lptools
 				restart_tool;;
 			"zypper" )
-				$sudo_cmd zypper install -y android-tools erofs-utils gawk brotli cpio zstd python3-virtualenv python3-devel patterns-devel-base-devel_basis java-latest-openjdk
+				for package in android-tools erofs-utils gawk brotli cpio zstd python3-virtualenv python3-devel patterns-devel-base-devel_basis java-latest-openjdk; do
+					$sudo_cmd zypper install -y "${package}"
+				done
 				install_dtc
 				install_lptools
 				restart_tool;;
