@@ -1,8 +1,0 @@
-romtools.conf
-dynamic_partitions.conf
-common_firmware_images
-custom_scripts/*
-patch/*
-bin/py/__pycache__
-bin/payloadRepackTool/bin/__pycache__
-bin/payloadRepackTool/venv
