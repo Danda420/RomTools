@@ -1,3 +1,11 @@
 input
 output
 ROM_WORKDIR
+tool/romtools.conf
+tool/dynamic_partitions.conf
+tool/common_firmware_images
+tool/custom_scripts/*
+tool/patch/*
+tool/bin/py/__pycache__
+tool/bin/payloadRepackTool/bin/__pycache__
+tool/bin/payloadRepackTool/venv
