@@ -9,3 +9,5 @@ tool/patch/*
 tool/bin/py/__pycache__
 tool/bin/payloadRepackTool/bin/__pycache__
 tool/bin/payloadRepackTool/venv
+tool/bin/booteditor
+tool/tmp
