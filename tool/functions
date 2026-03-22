@@ -1941,7 +1941,10 @@ custom_scripts() {
 	   if [[ $(ls -l $DIRSCRIPTS/custom_scripts/$SCRIPT | awk '{print $1}') != "-rwxrwxrwx" ]]; then
 	      chmod 777 $DIRSCRIPTS/custom_scripts/$SCRIPT
 	   fi
-	   exec $DIRSCRIPTS/custom_scripts/$SCRIPT
+
+	   "$DIRSCRIPTS/custom_scripts/$SCRIPT"
+
+	   restart_tool
 	fi
 }
 

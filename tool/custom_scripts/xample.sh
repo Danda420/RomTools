@@ -22,8 +22,8 @@ echo $TOOLDIR
 echo $PYSCRIPTS
 echo $DIRIN
 echo Hello
+rootc echo suddooo
 
 #################################################
-restart_tool
-exit
+exit 0
 #################################################
