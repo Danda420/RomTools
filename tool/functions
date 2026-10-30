@@ -156,10 +156,24 @@ clean() {
 	echo -e "${G}Done!${NC}"
 }
 
+check_spaces() {
+	local dir=$1
+	local bad
+	bad=$(find "$dir" -maxdepth 1 -name '* *' -printf '%f\n' 2>/dev/null)
+	if [[ -n $bad ]]; then
+		echo -e "${R}These files have spaces in their names and will break things:${NC}"
+		echo "$bad"
+		echo -e "${R}Rename them (use _ instead of spaces) and try again.${NC}"
+		read -rp "Press Enter to go back..."
+		return 1
+	fi
+}
+
 file_selector() {
 	local selected_dir=$1
 	local file_extension=$2
 	local message=$3
+	check_spaces "$selected_dir" || start_tools
 	if [[ $file_extension != "" ]]; then
 		local showfilescmd="ls -1 $selected_dir/*$file_extension"
 	else
